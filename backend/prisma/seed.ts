@@ -25,10 +25,14 @@ async function main() {
   console.log('✅ Created test user:', user.email);
 
   // ============ CREATE SAMPLE HABITS ============
+  // Set creation date to 60 days ago so historical data makes sense
+  const habitCreatedAt = new Date();
+  habitCreatedAt.setDate(habitCreatedAt.getDate() - 60);
+
   const habits = await Promise.all([
     prisma.habit.upsert({
       where: { id: 'habit-exercise' },
-      update: {},
+      update: { createdAt: habitCreatedAt },
       create: {
         id: 'habit-exercise',
         userId: user.id,
@@ -43,11 +47,12 @@ async function main() {
         category: 'Health',
         sortOrder: 0,
         isActive: true,
+        createdAt: habitCreatedAt,
       },
     }),
     prisma.habit.upsert({
       where: { id: 'habit-reading' },
-      update: {},
+      update: { createdAt: habitCreatedAt },
       create: {
         id: 'habit-reading',
         userId: user.id,
@@ -62,11 +67,12 @@ async function main() {
         category: 'Learning',
         sortOrder: 1,
         isActive: true,
+        createdAt: habitCreatedAt,
       },
     }),
     prisma.habit.upsert({
       where: { id: 'habit-meditation' },
-      update: {},
+      update: { createdAt: habitCreatedAt },
       create: {
         id: 'habit-meditation',
         userId: user.id,
@@ -81,11 +87,12 @@ async function main() {
         category: 'Mindfulness',
         sortOrder: 2,
         isActive: true,
+        createdAt: habitCreatedAt,
       },
     }),
     prisma.habit.upsert({
       where: { id: 'habit-water' },
-      update: {},
+      update: { createdAt: habitCreatedAt },
       create: {
         id: 'habit-water',
         userId: user.id,
@@ -100,11 +107,12 @@ async function main() {
         category: 'Health',
         sortOrder: 3,
         isActive: true,
+        createdAt: habitCreatedAt,
       },
     }),
     prisma.habit.upsert({
       where: { id: 'habit-planning' },
-      update: {},
+      update: { createdAt: habitCreatedAt },
       create: {
         id: 'habit-planning',
         userId: user.id,
@@ -118,6 +126,7 @@ async function main() {
         category: 'Productivity',
         sortOrder: 4,
         isActive: true,
+        createdAt: habitCreatedAt,
       },
     }),
   ]);

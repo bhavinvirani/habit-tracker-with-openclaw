@@ -1,69 +1,108 @@
 import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { asyncHandler } from '../utils/asyncHandler';
-import { sendSuccess, sendCreated, sendPaginated } from '../utils/response';
-import logger from '../utils/logger';
+import { sendSuccess, sendCreated } from '../utils/response';
+import * as trackingService from '../services/tracking.service';
+import { CheckInInput, UndoCheckInInput, HistoryQuery, DateParam } from '../validators/tracking.validator';
 
-export const logHabitCompletion = asyncHandler(async (req: AuthRequest, res: Response) => {
-  // TODO: Implement log habit completion in database
-  const { habitId, completedAt, notes } = req.body;
+/**
+ * GET /tracking/today
+ * Get today's habits with completion status
+ */
+export const getTodayHabits = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const habits = await trackingService.getTodayHabits(req.userId!);
 
-  logger.info('Logging habit completion', { userId: req.userId, habitId });
-
-  // Mock tracking entry until implementation
-  const trackingEntry = {
-    id: 'temp-tracking-id',
-    habitId,
-    userId: req.userId,
-    completedAt: completedAt || new Date().toISOString(),
-    notes: notes || null,
-    createdAt: new Date().toISOString(),
-  };
-
-  sendCreated(
-    res,
-    { entry: trackingEntry },
-    'Habit completion logged successfully. Keep up the great work!'
-  );
+  sendSuccess(res, { 
+    date: new Date().toISOString().split('T')[0],
+    habits,
+    summary: {
+      total: habits.length,
+      completed: habits.filter(h => h.isCompleted).length,
+      remaining: habits.filter(h => !h.isCompleted).length,
+    }
+  }, 'Today\'s habits retrieved successfully');
 });
 
-export const getTrackingHistory = asyncHandler(async (req: AuthRequest, res: Response) => {
-  // TODO: Implement get tracking history from database with pagination
-  const { page = 1, limit = 20, habitId } = req.query;
+/**
+ * POST /tracking/check-in
+ * Log habit completion
+ */
+export const checkIn = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const data = req.body as CheckInInput;
+  const result = await trackingService.checkIn(req.userId!, data);
 
-  logger.debug('Fetching tracking history', {
-    userId: req.userId,
-    habitId,
-    page,
-    limit,
-  });
+  const message = result.milestones.length > 0
+    ? `Habit logged! 🎉 You achieved ${result.milestones.length} milestone(s)!`
+    : result.streak.currentStreak > 1
+      ? `Habit logged! 🔥 ${result.streak.currentStreak} day streak!`
+      : 'Habit logged successfully!';
 
-  // Mock tracking history until implementation
-  const history = [
-    {
-      id: 'entry-1',
-      habitId: habitId || 'habit-1',
-      completedAt: new Date().toISOString(),
-      notes: 'Felt great today!',
-      createdAt: new Date().toISOString(),
-    },
-  ];
-
-  sendPaginated(
-    res,
-    history,
-    Number(page),
-    Number(limit),
-    1,
-    'Tracking history retrieved successfully'
-  );
+  sendCreated(res, {
+    log: result.log,
+    streak: result.streak,
+    milestones: result.milestones,
+  }, message);
 });
 
-export const deleteTrackingEntry = asyncHandler(async (req: AuthRequest, res: Response) => {
-  // TODO: Implement delete tracking entry from database
-  const { id } = req.params;
+/**
+ * DELETE /tracking/check-in
+ * Undo a check-in
+ */
+export const undoCheckIn = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const data = req.body as UndoCheckInInput;
+  await trackingService.undoCheckIn(req.userId!, data);
 
-  logger.info('Deleting tracking entry', { userId: req.userId, entryId: id });
+  sendSuccess(res, null, 'Check-in undone successfully');
+});
 
-  sendSuccess(res, { deletedId: id }, 'Tracking entry deleted successfully');
+/**
+ * GET /tracking/date/:date
+ * Get habits for a specific date
+ */
+export const getHabitsByDate = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const { date } = req.params as unknown as DateParam;
+  const habits = await trackingService.getHabitsByDate(req.userId!, date);
+
+  sendSuccess(res, {
+    date,
+    habits,
+    summary: {
+      total: habits.length,
+      completed: habits.filter(h => h.isCompleted).length,
+      remaining: habits.filter(h => !h.isCompleted).length,
+    }
+  }, 'Habits retrieved successfully');
+});
+
+/**
+ * GET /tracking/history
+ * Get tracking history for calendar/heatmap
+ */
+export const getHistory = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const query = req.query as unknown as HistoryQuery;
+  const result = await trackingService.getHistory(req.userId!, query);
+
+  sendSuccess(res, {
+    entries: result.entries,
+    logs: result.logs,
+    summary: {
+      totalDays: result.entries.length,
+      daysWithActivity: result.entries.filter(e => e.count > 0).length,
+      perfectDays: result.entries.filter(e => e.percentage === 100).length,
+      averageCompletion: Math.round(
+        result.entries.reduce((sum, e) => sum + e.percentage, 0) / result.entries.length
+      ),
+    }
+  }, 'History retrieved successfully');
+});
+
+/**
+ * GET /tracking/milestones
+ * Get all milestones for a user
+ */
+export const getMilestones = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const { habitId } = req.query as { habitId?: string };
+  const milestones = await trackingService.getMilestones(req.userId!, habitId);
+
+  sendSuccess(res, { milestones }, 'Milestones retrieved successfully');
 });
