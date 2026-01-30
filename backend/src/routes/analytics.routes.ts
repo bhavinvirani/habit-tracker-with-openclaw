@@ -1,17 +1,46 @@
 import { Router } from 'express';
 import { authenticate } from '../middleware/auth';
+import { validateQuery, validateParams } from '../middleware/validate';
+import {
+  overviewQuerySchema,
+  periodQuerySchema,
+  heatmapQuerySchema,
+  habitIdParamSchema,
+  streaksQuerySchema,
+} from '../validators/analytics.validator';
 import {
   getOverview,
+  getWeeklyAnalytics,
+  getMonthlyAnalytics,
+  getHeatmap,
   getHabitStats,
-  getTrends,
+  getStreaks,
+  getInsights,
 } from '../controllers/analytics.controller';
 
 const router = Router();
 
 router.use(authenticate);
 
-router.get('/overview', getOverview);
-router.get('/habits/:id/stats', getHabitStats);
-router.get('/trends', getTrends);
+// Dashboard overview
+router.get('/overview', validateQuery(overviewQuerySchema), getOverview);
+
+// Weekly breakdown
+router.get('/weekly', validateQuery(periodQuerySchema), getWeeklyAnalytics);
+
+// Monthly breakdown
+router.get('/monthly', validateQuery(periodQuerySchema), getMonthlyAnalytics);
+
+// Year heatmap
+router.get('/heatmap', validateQuery(heatmapQuerySchema), getHeatmap);
+
+// Habit-specific stats
+router.get('/habits/:id', validateParams(habitIdParamSchema), getHabitStats);
+
+// Streak leaderboard
+router.get('/streaks', validateQuery(streaksQuerySchema), getStreaks);
+
+// Insights and suggestions
+router.get('/insights', getInsights);
 
 export default router;

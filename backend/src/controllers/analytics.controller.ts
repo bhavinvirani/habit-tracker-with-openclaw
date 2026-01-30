@@ -2,77 +2,94 @@ import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { asyncHandler } from '../utils/asyncHandler';
 import { sendSuccess } from '../utils/response';
-import logger from '../utils/logger';
+import * as analyticsService from '../services/analytics.service';
+import {
+  OverviewQuery,
+  PeriodQuery,
+  HeatmapQuery,
+  HabitIdParam,
+  StreaksQuery,
+} from '../validators/analytics.validator';
 
+/**
+ * GET /analytics/overview
+ * Get dashboard overview stats
+ */
 export const getOverview = asyncHandler(async (req: AuthRequest, res: Response) => {
-  // TODO: Implement get overview analytics from database
-  logger.debug('Fetching analytics overview', { userId: req.userId });
+  const query = req.query as unknown as OverviewQuery;
+  const result = await analyticsService.getOverview(req.userId!, query);
 
-  // Mock analytics data until implementation
-  const overview = {
-    totalHabits: 0,
-    activeHabits: 0,
-    completedToday: 0,
-    currentStreak: 0,
-    longestStreak: 0,
-    completionRate: 0,
-    totalCompletions: 0,
-    weeklyProgress: [
-      { day: 'Mon', completed: 0, total: 0 },
-      { day: 'Tue', completed: 0, total: 0 },
-      { day: 'Wed', completed: 0, total: 0 },
-      { day: 'Thu', completed: 0, total: 0 },
-      { day: 'Fri', completed: 0, total: 0 },
-      { day: 'Sat', completed: 0, total: 0 },
-      { day: 'Sun', completed: 0, total: 0 },
-    ],
-  };
-
-  sendSuccess(res, { overview }, 'Analytics overview retrieved successfully');
-});
-
-export const getHabitStats = asyncHandler(async (req: AuthRequest, res: Response) => {
-  // TODO: Implement get habit statistics from database
-  const { habitId } = req.params;
-
-  logger.debug('Fetching habit statistics', { userId: req.userId, habitId });
-
-  // Mock habit stats until implementation
-  const stats = {
-    habitId,
-    habitName: 'Sample Habit',
-    totalCompletions: 0,
-    currentStreak: 0,
-    longestStreak: 0,
-    completionRate: 0,
-    averagePerWeek: 0,
-    lastCompleted: null,
-    recentCompletions: [],
-    monthlyBreakdown: {
-      completed: 0,
-      missed: 0,
-      rate: 0,
+  sendSuccess(
+    res,
+    {
+      stats: result.stats,
+      weeklyProgress: result.weeklyProgress,
     },
-  };
-
-  sendSuccess(res, { stats }, 'Habit statistics retrieved successfully');
+    'Analytics overview retrieved successfully'
+  );
 });
 
-export const getTrends = asyncHandler(async (req: AuthRequest, res: Response) => {
-  // TODO: Implement get trends from database
-  const { period = '30d' } = req.query;
+/**
+ * GET /analytics/weekly
+ * Get weekly breakdown
+ */
+export const getWeeklyAnalytics = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const query = req.query as unknown as PeriodQuery;
+  const result = await analyticsService.getWeeklyAnalytics(req.userId!, query);
 
-  logger.debug('Fetching trends', { userId: req.userId, period });
+  sendSuccess(res, result, 'Weekly analytics retrieved successfully');
+});
 
-  // Mock trends data until implementation
-  const trends = {
-    period,
-    overallTrend: 'stable', // 'improving' | 'declining' | 'stable'
-    completionTrend: [],
-    bestPerformingHabits: [],
-    needsAttention: [],
-    insights: ["You're doing great! Keep up the consistency."],
-  };
+/**
+ * GET /analytics/monthly
+ * Get monthly breakdown
+ */
+export const getMonthlyAnalytics = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const query = req.query as unknown as PeriodQuery;
+  const result = await analyticsService.getMonthlyAnalytics(req.userId!, query);
 
-  sendSuccess(res, { trends }, 'Trends analysis retrieved successfully');
+  sendSuccess(res, result, 'Monthly analytics retrieved successfully');
+});
+
+/**
+ * GET /analytics/heatmap
+ * Get year heatmap data
+ */
+export const getHeatmap = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const query = req.query as unknown as HeatmapQuery;
+  const heatmap = await analyticsService.getHeatmap(req.userId!, query);
+
+  sendSuccess(res, { heatmap }, 'Heatmap data retrieved successfully');
+});
+
+/**
+ * GET /analytics/habits/:id
+ * Get stats for a specific habit
+ */
+export const getHabitStats = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const { id } = req.params as unknown as HabitIdParam;
+  const stats = await analyticsService.getHabitStats(req.userId!, id);
+
+  sendSuccess(res, stats, 'Habit stats retrieved successfully');
+});
+
+/**
+ * GET /analytics/streaks
+ * Get streak leaderboard
+ */
+export const getStreaks = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const query = req.query as unknown as StreaksQuery;
+  const streaks = await analyticsService.getStreakLeaderboard(req.userId!, query);
+
+  sendSuccess(res, { streaks }, 'Streak leaderboard retrieved successfully');
+});
+
+/**
+ * GET /analytics/insights
+ * Get insights and suggestions
+ */
+export const getInsights = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const insights = await analyticsService.getInsights(req.userId!);
+
+  sendSuccess(res, insights, 'Insights retrieved successfully');
 });

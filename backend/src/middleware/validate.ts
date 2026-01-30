@@ -66,3 +66,6 @@ export const validateParams = <T>(schema: ZodSchema<T>) => {
     }
   };
 };
+
+// Alias for backward compatibility
+export const validate = validateBody;

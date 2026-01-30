@@ -8,70 +8,70 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  password  String
-  name      String
-  
+  id       String @id @default(uuid())
+  email    String @unique
+  password String
+  name     String
+
   // API Access for future integrations (WhatsApp, automations, etc.)
-  apiKey    String?  @unique
+  apiKey          String?   @unique
   apiKeyCreatedAt DateTime?
-  
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  habits      Habit[]
-  habitLogs   HabitLog[]
-  milestones  Milestone[]
-  books       Book[]
-  challenges  Challenge[]
+  habits            Habit[]
+  habitLogs         HabitLog[]
+  milestones        Milestone[]
+  books             Book[]
+  challenges        Challenge[]
   challengeProgress ChallengeProgress[]
 
   @@map("users")
 }
 
 model Habit {
-  id          String    @id @default(uuid())
+  id          String  @id @default(uuid())
   userId      String
   name        String
   description String?
-  
-  // Frequency configuration
-  frequency     Frequency @default(DAILY)
-  daysOfWeek    Int[]     // For weekly: specific days [1,3,5] = Mon,Wed,Fri (1=Mon, 7=Sun)
-  timesPerWeek  Int?      // For weekly: X times per week (any days)
-  
-  // Habit type configuration
-  habitType     HabitType @default(BOOLEAN)
-  targetValue   Int?      // For NUMERIC/DURATION: target goal (e.g., 8 glasses, 30 minutes)
-  unit          String?   // For NUMERIC/DURATION: unit label (e.g., "glasses", "minutes")
-  
-  // Display & Organization
-  color       String    @default("#0ea5e9")
-  icon        String?
-  category    String?
-  sortOrder   Int       @default(0)  // For drag-and-drop ordering
-  
-  // Status
-  isActive    Boolean   @default(true)
-  isArchived  Boolean   @default(false)  // Archived habits (keep history, hide from view)
-  
-  // Template reference (if created from template)
-  templateId  String?
-  
-  // Streak tracking (denormalized for performance)
-  currentStreak  Int     @default(0)
-  longestStreak  Int     @default(0)
-  totalCompletions Int   @default(0)
-  lastCompletedAt DateTime?
-  
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
 
-  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  template   HabitTemplate? @relation(fields: [templateId], references: [id])
-  habitLogs  HabitLog[]
-  milestones Milestone[]
+  // Frequency configuration
+  frequency    Frequency @default(DAILY)
+  daysOfWeek   Int[] // For weekly: specific days [1,3,5] = Mon,Wed,Fri (1=Mon, 7=Sun)
+  timesPerWeek Int? // For weekly: X times per week (any days)
+
+  // Habit type configuration
+  habitType   HabitType @default(BOOLEAN)
+  targetValue Int? // For NUMERIC/DURATION: target goal (e.g., 8 glasses, 30 minutes)
+  unit        String? // For NUMERIC/DURATION: unit label (e.g., "glasses", "minutes")
+
+  // Display & Organization
+  color     String  @default("#0ea5e9")
+  icon      String?
+  category  String?
+  sortOrder Int     @default(0) // For drag-and-drop ordering
+
+  // Status
+  isActive   Boolean @default(true)
+  isArchived Boolean @default(false) // Archived habits (keep history, hide from view)
+
+  // Template reference (if created from template)
+  templateId String?
+
+  // Streak tracking (denormalized for performance)
+  currentStreak    Int       @default(0)
+  longestStreak    Int       @default(0)
+  totalCompletions Int       @default(0)
+  lastCompletedAt  DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  template        HabitTemplate?   @relation(fields: [templateId], references: [id])
+  habitLogs       HabitLog[]
+  milestones      Milestone[]
   challengeHabits ChallengeHabit[]
 
   @@index([userId])
@@ -85,9 +85,9 @@ model HabitLog {
   id        String   @id @default(uuid())
   habitId   String
   userId    String
-  date      DateTime @db.Date  // Store as date only, no time component
+  date      DateTime @db.Date // Store as date only, no time component
   completed Boolean  @default(true)
-  value     Int?     // For NUMERIC/DURATION habits: actual value achieved
+  value     Int? // For NUMERIC/DURATION habits: actual value achieved
   notes     String?
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
@@ -104,17 +104,17 @@ model HabitLog {
 }
 
 model Milestone {
-  id        String        @id @default(uuid())
-  habitId   String
-  userId    String
-  type      MilestoneType
-  value     Int           // The milestone value (7, 30, 100, etc.)
-  achievedAt DateTime     @default(now())
+  id         String        @id @default(uuid())
+  habitId    String
+  userId     String
+  type       MilestoneType
+  value      Int // The milestone value (7, 30, 100, etc.)
+  achievedAt DateTime      @default(now())
 
   habit Habit @relation(fields: [habitId], references: [id], onDelete: Cascade)
   user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([habitId, type, value])  // Prevent duplicate milestones
+  @@unique([habitId, type, value]) // Prevent duplicate milestones
   @@index([habitId])
   @@index([userId])
   @@index([achievedAt])
@@ -134,36 +134,36 @@ model HabitTemplate {
   targetValue Int?
   unit        String?
   frequency   Frequency @default(DAILY)
-  isSystem    Boolean   @default(true)  // System templates vs user-created
-  
-  createdAt   DateTime  @default(now())
-  
-  habits      Habit[]
-  
+  isSystem    Boolean   @default(true) // System templates vs user-created
+
+  createdAt DateTime @default(now())
+
+  habits Habit[]
+
   @@map("habit_templates")
 }
 
 // ============ BOOK READING TRACKER ============
 
 model Book {
-  id          String     @id @default(uuid())
+  id          String  @id @default(uuid())
   userId      String
   title       String
   author      String?
-  coverUrl    String?    // Book cover image URL
+  coverUrl    String? // Book cover image URL
   totalPages  Int?
-  currentPage Int        @default(0)
-  
-  status      BookStatus @default(WANT_TO_READ)
-  rating      Int?       // 1-5 stars
-  notes       String?    // Personal notes/review
-  
-  startedAt   DateTime?
-  finishedAt  DateTime?
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  currentPage Int     @default(0)
 
-  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status BookStatus @default(WANT_TO_READ)
+  rating Int? // 1-5 stars
+  notes  String? // Personal notes/review
+
+  startedAt  DateTime?
+  finishedAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   readingLogs ReadingLog[]
 
   @@index([userId])
@@ -181,6 +181,7 @@ model ReadingLog {
 
   book Book @relation(fields: [bookId], references: [id], onDelete: Cascade)
 
+  @@unique([bookId, date])
   @@index([bookId])
   @@index([date])
   @@map("reading_logs")
@@ -189,28 +190,28 @@ model ReadingLog {
 // ============ CHALLENGES ============
 
 model Challenge {
-  id          String          @id @default(uuid())
+  id          String  @id @default(uuid())
   userId      String
   name        String
   description String?
-  
+
   // Duration
-  duration    Int             // Number of days (e.g., 30 for 30-day challenge)
-  startDate   DateTime        @db.Date
-  endDate     DateTime        @db.Date
-  
+  duration  Int // Number of days (e.g., 30 for 30-day challenge)
+  startDate DateTime @db.Date
+  endDate   DateTime @db.Date
+
   // Status
-  status      ChallengeStatus @default(ACTIVE)
-  
+  status ChallengeStatus @default(ACTIVE)
+
   // Results (calculated when completed)
   completionRate Float?
-  
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
 
-  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  habits      ChallengeHabit[]
-  progress    ChallengeProgress[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user     User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  habits   ChallengeHabit[]
+  progress ChallengeProgress[]
 
   @@index([userId])
   @@index([userId, status])
@@ -218,12 +219,12 @@ model Challenge {
 }
 
 model ChallengeHabit {
-  id          String    @id @default(uuid())
+  id          String @id @default(uuid())
   challengeId String
   habitId     String
-  
-  challenge   Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
-  habit       Habit     @relation(fields: [habitId], references: [id], onDelete: Cascade)
+
+  challenge Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  habit     Habit     @relation(fields: [habitId], references: [id], onDelete: Cascade)
 
   @@unique([challengeId, habitId])
   @@map("challenge_habits")
@@ -234,15 +235,15 @@ model ChallengeProgress {
   challengeId String
   userId      String
   date        DateTime @db.Date
-  
-  // Daily stats for the challenge
-  habitsCompleted Int   @default(0)
-  habitsTotal     Int   @default(0)
-  
-  createdAt   DateTime @default(now())
 
-  challenge   Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Daily stats for the challenge
+  habitsCompleted Int @default(0)
+  habitsTotal     Int @default(0)
+
+  createdAt DateTime @default(now())
+
+  challenge Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([challengeId, date])
   @@index([challengeId])
@@ -252,31 +253,31 @@ model ChallengeProgress {
 // ============ ENUMS ============
 
 enum Frequency {
-  DAILY   // Every day
-  WEEKLY  // Specific days or X times per week
+  DAILY // Every day
+  WEEKLY // Specific days or X times per week
 }
 
 enum HabitType {
-  BOOLEAN   // Yes/No - Did you do it?
-  NUMERIC   // Count - How many? (glasses of water)
-  DURATION  // Minutes - How long? (meditation time)
+  BOOLEAN // Yes/No - Did you do it?
+  NUMERIC // Count - How many? (glasses of water)
+  DURATION // Minutes - How long? (meditation time)
 }
 
 enum MilestoneType {
-  STREAK      // Consecutive days: 7, 14, 30, 60, 90, 180, 365
+  STREAK // Consecutive days: 7, 14, 30, 60, 90, 180, 365
   COMPLETIONS // Total completions: 10, 25, 50, 100, 250, 500, 1000
 }
 
 enum BookStatus {
-  WANT_TO_READ  // In wishlist / TBR
-  READING       // Currently reading
-  FINISHED      // Completed
-  ABANDONED     // Gave up on it
+  WANT_TO_READ // In wishlist / TBR
+  READING // Currently reading
+  FINISHED // Completed
+  ABANDONED // Gave up on it
 }
 
 enum ChallengeStatus {
-  ACTIVE      // In progress
-  COMPLETED   // Successfully finished
-  FAILED      // Didn't complete in time
-  CANCELLED   // User cancelled
+  ACTIVE // In progress
+  COMPLETED // Successfully finished
+  FAILED // Didn't complete in time
+  CANCELLED // User cancelled
 }
