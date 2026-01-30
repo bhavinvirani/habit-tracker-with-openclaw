@@ -141,7 +141,7 @@ const Books: React.FC = () => {
   };
 
   const handleDelete = (id: string) => {
-    if (confirm('Remove this book?')) {
+    if (window.confirm('Remove this book?')) {
       deleteMutation.mutate(id);
     }
     setActiveMenu(null);

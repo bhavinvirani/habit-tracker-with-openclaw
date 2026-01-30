@@ -114,7 +114,7 @@ const Habits: React.FC = () => {
   };
 
   const handleDelete = (id: string) => {
-    if (confirm('Are you sure you want to delete this habit? This cannot be undone.')) {
+    if (window.confirm('Are you sure you want to delete this habit? This cannot be undone.')) {
       deleteMutation.mutate(id);
     }
     setActiveMenu(null);
@@ -196,7 +196,9 @@ const Habits: React.FC = () => {
                   <p className="text-sm text-dark-400 truncate">{habit.description}</p>
                 )}
                 <div className="flex items-center gap-4 mt-2">
-                  <span className="badge badge-primary">{habit.frequency.charAt(0) + habit.frequency.slice(1).toLowerCase()}</span>
+                  <span className="badge badge-primary">
+                    {habit.frequency.charAt(0) + habit.frequency.slice(1).toLowerCase()}
+                  </span>
                   {habit.category && (
                     <span className="text-xs text-dark-500">{habit.category}</span>
                   )}

@@ -168,7 +168,7 @@ const Challenges: React.FC = () => {
   };
 
   const handleDelete = (id: string) => {
-    if (confirm('Remove this challenge?')) {
+    if (window.confirm('Remove this challenge?')) {
       deleteMutation.mutate(id);
     }
     setActiveMenu(null);

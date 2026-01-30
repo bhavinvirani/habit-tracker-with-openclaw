@@ -8,7 +8,7 @@ import { AppError } from '../utils/AppError';
  */
 const handlePrismaError = (error: Prisma.PrismaClientKnownRequestError): AppError => {
   switch (error.code) {
-    case 'P2002':
+    case 'P2002': {
       // Unique constraint violation
       const target = error.meta?.target as string[] | undefined;
       const field = target ? target[0] : 'field';
@@ -19,6 +19,7 @@ const handlePrismaError = (error: Prisma.PrismaClientKnownRequestError): AppErro
         'DUPLICATE_ENTRY',
         { field, meta: error.meta }
       );
+    }
 
     case 'P2025':
       // Record not found
