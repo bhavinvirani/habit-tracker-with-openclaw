@@ -1,5 +1,5 @@
 import api from './api';
-import { Habit, HabitLog } from '../types';
+import { Habit, HabitLog, InsightsData } from '../types';
 
 // Types for API responses
 interface ApiResponse<T> {
@@ -138,11 +138,6 @@ interface StreaksData {
     longestStreak: number;
     color: string;
   }>;
-}
-
-interface InsightsData {
-  insights: string[];
-  recommendations: string[];
 }
 
 // Habits API

@@ -56,7 +56,7 @@ const sendErrorResponse = (err: AppError, req: Request, res: Response) => {
       message: string;
       code?: string;
       stack?: string;
-      details?: Record<string, unknown>;
+      details?: Record<string, unknown> | unknown[];
     };
   } = {
     success: false,

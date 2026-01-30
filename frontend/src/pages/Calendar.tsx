@@ -127,7 +127,7 @@ const Calendar: React.FC = () => {
             >
               {format(currentDay, 'd')}
             </span>
-            {isCurrentMonth && dayData?.total > 0 && (
+            {isCurrentMonth && dayData && dayData.total > 0 && (
               <span className="text-xs text-dark-400 mt-0.5">
                 {dayData.completed}/{dayData.total}
               </span>
@@ -215,7 +215,7 @@ const Calendar: React.FC = () => {
                 {selectedDayData.completed} of {selectedDayData.total} habits completed
               </div>
 
-              {selectedDayData.habits?.length > 0 && (
+              {selectedDayData.habits && selectedDayData.habits.length > 0 && (
                 <div className="space-y-2">
                   {selectedDayData.habits.map(
                     (habit: { id: string; name: string; completed: boolean }) => (

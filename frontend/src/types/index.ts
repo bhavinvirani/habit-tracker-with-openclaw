@@ -183,9 +183,19 @@ export interface StreaksData {
   streaks: StreakInfo[];
 }
 
+// Insights data with optional suggestions and highlights
 export interface InsightsData {
   insights: string[];
   recommendations: string[];
+  suggestions?: string[];
+  bestDay?: {
+    day: string;
+    percentage: number;
+  };
+  topHabit?: {
+    name: string;
+    streak: number;
+  };
 }
 
 // Axios Error type

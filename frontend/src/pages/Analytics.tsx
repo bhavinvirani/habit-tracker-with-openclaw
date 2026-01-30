@@ -213,7 +213,7 @@ const Analytics: React.FC = () => {
         {/* Top Streaks */}
         <div className="card">
           <h2 className="text-xl font-semibold text-white mb-4">Streak Leaders</h2>
-          {streaks?.streaks?.length > 0 ? (
+          {streaks?.streaks && streaks.streaks.length > 0 ? (
             <div className="space-y-3">
               {streaks.streaks.slice(0, 5).map((habit: StreakInfo, index: number) => (
                 <div
@@ -256,14 +256,14 @@ const Analytics: React.FC = () => {
             <Lightbulb className="w-5 h-5 text-accent-yellow" />
             <h2 className="text-xl font-semibold text-white">Insights</h2>
           </div>
-          {insights?.suggestions?.length > 0 ? (
+          {insights?.suggestions && insights.suggestions?.length > 0 ? (
             <div className="space-y-3">
               {insights.suggestions.map((suggestion: string, index: number) => (
                 <div key={index} className="p-4 rounded-lg border bg-dark-800 border-dark-700">
                   <p className="text-sm text-dark-300">{suggestion}</p>
                 </div>
               ))}
-              {insights.bestDay && (
+              {insights?.bestDay && (
                 <div className="p-4 rounded-lg border bg-accent-green/10 border-accent-green/20">
                   <p className="text-sm text-accent-green">
                     🎯 Your best day is {insights.bestDay.day} with {insights.bestDay.percentage}%
@@ -271,7 +271,7 @@ const Analytics: React.FC = () => {
                   </p>
                 </div>
               )}
-              {insights.topHabit && (
+              {insights?.topHabit && (
                 <div className="p-4 rounded-lg border bg-accent-yellow/10 border-accent-yellow/20">
                   <p className="text-sm text-accent-yellow">
                     🔥 Top habit: {insights.topHabit.name} with a {insights.topHabit.streak}-day

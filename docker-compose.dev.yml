@@ -40,6 +40,7 @@ services:
       - ./backend/src:/app/src
       - ./backend/prisma:/app/prisma
       - ./backend/jest.config.js:/app/jest.config.js
+      - ./backend/nodemon.json:/app/nodemon.json
       - ./backend/package.json:/app/package.json
       - /app/node_modules
     command: sh -c "npx prisma migrate deploy && npx prisma generate && npm run dev"

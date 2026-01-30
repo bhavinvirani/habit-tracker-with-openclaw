@@ -6,14 +6,14 @@ export class AppError extends Error {
   public readonly statusCode: number;
   public readonly isOperational: boolean;
   public readonly code?: string;
-  public readonly details?: Record<string, unknown>;
+  public readonly details?: Record<string, unknown> | unknown[];
 
   constructor(
     message: string,
     statusCode: number = 500,
     isOperational: boolean = true,
     code?: string,
-    details?: Record<string, unknown>
+    details?: Record<string, unknown> | unknown[]
   ) {
     super(message);
 
@@ -32,7 +32,10 @@ export class AppError extends Error {
  * 400 - Bad Request
  */
 export class ValidationError extends AppError {
-  constructor(message: string = 'Validation failed', details?: Record<string, unknown>) {
+  constructor(
+    message: string = 'Validation failed',
+    details?: Record<string, unknown> | unknown[]
+  ) {
     super(message, 400, true, 'VALIDATION_ERROR', details);
   }
 }
@@ -41,7 +44,7 @@ export class ValidationError extends AppError {
  * 400 - Bad Request (alias for ValidationError)
  */
 export class BadRequestError extends AppError {
-  constructor(message: string = 'Bad request', details?: Record<string, unknown>) {
+  constructor(message: string = 'Bad request', details?: Record<string, unknown> | unknown[]) {
     super(message, 400, true, 'BAD_REQUEST_ERROR', details);
   }
 }
