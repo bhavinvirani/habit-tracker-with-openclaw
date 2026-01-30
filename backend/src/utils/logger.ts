@@ -9,6 +9,7 @@ const levels = {
   info: 2,
   http: 3,
   debug: 4,
+  silent: 5,
 };
 
 // Define colors for each level
@@ -26,6 +27,7 @@ winston.addColors(colors);
 // Define log level based on environment
 const level = () => {
   const env = process.env.NODE_ENV || 'development';
+  if (env === 'test') return 'silent';
   const isDevelopment = env === 'development';
   return isDevelopment ? 'debug' : 'warn';
 };
@@ -54,32 +56,41 @@ const format = winston.format.combine(
   })
 );
 
-// Define transports
-const transports = [
-  // Console transport
-  new winston.transports.Console({
-    format: winston.format.combine(winston.format.colorize({ all: true }), format),
-  }),
+// Define transports - conditionally add based on environment
+const isTest = process.env.NODE_ENV === 'test';
 
-  // File transport - All logs
-  new DailyRotateFile({
-    filename: path.join('logs', 'application-%DATE%.log'),
-    datePattern: 'YYYY-MM-DD',
-    maxSize: '20m',
-    maxFiles: '14d',
-    format: winston.format.combine(winston.format.uncolorize(), format),
-  }),
+const transports = isTest
+  ? [
+      // Silent transport for tests
+      new winston.transports.Console({
+        silent: true,
+      }),
+    ]
+  : [
+      // Console transport
+      new winston.transports.Console({
+        format: winston.format.combine(winston.format.colorize({ all: true }), format),
+      }),
 
-  // File transport - Error logs only
-  new DailyRotateFile({
-    level: 'error',
-    filename: path.join('logs', 'error-%DATE%.log'),
-    datePattern: 'YYYY-MM-DD',
-    maxSize: '20m',
-    maxFiles: '30d',
-    format: winston.format.combine(winston.format.uncolorize(), format),
-  }),
-];
+      // File transport - All logs
+      new DailyRotateFile({
+        filename: path.join('logs', 'application-%DATE%.log'),
+        datePattern: 'YYYY-MM-DD',
+        maxSize: '20m',
+        maxFiles: '14d',
+        format: winston.format.combine(winston.format.uncolorize(), format),
+      }),
+
+      // File transport - Error logs only
+      new DailyRotateFile({
+        level: 'error',
+        filename: path.join('logs', 'error-%DATE%.log'),
+        datePattern: 'YYYY-MM-DD',
+        maxSize: '20m',
+        maxFiles: '30d',
+        format: winston.format.combine(winston.format.uncolorize(), format),
+      }),
+    ];
 
 // Create the logger instance
 const logger = winston.createLogger({
