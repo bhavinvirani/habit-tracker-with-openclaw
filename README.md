@@ -6,13 +6,13 @@ A comprehensive full-stack habit tracking application with analytics, insights, 
 
 ```bash
 # Clone the repository
-git clone <your-repo-url>
+git clone https://github.com/bhavinvirani/habit-tracker.git
 cd habit-tracker
 
 # Start the entire application with one command
 docker-compose -f docker-compose.dev.yml up
 
-# Or use the helper script (auto-follows logs)
+# Or use the helper script
 ./start.sh
 ```
 
@@ -20,156 +20,215 @@ That's it! No Node.js, PostgreSQL, or other dependencies needed locally.
 
 **Access the application:**
 
-- **Frontend**: http://localhost:3000
-- **Backend API**: http://localhost:8080
-- **API Health**: http://localhost:8080/health
-- **Database**: PostgreSQL on localhost:5432
+| Service     | URL                          |
+| ----------- | ---------------------------- |
+| Frontend    | http://localhost:3000        |
+| Backend API | http://localhost:8080        |
+| API Health  | http://localhost:8080/health |
+| PostgreSQL  | localhost:5432               |
 
 **Test Credentials:**
 
 - Email: `test@example.com`
 - Password: `password123`
 
-> 📖 **For detailed development instructions and all commands, see [DEVELOPMENT.md](DEVELOPMENT.md)**  
-> 📝 **For logging and debugging, see [.github/LOGGING_GUIDE.md](.github/LOGGING_GUIDE.md)**
+> 📖 **For detailed development instructions, see [DEVELOPMENT.md](DEVELOPMENT.md)**
 
 ## ✨ Features
 
+### Core Features
+
 - **Habit Management**: Create, edit, delete, and organize personal habits
-- **Tracking**: Daily check-ins and progress tracking
-- **Analytics**: Detailed insights and statistics about habit performance
+- **Daily Tracking**: Check-in and track habit completion
+- **Analytics Dashboard**: Insights and statistics about habit performance
 - **Visualizations**: Charts and graphs showing trends and patterns
 - **Streaks**: Track consecutive days of habit completion
 - **Categories**: Organize habits by custom categories
-- **Goals**: Set and track habit-related goals
 
-## Tech Stack
+### Additional Features
+
+- **📚 Book Tracking**: Track books you're reading, completed, or want to read
+- **🏆 Challenges**: Create and participate in habit challenges
+- **📅 Calendar View**: Visualize habit completion over time
+- **👤 User Profile**: Manage account settings and preferences
+- **📱 Responsive Design**: Works on desktop and mobile
+
+## 🛠 Tech Stack
 
 ### Backend
 
-- Node.js 20 with Express
-- TypeScript
-- PostgreSQL 16 (with Prisma ORM)
-- JWT Authentication
+- **Runtime**: Node.js 20 with Express
+- **Language**: TypeScript
+- **Database**: PostgreSQL 16 with Prisma ORM
+- **Auth**: JWT-based authentication
+- **Validation**: Zod + Express Validator
+- **Logging**: Winston with daily rotate
 
 ### Frontend
 
-- React 18
-- TypeScript
-- Tailwind CSS
-- Recharts (for visualizations)
-- React Query (data fetching)
-- Zustand (state management)
+- **Framework**: React 18
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS
+- **Charts**: Recharts
+- **Data Fetching**: React Query (TanStack Query)
+- **State Management**: Zustand
+- **Icons**: Lucide React
 
 ### Infrastructure
 
-- Docker & Docker Compose
-- Nginx (production frontend)
-- Multi-stage builds for optimization
+- **Containerization**: Docker & Docker Compose
+- **Web Server**: Nginx (production)
+- **Monorepo**: npm Workspaces
 
-## Project Structure
+### Development Tools
+
+- **Linting**: ESLint
+- **Formatting**: Prettier
+- **Git Hooks**: Husky + lint-staged
+- **Testing**: Jest + Supertest
+
+## 📁 Project Structure
 
 ```
 habit-tracker/
-├── backend/              # API server (Express + Prisma)
-│   ├── src/             # Source code
-│   ├── prisma/          # Database schema & migrations
-│   ├── Dockerfile       # Production image
-│   └── Dockerfile.dev   # Development image
-├── frontend/            # React application
-│   ├── src/            # Source code
-│   ├── Dockerfile      # Production image (Nginx)
-│   └── Dockerfile.dev  # Development image
-├── shared/             # Shared TypeScript types
-├── docs/               # Documentation
-├── docker-compose.yml  # Production setup
-└── docker-compose.dev.yml # Development setup
+├── backend/                 # Express API server
+│   ├── src/
+│   │   ├── controllers/    # Route handlers
+│   │   ├── services/       # Business logic
+│   │   ├── routes/         # API routes
+│   │   ├── middleware/     # Auth, validation, error handling
+│   │   ├── validators/     # Request validation schemas
+│   │   └── utils/          # Helpers and utilities
+│   ├── prisma/             # Database schema & migrations
+│   ├── Dockerfile          # Production image
+│   └── Dockerfile.dev      # Development image
+├── frontend/               # React application
+│   ├── src/
+│   │   ├── components/     # Reusable UI components
+│   │   ├── pages/          # Page components
+│   │   ├── services/       # API client
+│   │   ├── store/          # Zustand state management
+│   │   └── types/          # TypeScript types
+│   ├── Dockerfile          # Production image (Nginx)
+│   └── Dockerfile.dev      # Development image
+├── shared/                 # Shared TypeScript types
+├── docs/                   # API documentation
+├── .husky/                 # Git hooks
+├── docker-compose.yml      # Production setup
+└── docker-compose.dev.yml  # Development setup
 ```
 
-## 📋 Development Guide
+## 📋 Development
 
 ### Prerequisites
 
 - Docker Desktop (macOS/Windows) or Docker Engine + Docker Compose (Linux)
 
-### Environment Setup
-
-All services run in Docker - no local Node.js or PostgreSQL needed!
+### Quick Commands
 
 ```bash
-# Development mode (hot reload enabled)
+# Start development environment
 docker-compose -f docker-compose.dev.yml up
 
-# Or use the interactive script
-./start.sh
-
-# Detached mode (runs in background)
-docker-compose -f docker-compose.dev.yml up -d
-```
-
-### Common Commands
-
-```bash
 # View logs
-docker-compose -f docker-compose.dev.yml logs -f backend
-docker-compose -f docker-compose.dev.yml logs -f frontend
+docker-compose -f docker-compose.dev.yml logs -f backend frontend
 
 # Stop all services
 docker-compose -f docker-compose.dev.yml down
 
 # Rebuild after dependency changes
 docker-compose -f docker-compose.dev.yml up --build
+```
 
-# Database operations
-docker-compose -f docker-compose.dev.yml exec backend npx prisma migrate dev --name <name>
+### Database Commands
+
+```bash
+# Run migrations
+docker-compose -f docker-compose.dev.yml exec backend npx prisma migrate dev
+
+# Open Prisma Studio (database GUI)
 docker-compose -f docker-compose.dev.yml exec backend npx prisma studio
+
+# Seed database
 docker-compose -f docker-compose.dev.yml exec backend npx ts-node prisma/seed.ts
 
-# Access database directly
-docker-compose -f docker-compose.dev.yml exec postgres psql -U postgres -d habit_tracker
-```
-
-### Development Workflow
-
-1. **Start containers**: `docker-compose -f docker-compose.dev.yml up`
-2. **Access frontend**: http://localhost:3000
-3. **Test API**: http://localhost:8080/health
-4. **Make changes**: Files auto-reload via volume mounts
-5. **Run migrations**: After schema changes, run `prisma migrate dev`
-6. **View database**: Use Prisma Studio or psql
-
-### Port Configuration
-
-- Frontend: 3000
-- Backend: 8080 (mapped from container port 5000)
-- PostgreSQL: 5432
-
-### Troubleshooting
-
-**Port conflicts:**
-
-```bash
-# Free up ports if needed
-lsof -ti:3000 | xargs kill -9
-lsof -ti:8080 | xargs kill -9
-lsof -ti:5432 | xargs kill -9
-```
-
-**Database issues:**
-
-```bash
 # Reset database
 docker-compose -f docker-compose.dev.yml exec backend npm run db:reset
-docker-compose -f docker-compose.dev.yml exec backend npx ts-node prisma/seed.ts
 ```
 
-**Container issues:**
+### Git Hooks (Husky)
+
+This project uses Husky for Git hooks:
+
+| Hook           | Action                                 |
+| -------------- | -------------------------------------- |
+| **pre-commit** | Runs ESLint + Prettier on staged files |
+| **pre-push**   | Runs full lint across all workspaces   |
+
+### Linting & Formatting
 
 ```bash
-# Complete reset
-docker-compose -f docker-compose.dev.yml down -v
-docker-compose -f docker-compose.dev.yml up --build
+# Run linting across all workspaces
+npm run lint
+
+# Format all files
+npm run format
 ```
+
+## 📚 API Endpoints
+
+Base URL: `http://localhost:8080/api`
+
+### Authentication
+
+| Method | Endpoint         | Description       |
+| ------ | ---------------- | ----------------- |
+| POST   | `/auth/register` | Register new user |
+| POST   | `/auth/login`    | Login and get JWT |
+| GET    | `/auth/me`       | Get current user  |
+
+### Habits
+
+| Method | Endpoint      | Description       |
+| ------ | ------------- | ----------------- |
+| GET    | `/habits`     | List all habits   |
+| POST   | `/habits`     | Create habit      |
+| GET    | `/habits/:id` | Get habit details |
+| PUT    | `/habits/:id` | Update habit      |
+| DELETE | `/habits/:id` | Delete habit      |
+
+### Tracking
+
+| Method | Endpoint            | Description           |
+| ------ | ------------------- | --------------------- |
+| POST   | `/tracking/log`     | Log habit completion  |
+| GET    | `/tracking/history` | View tracking history |
+
+### Analytics
+
+| Method | Endpoint              | Description     |
+| ------ | --------------------- | --------------- |
+| GET    | `/analytics/overview` | Dashboard stats |
+
+### Books
+
+| Method | Endpoint     | Description    |
+| ------ | ------------ | -------------- |
+| GET    | `/books`     | List all books |
+| POST   | `/books`     | Add a book     |
+| PUT    | `/books/:id` | Update book    |
+| DELETE | `/books/:id` | Remove book    |
+
+### Challenges
+
+| Method | Endpoint          | Description      |
+| ------ | ----------------- | ---------------- |
+| GET    | `/challenges`     | List challenges  |
+| POST   | `/challenges`     | Create challenge |
+| PUT    | `/challenges/:id` | Update challenge |
+| DELETE | `/challenges/:id` | Delete challenge |
+
+> Full API examples in [docs/API_EXAMPLES.json](docs/API_EXAMPLES.json)
 
 ## 🚀 Deployment
 
@@ -183,104 +242,45 @@ docker-compose build
 docker-compose up -d
 ```
 
-### Deployment Platforms
-
-**Cloud Platforms (Recommended):**
-
-- Railway, Render, Fly.io - Direct Docker deployment from Git
-- DigitalOcean App Platform - Container support
-- AWS ECS/Fargate, GCP Cloud Run - Container orchestration
-
-**VPS/Self-Hosted:**
-
-```bash
-# On your server
-git clone <repo>
-cd habit-tracker
-docker-compose up -d
-
-# Set production environment variables
-# Configure reverse proxy (Nginx/Caddy) for SSL
-```
-
 ### Environment Variables
 
-Production requires:
+| Variable            | Description                   |
+| ------------------- | ----------------------------- |
+| `DATABASE_URL`      | PostgreSQL connection string  |
+| `JWT_SECRET`        | Secret for JWT signing        |
+| `JWT_EXPIRES_IN`    | Token expiration (e.g., "7d") |
+| `CORS_ORIGIN`       | Frontend URL for CORS         |
+| `REACT_APP_API_URL` | Backend API URL               |
 
-- `DATABASE_URL` - PostgreSQL connection string
-- `JWT_SECRET` - Strong random secret
-- `CORS_ORIGIN` - Frontend URL
-- `REACT_APP_API_URL` - Backend API URL
+### Deployment Platforms
 
-## 📚 API Documentation
-
-### Authentication
-
-```bash
-# Register
-curl -X POST http://localhost:8080/api/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{"email":"user@example.com","password":"secret","name":"User"}'
-
-# Login
-curl -X POST http://localhost:8080/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"user@example.com","password":"secret"}'
-```
-
-### API Endpoints
-
-Base URL: `http://localhost:8080/api`
-
-- `POST /auth/register` - Register new user
-- `POST /auth/login` - Login and get JWT token
-- `GET /auth/me` - Get current user (requires auth)
-- `GET /habits` - List user's habits
-- `POST /habits` - Create new habit
-- `GET /habits/:id` - Get habit details
-- `PUT /habits/:id` - Update habit
-- `DELETE /habits/:id` - Delete habit
-- `POST /tracking/log` - Log habit completion
-- `GET /tracking/history` - View tracking history
-- `GET /analytics/overview` - Dashboard analytics
-
-Full API examples in `docs/API_EXAMPLES.json`
+- **Railway, Render, Fly.io** - Direct Docker deployment
+- **DigitalOcean App Platform** - Container support
+- **AWS ECS, GCP Cloud Run** - Container orchestration
+- **VPS** - Self-hosted with Docker
 
 ## 🤖 AI Integration (Planned)
 
 This project is architected for future AI capabilities:
 
-- **Habit Recommendations**: ML-based suggestions
-- **Pattern Recognition**: Identify success factors
-- **Insights Generation**: Natural language summaries
-- **Predictive Analytics**: Success probability forecasting
-- **Smart Reminders**: Context-aware notifications
-
-Modular design allows easy addition of AI services as separate containers.
+- Habit recommendations based on patterns
+- Smart insights and summaries
+- Predictive analytics for success probability
+- Context-aware reminders
 
 ## 📝 Contributing
 
 1. Fork the repository
-2. Create a feature branch
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
 3. Make your changes
-4. Test in Docker environment
-5. Submit a pull request
+4. Commit with conventional commits (`git commit -m 'feat: add amazing feature'`)
+5. Push to the branch (`git push origin feature/amazing-feature`)
+6. Open a Pull Request
 
 ## 📄 License
 
-MIT License - See LICENSE file for details
+MIT License - See [LICENSE](LICENSE) file for details.
 
-## 🙏 Acknowledgments
+---
 
-Built with modern web technologies and best practices for containerized deployment.
-
-## Documentation
-
-- [DOCKER_SETUP.md](DOCKER_SETUP.md) - Complete Docker guide
-- [docs/PROJECT_OVERVIEW.md](docs/PROJECT_OVERVIEW.md) - Architecture details
-- [docs/SETUP.md](docs/SETUP.md) - Local development (non-Docker)
-- [docs/API_EXAMPLES.json](docs/API_EXAMPLES.json) - API examples
-
-## License
-
-MIT
+Built with ❤️ using modern web technologies and containerized for easy deployment.
