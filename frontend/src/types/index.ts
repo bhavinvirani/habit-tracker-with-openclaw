@@ -1,4 +1,5 @@
 export type Frequency = 'DAILY' | 'WEEKLY';
+export type HabitType = 'BOOLEAN' | 'NUMERIC' | 'DURATION';
 
 export interface Habit {
   id: string;
@@ -15,6 +16,12 @@ export interface Habit {
   sortOrder: number;
   createdAt: string;
   updatedAt: string;
+  // Extended fields
+  habitType?: HabitType;
+  targetValue?: number;
+  unit?: string;
+  daysOfWeek?: number[];
+  timesPerWeek?: number;
 }
 
 export interface HabitWithStats extends Habit {

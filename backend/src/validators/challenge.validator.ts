@@ -35,7 +35,7 @@ export type ChallengeQueryInput = z.infer<typeof challengeQuerySchema>;
 
 // ============ ID PARAM ============
 export const challengeIdParamSchema = z.object({
-  id: z.string().uuid('Invalid challenge ID'),
+  id: z.string().min(1, 'Challenge ID is required'),
 });
 
 // ============ SYNC PROGRESS ============

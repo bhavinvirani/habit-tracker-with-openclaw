@@ -1,5 +1,5 @@
 import api from './api';
-import { Habit, HabitLog, InsightsData, HabitWithStats } from '../types';
+import { Habit, HabitLog, InsightsData, HabitWithStats, HabitType } from '../types';
 
 // Types for API responses
 interface ApiResponse<T> {
@@ -7,7 +7,7 @@ interface ApiResponse<T> {
   data: T;
 }
 
-export interface TodayHabit extends Habit {
+export interface TodayHabit extends Omit<Habit, 'habitType' | 'targetValue' | 'unit'> {
   isCompleted: boolean;
   logValue: number | null;
   logNotes: string | null;
@@ -16,7 +16,7 @@ export interface TodayHabit extends Habit {
   longestStreak: number;
   targetValue: number | null;
   unit: string | null;
-  habitType: string;
+  habitType: HabitType | string;
 }
 
 export interface TodayResponse {
@@ -75,7 +75,8 @@ interface HabitTemplate {
 interface Milestone {
   id: string;
   habitId: string;
-  streak: number;
+  type: string;
+  value: number;
   achievedAt: string;
   habit: {
     name: string;

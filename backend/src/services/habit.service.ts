@@ -114,11 +114,17 @@ export async function getHabits(filters: HabitFilters): Promise<HabitWithStats[]
       if (habit.frequency === 'DAILY') {
         expectedDays = 30;
       } else if (habit.frequency === 'WEEKLY') {
-        expectedDays = 4; // ~4 weeks in 30 days
-      } else if (habit.daysOfWeek && habit.daysOfWeek.length > 0) {
-        expectedDays = habit.daysOfWeek.length * 4;
-      } else if (habit.timesPerWeek) {
-        expectedDays = habit.timesPerWeek * 4;
+        // Weekly habits: count how many expected days in 30 days
+        if (habit.daysOfWeek && habit.daysOfWeek.length > 0) {
+          // Specific days: multiply by ~4 weeks
+          expectedDays = habit.daysOfWeek.length * 4;
+        } else if (habit.timesPerWeek) {
+          // X times per week (any days)
+          expectedDays = habit.timesPerWeek * 4;
+        } else {
+          // Fallback: once per week
+          expectedDays = 4;
+        }
       } else {
         expectedDays = 30; // Default to daily
       }

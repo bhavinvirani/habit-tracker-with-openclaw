@@ -63,7 +63,7 @@ export type BookQueryInput = z.infer<typeof bookQuerySchema>;
 
 // ============ ID PARAM ============
 export const bookIdParamSchema = z.object({
-  id: z.string().uuid('Invalid book ID'),
+  id: z.string().min(1, 'Book ID is required'),
 });
 
 // ============ READING STATS QUERY ============
