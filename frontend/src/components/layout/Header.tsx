@@ -14,6 +14,7 @@ import {
   Target,
   Menu,
   X,
+  Keyboard,
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { analyticsApi } from '../../services/habits';
@@ -22,9 +23,14 @@ import clsx from 'clsx';
 interface HeaderProps {
   onMobileMenuToggle: () => void;
   isMobileMenuOpen: boolean;
+  onShowShortcuts?: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ onMobileMenuToggle, isMobileMenuOpen }) => {
+const Header: React.FC<HeaderProps> = ({
+  onMobileMenuToggle,
+  isMobileMenuOpen,
+  onShowShortcuts,
+}) => {
   const navigate = useNavigate();
   const { user, logout } = useAuthStore();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -115,6 +121,18 @@ const Header: React.FC<HeaderProps> = ({ onMobileMenuToggle, isMobileMenuOpen })
               </span>
             </div>
           )}
+
+          {/* Keyboard Shortcuts Button */}
+          <button
+            onClick={onShowShortcuts}
+            className="hidden sm:flex items-center gap-1.5 p-2 rounded-lg text-dark-400 hover:text-white hover:bg-dark-800 transition-colors group"
+            title="Keyboard Shortcuts (?)"
+          >
+            <Keyboard size={20} />
+            <kbd className="hidden lg:inline-flex px-1.5 py-0.5 text-[10px] font-mono bg-dark-900 border border-dark-600 rounded text-dark-500 group-hover:text-dark-300 group-hover:border-dark-500">
+              ?
+            </kbd>
+          </button>
 
           {/* Notifications */}
           <button className="relative p-2 rounded-lg text-dark-400 hover:text-white hover:bg-dark-800 transition-colors">

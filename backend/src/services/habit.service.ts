@@ -292,6 +292,111 @@ export async function reorderHabits(userId: string, habitIds: string[]): Promise
 }
 
 /**
+ * Pause a habit (vacation mode) - preserves streak
+ */
+export async function pauseHabit(
+  habitId: string,
+  userId: string,
+  pausedUntil?: string,
+  reason?: string
+): Promise<Habit> {
+  const habit = await prisma.habit.findFirst({
+    where: { id: habitId, userId },
+  });
+
+  if (!habit) {
+    throw new NotFoundError('Habit not found');
+  }
+
+  const updated = await prisma.habit.update({
+    where: { id: habitId },
+    data: {
+      isPaused: true,
+      pausedAt: new Date(),
+      pausedUntil: pausedUntil ? new Date(pausedUntil) : null,
+      pauseReason: reason || null,
+    },
+  });
+
+  logger.info('Habit paused', { habitId, userId, pausedUntil });
+  return updated;
+}
+
+/**
+ * Resume a paused habit
+ */
+export async function resumeHabit(habitId: string, userId: string): Promise<Habit> {
+  const habit = await prisma.habit.findFirst({
+    where: { id: habitId, userId },
+  });
+
+  if (!habit) {
+    throw new NotFoundError('Habit not found');
+  }
+
+  const updated = await prisma.habit.update({
+    where: { id: habitId },
+    data: {
+      isPaused: false,
+      pausedAt: null,
+      pausedUntil: null,
+      pauseReason: null,
+    },
+  });
+
+  logger.info('Habit resumed', { habitId, userId });
+  return updated;
+}
+
+/**
+ * Stack a habit after another (habit chaining)
+ */
+export async function stackHabit(
+  habitId: string,
+  userId: string,
+  afterHabitId: string | null
+): Promise<Habit> {
+  const habit = await prisma.habit.findFirst({
+    where: { id: habitId, userId },
+  });
+
+  if (!habit) {
+    throw new NotFoundError('Habit not found');
+  }
+
+  // Validate afterHabitId if provided
+  if (afterHabitId) {
+    const afterHabit = await prisma.habit.findFirst({
+      where: { id: afterHabitId, userId },
+    });
+
+    if (!afterHabit) {
+      throw new NotFoundError('Target habit not found');
+    }
+
+    // Prevent circular stacking
+    if (afterHabit.stackedAfterHabitId === habitId) {
+      throw new ConflictError('Cannot create circular habit stacking');
+    }
+  }
+
+  const updated = await prisma.habit.update({
+    where: { id: habitId },
+    data: {
+      stackedAfterHabitId: afterHabitId,
+    },
+    include: {
+      stackedAfterHabit: {
+        select: { id: true, name: true, color: true, icon: true },
+      },
+    },
+  });
+
+  logger.info('Habit stacked', { habitId, afterHabitId, userId });
+  return updated;
+}
+
+/**
  * Get all unique categories for a user
  */
 export async function getCategories(

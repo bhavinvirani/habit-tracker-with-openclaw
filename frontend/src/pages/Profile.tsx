@@ -26,6 +26,7 @@ import {
   Download,
   ChevronRight,
   CheckCircle,
+  Keyboard,
 } from 'lucide-react';
 import { format, differenceInDays } from 'date-fns';
 import toast from 'react-hot-toast';
@@ -33,6 +34,8 @@ import { useAuthStore } from '../store/authStore';
 import { analyticsApi, trackingApi } from '../services/habits';
 import api from '../services/api';
 import clsx from 'clsx';
+import ApiDashboard from '../components/ApiDashboard';
+import KeyboardShortcutsModal from '../components/KeyboardShortcutsModal';
 
 // Types for the page
 interface OverviewStats {
@@ -150,6 +153,7 @@ const Profile: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Tab>('overview');
   const [isEditing, setIsEditing] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showShortcuts, setShowShortcuts] = useState(false);
   const [formData, setFormData] = useState({
     name: user?.name || '',
   });
@@ -778,16 +782,52 @@ const Profile: React.FC = () => {
             </h3>
 
             <div className="space-y-3">
-              <button className="w-full flex items-center gap-3 p-3 rounded-lg text-left text-dark-300 hover:bg-dark-800 hover:text-white transition-colors">
+              <button
+                onClick={async () => {
+                  try {
+                    const response = await api.get('/users/export', { responseType: 'blob' });
+                    const blob = new Blob([JSON.stringify(response.data, null, 2)], {
+                      type: 'application/json',
+                    });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `habit-tracker-export-${new Date().toISOString().split('T')[0]}.json`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                    toast.success('Data exported successfully!');
+                  } catch {
+                    toast.error('Failed to export data');
+                  }
+                }}
+                className="w-full flex items-center gap-3 p-3 rounded-lg text-left text-dark-300 hover:bg-dark-800 hover:text-white transition-colors"
+              >
                 <Download size={18} />
                 <div className="flex-1">
                   <p className="font-medium">Export Data</p>
-                  <p className="text-xs text-dark-500">Download all your habit data</p>
+                  <p className="text-xs text-dark-500">Download all your habit data as JSON</p>
                 </div>
                 <ChevronRight size={16} className="text-dark-500" />
               </button>
+
+              <button
+                onClick={() => setShowShortcuts(true)}
+                className="w-full flex items-center gap-3 p-3 rounded-lg text-left text-dark-300 hover:bg-dark-800 hover:text-white transition-colors"
+              >
+                <Keyboard size={18} />
+                <div className="flex-1">
+                  <p className="font-medium">Keyboard Shortcuts</p>
+                  <p className="text-xs text-dark-500">View all keyboard shortcuts</p>
+                </div>
+                <kbd className="px-2 py-1 text-xs font-mono bg-dark-800 border border-dark-600 rounded">
+                  ?
+                </kbd>
+              </button>
             </div>
           </div>
+
+          {/* API Access */}
+          <ApiDashboard />
 
           {/* Danger Zone */}
           <div className="card border-accent-red/20">
@@ -807,6 +847,9 @@ const Profile: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Keyboard Shortcuts Modal */}
+      <KeyboardShortcutsModal isOpen={showShortcuts} onClose={() => setShowShortcuts(false)} />
     </div>
   );
 };

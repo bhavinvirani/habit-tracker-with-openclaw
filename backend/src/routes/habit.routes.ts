@@ -18,6 +18,9 @@ import {
   getArchivedHabits,
   reorderHabits,
   getCategories,
+  pauseHabit,
+  resumeHabit,
+  stackHabit,
 } from '../controllers/habit.controller';
 
 const router = Router();
@@ -44,5 +47,12 @@ router.delete('/:id', deleteHabit);
 // Archive/Unarchive
 router.post('/:id/archive', archiveHabit);
 router.post('/:id/unarchive', unarchiveHabit);
+
+// Pause/Resume (Vacation Mode)
+router.post('/:id/pause', pauseHabit);
+router.post('/:id/resume', resumeHabit);
+
+// Habit Stacking
+router.post('/:id/stack', stackHabit);
 
 export default router;

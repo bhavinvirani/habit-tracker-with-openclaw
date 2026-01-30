@@ -56,6 +56,17 @@ model Habit {
   isActive   Boolean @default(true)
   isArchived Boolean @default(false) // Archived habits (keep history, hide from view)
 
+  // Pause/Vacation Mode
+  isPaused     Boolean   @default(false)
+  pausedAt     DateTime?
+  pausedUntil  DateTime? // Auto-resume date (optional)
+  pauseReason  String?   // Optional reason for pausing
+
+  // Habit Stacking/Chaining
+  stackedAfterHabitId String? // The habit this one comes after
+  stackedAfterHabit   Habit?  @relation("HabitStack", fields: [stackedAfterHabitId], references: [id], onDelete: SetNull)
+  stackedBeforeHabits Habit[] @relation("HabitStack")
+
   // Template reference (if created from template)
   templateId String?
 
@@ -78,6 +89,7 @@ model Habit {
   @@index([userId, isActive, isArchived])
   @@index([category])
   @@index([userId, sortOrder])
+  @@index([stackedAfterHabitId])
   @@map("habits")
 }
 

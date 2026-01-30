@@ -109,6 +109,43 @@ export const reorderHabits = asyncHandler(async (req: AuthRequest, res: Response
 });
 
 /**
+ * Pause a habit (vacation mode)
+ * POST /api/habits/:id/pause
+ */
+export const pauseHabit = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const habitId = req.params.id as string;
+  const { pausedUntil, reason } = req.body as { pausedUntil?: string; reason?: string };
+
+  const habit = await habitService.pauseHabit(habitId, req.userId!, pausedUntil, reason);
+
+  sendSuccess(res, { habit }, 'Habit paused successfully. Your streak is safe! 🌴');
+});
+
+/**
+ * Resume a paused habit
+ * POST /api/habits/:id/resume
+ */
+export const resumeHabit = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const habitId = req.params.id as string;
+  const habit = await habitService.resumeHabit(habitId, req.userId!);
+
+  sendSuccess(res, { habit }, 'Habit resumed! Welcome back! 💪');
+});
+
+/**
+ * Stack a habit after another
+ * POST /api/habits/:id/stack
+ */
+export const stackHabit = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const habitId = req.params.id as string;
+  const { afterHabitId } = req.body as { afterHabitId: string | null };
+
+  const habit = await habitService.stackHabit(habitId, req.userId!, afterHabitId);
+
+  sendSuccess(res, { habit }, afterHabitId ? 'Habit stacked successfully' : 'Habit unstacked');
+});
+
+/**
  * Get all categories
  * GET /api/categories
  */

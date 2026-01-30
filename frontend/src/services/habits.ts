@@ -229,6 +229,28 @@ export const habitsApi = {
   reorder: async (habitIds: string[]): Promise<void> => {
     await api.patch('/habits/reorder', { habitIds });
   },
+
+  // Pause/Resume (Vacation Mode)
+  pause: async (id: string, pausedUntil?: string, reason?: string): Promise<Habit> => {
+    const response = await api.post<ApiResponse<{ habit: Habit }>>(`/habits/${id}/pause`, {
+      pausedUntil,
+      reason,
+    });
+    return response.data.data.habit;
+  },
+
+  resume: async (id: string): Promise<Habit> => {
+    const response = await api.post<ApiResponse<{ habit: Habit }>>(`/habits/${id}/resume`);
+    return response.data.data.habit;
+  },
+
+  // Habit Stacking
+  stack: async (id: string, afterHabitId: string | null): Promise<Habit> => {
+    const response = await api.post<ApiResponse<{ habit: Habit }>>(`/habits/${id}/stack`, {
+      afterHabitId,
+    });
+    return response.data.data.habit;
+  },
 };
 
 // Tracking API
