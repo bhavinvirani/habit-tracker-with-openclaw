@@ -1,29 +1,43 @@
 import React from 'react';
-import { User, LogOut } from 'lucide-react';
+import { LogOut, Sparkles } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
+import { useNavigate } from 'react-router-dom';
 
 const Header: React.FC = () => {
   const { user, logout } = useAuthStore();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
 
   return (
-    <header className="fixed top-0 left-0 right-0 h-16 bg-white border-b border-gray-200 z-50">
+    <header className="fixed top-0 left-0 right-0 h-16 bg-dark-900/80 backdrop-blur-lg border-b border-dark-700 z-50">
       <div className="h-full px-6 flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-primary-600">Habit Tracker</h1>
-        
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <User size={20} className="text-gray-600" />
-            <span className="text-sm font-medium text-gray-700">
-              {user?.name || 'User'}
-            </span>
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center">
+            <Sparkles size={18} className="text-white" />
           </div>
-          
+          <h1 className="text-xl font-bold text-white">Habit Tracker</h1>
+        </div>
+
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-dark-800">
+            <div className="w-7 h-7 rounded-full bg-primary-600 flex items-center justify-center">
+              <span className="text-xs font-bold text-white">
+                {user?.name?.charAt(0).toUpperCase() || 'U'}
+              </span>
+            </div>
+            <span className="text-sm font-medium text-dark-200">{user?.name || 'User'}</span>
+          </div>
+
           <button
-            onClick={logout}
-            className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+            onClick={handleLogout}
+            className="flex items-center gap-2 px-3 py-2 text-sm text-dark-300 hover:text-white hover:bg-dark-800 rounded-lg transition-all"
           >
             <LogOut size={18} />
-            Logout
+            <span className="hidden sm:inline">Logout</span>
           </button>
         </div>
       </div>
