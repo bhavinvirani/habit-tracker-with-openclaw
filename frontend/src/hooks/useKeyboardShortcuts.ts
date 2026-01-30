@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useMemo, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 export interface Shortcut {
@@ -23,71 +23,86 @@ export const useKeyboardShortcuts = (options: UseKeyboardShortcutsOptions = {}) 
   const location = useLocation();
   const { onNewHabit, onSearch, onToggleHelp, enabled = true } = options;
 
-  // Define all shortcuts
-  const shortcuts: Shortcut[] = [
-    // Navigation shortcuts
-    {
-      key: 'g',
-      description: 'Go to Dashboard',
-      action: () => navigate('/'),
-      scope: 'global',
-    },
-    {
-      key: 'h',
-      description: 'Go to Habits',
-      action: () => navigate('/habits'),
-      scope: 'global',
-    },
-    {
-      key: 'c',
-      description: 'Go to Calendar',
-      action: () => navigate('/calendar'),
-      scope: 'global',
-    },
-    {
-      key: 'a',
-      description: 'Go to Analytics',
-      action: () => navigate('/analytics'),
-      scope: 'global',
-    },
-    {
-      key: 'b',
-      description: 'Go to Books',
-      action: () => navigate('/books'),
-      scope: 'global',
-    },
-    {
-      key: 'p',
-      description: 'Go to Profile',
-      action: () => navigate('/profile'),
-      scope: 'global',
-    },
-    // Action shortcuts
-    {
-      key: 'n',
-      description: 'New Habit',
-      action: () => onNewHabit?.(),
-      scope: 'global',
-    },
-    {
-      key: '/',
-      description: 'Search',
-      action: () => onSearch?.(),
-      scope: 'global',
-    },
-    {
-      key: '?',
-      description: 'Show Keyboard Shortcuts',
-      action: () => onToggleHelp?.(),
-      scope: 'global',
-    },
-    {
-      key: 'Escape',
-      description: 'Close Modal / Cancel',
-      action: () => {}, // Handled by individual modals
-      scope: 'global',
-    },
-  ];
+  // Use refs to avoid recreating shortcuts array on every render
+  const onNewHabitRef = useRef(onNewHabit);
+  const onSearchRef = useRef(onSearch);
+  const onToggleHelpRef = useRef(onToggleHelp);
+
+  // Update refs when callbacks change
+  useEffect(() => {
+    onNewHabitRef.current = onNewHabit;
+    onSearchRef.current = onSearch;
+    onToggleHelpRef.current = onToggleHelp;
+  }, [onNewHabit, onSearch, onToggleHelp]);
+
+  // Define all shortcuts with stable references
+  const shortcuts: Shortcut[] = useMemo(
+    () => [
+      // Navigation shortcuts
+      {
+        key: 'g',
+        description: 'Go to Dashboard',
+        action: () => navigate('/'),
+        scope: 'global' as const,
+      },
+      {
+        key: 'h',
+        description: 'Go to Habits',
+        action: () => navigate('/habits'),
+        scope: 'global' as const,
+      },
+      {
+        key: 'c',
+        description: 'Go to Calendar',
+        action: () => navigate('/calendar'),
+        scope: 'global' as const,
+      },
+      {
+        key: 'a',
+        description: 'Go to Analytics',
+        action: () => navigate('/analytics'),
+        scope: 'global' as const,
+      },
+      {
+        key: 'b',
+        description: 'Go to Books',
+        action: () => navigate('/books'),
+        scope: 'global' as const,
+      },
+      {
+        key: 'p',
+        description: 'Go to Profile',
+        action: () => navigate('/profile'),
+        scope: 'global' as const,
+      },
+      // Action shortcuts
+      {
+        key: 'n',
+        description: 'New Habit',
+        action: () => onNewHabitRef.current?.(),
+        scope: 'global' as const,
+      },
+      {
+        key: '/',
+        description: 'Search',
+        action: () => onSearchRef.current?.(),
+        scope: 'global' as const,
+      },
+      {
+        key: '?',
+        description: 'Show Keyboard Shortcuts',
+        action: () => onToggleHelpRef.current?.(),
+        scope: 'global' as const,
+      },
+      {
+        key: 'Escape',
+        description: 'Close Modal / Cancel',
+        action: () => {}, // Handled by individual modals
+        scope: 'global' as const,
+      },
+    ],
+    [navigate]
+  );
 
   const handleKeyDown = useCallback(
     (event: KeyboardEvent) => {
