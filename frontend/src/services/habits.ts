@@ -50,24 +50,17 @@ interface OverviewStats {
 }
 
 interface WeeklyStats {
-  week: {
-    start: string;
-    end: string;
-  };
   days: Array<{
     date: string;
-    dayName: string;
     completed: number;
     total: number;
     percentage: number;
-    habits: Array<{ id: string; name: string; completed: boolean }>;
+    habits: Array<{ id: string; name: string; completed: boolean; value: number | null }>;
   }>;
   summary: {
-    totalCompleted: number;
-    totalPossible: number;
-    percentage: number;
-    bestDay: string;
-    worstDay: string;
+    total: number;
+    completed: number;
+    rate: number;
   };
 }
 
@@ -101,7 +94,36 @@ interface MonthlyStats {
     completed: number;
     total: number;
     percentage: number;
-    habits?: Array<{ id: string; name: string; completed: boolean }>;
+    habits?: Array<{
+      id: string;
+      name: string;
+      color?: string;
+      icon?: string;
+      completed: boolean;
+      value?: number | null;
+    }>;
+  }>;
+  summary: {
+    totalCompleted: number;
+    totalPossible: number;
+    percentage: number;
+  };
+}
+
+interface CalendarData {
+  days: Array<{
+    date: string;
+    completed: number;
+    total: number;
+    percentage: number;
+    habits: Array<{
+      id: string;
+      name: string;
+      color: string;
+      icon: string | null;
+      completed: boolean;
+      value: number | null;
+    }>;
   }>;
   summary: {
     totalCompleted: number;
@@ -111,11 +133,11 @@ interface MonthlyStats {
 }
 
 interface HeatmapStats {
-  year: number;
-  data: Array<{
+  heatmap: Array<{
     date: string;
     count: number;
-    percentage: number;
+    total: number;
+    level: number;
   }>;
 }
 
@@ -138,6 +160,37 @@ interface StreaksData {
     longestStreak: number;
     color: string;
   }>;
+}
+
+interface CategoryBreakdown {
+  categories: Array<{
+    name: string;
+    color: string;
+    habitCount: number;
+    completionRate: number;
+    totalCompletions: number;
+  }>;
+  habitRates: Array<{
+    id: string;
+    name: string;
+    color: string;
+    icon: string | null;
+    category: string | null;
+    completionRate: number;
+    currentStreak: number;
+  }>;
+}
+
+interface WeekComparison {
+  thisWeek: { completed: number; total: number; rate: number };
+  lastWeek: { completed: number; total: number; rate: number };
+  change: number;
+  trend: 'up' | 'down' | 'same';
+}
+
+interface MonthlyTrend {
+  days: Array<{ date: string; rate: number; completed: number; total: number }>;
+  averageRate: number;
 }
 
 // Habits API
@@ -241,6 +294,13 @@ export const analyticsApi = {
     return response.data.data;
   },
 
+  getCalendar: async (year: number, month: number): Promise<CalendarData> => {
+    const response = await api.get<ApiResponse<CalendarData>>('/analytics/calendar', {
+      params: { year, month },
+    });
+    return response.data.data;
+  },
+
   getHeatmap: async (year?: number): Promise<HeatmapStats> => {
     const response = await api.get<ApiResponse<HeatmapStats>>('/analytics/heatmap', {
       params: { year },
@@ -262,6 +322,21 @@ export const analyticsApi = {
 
   getInsights: async (): Promise<InsightsData> => {
     const response = await api.get<ApiResponse<InsightsData>>('/analytics/insights');
+    return response.data.data;
+  },
+
+  getCategoryBreakdown: async (): Promise<CategoryBreakdown> => {
+    const response = await api.get<ApiResponse<CategoryBreakdown>>('/analytics/categories');
+    return response.data.data;
+  },
+
+  getWeekComparison: async (): Promise<WeekComparison> => {
+    const response = await api.get<ApiResponse<WeekComparison>>('/analytics/comparison');
+    return response.data.data;
+  },
+
+  getMonthlyTrend: async (): Promise<MonthlyTrend> => {
+    const response = await api.get<ApiResponse<MonthlyTrend>>('/analytics/trend');
     return response.data.data;
   },
 };

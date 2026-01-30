@@ -1,10 +1,16 @@
-import { PrismaClient, Frequency, HabitType } from '@prisma/client';
+import { PrismaClient, Frequency, HabitType, MilestoneType } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
 async function main() {
   console.log('🌱 Seeding database...');
+
+  // Clean up existing data for fresh seed
+  await prisma.habitLog.deleteMany({});
+  await prisma.milestone.deleteMany({});
+  await prisma.habit.deleteMany({});
+  console.log('🧹 Cleaned up existing habit data');
 
   // ============ SEED HABIT TEMPLATES ============
   await seedTemplates();
@@ -18,22 +24,28 @@ async function main() {
     create: {
       email: 'test@example.com',
       password: hashedPassword,
-      name: 'Test User',
+      name: 'Alex Johnson',
     },
   });
 
   console.log('✅ Created test user:', user.email);
 
-  // ============ CREATE SAMPLE HABITS ============
-  // Set creation date to 60 days ago so historical data makes sense
-  const habitCreatedAt = new Date();
-  habitCreatedAt.setDate(habitCreatedAt.getDate() - 60);
+  // ============ CREATE DIVERSE HABITS ============
+  // Various creation dates for realistic testing
+  const now = new Date();
+  const daysAgo = (days: number) => {
+    const d = new Date(now);
+    d.setDate(d.getDate() - days);
+    d.setHours(0, 0, 0, 0);
+    return d;
+  };
 
   const habits = await Promise.all([
-    prisma.habit.upsert({
-      where: { id: 'habit-exercise' },
-      update: { createdAt: habitCreatedAt },
-      create: {
+    // ===== DAILY HABITS =====
+
+    // 1. Morning Exercise - High performer, long streak
+    prisma.habit.create({
+      data: {
         id: 'habit-exercise',
         userId: user.id,
         name: 'Morning Exercise',
@@ -44,16 +56,16 @@ async function main() {
         unit: 'minutes',
         color: '#10b981',
         icon: '🏃',
-        category: 'Health',
+        category: 'Fitness',
         sortOrder: 0,
         isActive: true,
-        createdAt: habitCreatedAt,
+        createdAt: daysAgo(90),
       },
     }),
-    prisma.habit.upsert({
-      where: { id: 'habit-reading' },
-      update: { createdAt: habitCreatedAt },
-      create: {
+
+    // 2. Reading - Consistent performer
+    prisma.habit.create({
+      data: {
         id: 'habit-reading',
         userId: user.id,
         name: 'Read Books',
@@ -67,13 +79,13 @@ async function main() {
         category: 'Learning',
         sortOrder: 1,
         isActive: true,
-        createdAt: habitCreatedAt,
+        createdAt: daysAgo(90),
       },
     }),
-    prisma.habit.upsert({
-      where: { id: 'habit-meditation' },
-      update: { createdAt: habitCreatedAt },
-      create: {
+
+    // 3. Meditation - Improving over time
+    prisma.habit.create({
+      data: {
         id: 'habit-meditation',
         userId: user.id,
         name: 'Meditation',
@@ -87,13 +99,13 @@ async function main() {
         category: 'Mindfulness',
         sortOrder: 2,
         isActive: true,
-        createdAt: habitCreatedAt,
+        createdAt: daysAgo(60),
       },
     }),
-    prisma.habit.upsert({
-      where: { id: 'habit-water' },
-      update: { createdAt: habitCreatedAt },
-      create: {
+
+    // 4. Hydration - High completion
+    prisma.habit.create({
+      data: {
         id: 'habit-water',
         userId: user.id,
         name: 'Drink Water',
@@ -107,13 +119,89 @@ async function main() {
         category: 'Health',
         sortOrder: 3,
         isActive: true,
-        createdAt: habitCreatedAt,
+        createdAt: daysAgo(90),
       },
     }),
-    prisma.habit.upsert({
-      where: { id: 'habit-planning' },
-      update: { createdAt: habitCreatedAt },
-      create: {
+
+    // 5. Journaling - Moderate performer
+    prisma.habit.create({
+      data: {
+        id: 'habit-journal',
+        userId: user.id,
+        name: 'Daily Journal',
+        description: 'Write thoughts and reflections',
+        frequency: Frequency.DAILY,
+        habitType: HabitType.BOOLEAN,
+        color: '#ec4899',
+        icon: '✍️',
+        category: 'Mindfulness',
+        sortOrder: 4,
+        isActive: true,
+        createdAt: daysAgo(45),
+      },
+    }),
+
+    // 6. Coding Practice - Weekday focused
+    prisma.habit.create({
+      data: {
+        id: 'habit-coding',
+        userId: user.id,
+        name: 'Coding Practice',
+        description: 'Practice coding or learn new tech',
+        frequency: Frequency.DAILY,
+        habitType: HabitType.DURATION,
+        targetValue: 60,
+        unit: 'minutes',
+        color: '#0ea5e9',
+        icon: '💻',
+        category: 'Learning',
+        sortOrder: 5,
+        isActive: true,
+        createdAt: daysAgo(30),
+      },
+    }),
+
+    // 7. No Social Media - Struggling habit
+    prisma.habit.create({
+      data: {
+        id: 'habit-no-social',
+        userId: user.id,
+        name: 'No Social Media',
+        description: 'Avoid social media until after 6pm',
+        frequency: Frequency.DAILY,
+        habitType: HabitType.BOOLEAN,
+        color: '#ef4444',
+        icon: '📵',
+        category: 'Productivity',
+        sortOrder: 6,
+        isActive: true,
+        createdAt: daysAgo(21),
+      },
+    }),
+
+    // 8. Vitamins - Simple boolean, high completion
+    prisma.habit.create({
+      data: {
+        id: 'habit-vitamins',
+        userId: user.id,
+        name: 'Take Vitamins',
+        description: 'Daily vitamins and supplements',
+        frequency: Frequency.DAILY,
+        habitType: HabitType.BOOLEAN,
+        color: '#84cc16',
+        icon: '💊',
+        category: 'Health',
+        sortOrder: 7,
+        isActive: true,
+        createdAt: daysAgo(75),
+      },
+    }),
+
+    // ===== WEEKLY HABITS =====
+
+    // 9. Weekly Planning - Sunday
+    prisma.habit.create({
+      data: {
         id: 'habit-planning',
         userId: user.id,
         name: 'Weekly Planning',
@@ -121,80 +209,201 @@ async function main() {
         frequency: Frequency.WEEKLY,
         habitType: HabitType.BOOLEAN,
         daysOfWeek: [7], // Sunday
-        color: '#ec4899',
+        color: '#a855f7',
         icon: '📅',
         category: 'Productivity',
-        sortOrder: 4,
+        sortOrder: 8,
         isActive: true,
-        createdAt: habitCreatedAt,
+        createdAt: daysAgo(90),
+      },
+    }),
+
+    // 10. Gym Sessions - 3x per week
+    prisma.habit.create({
+      data: {
+        id: 'habit-gym',
+        userId: user.id,
+        name: 'Gym Workout',
+        description: 'Strength training session',
+        frequency: Frequency.WEEKLY,
+        habitType: HabitType.BOOLEAN,
+        daysOfWeek: [1, 3, 5], // Mon, Wed, Fri
+        timesPerWeek: 3,
+        color: '#dc2626',
+        icon: '🏋️',
+        category: 'Fitness',
+        sortOrder: 9,
+        isActive: true,
+        createdAt: daysAgo(60),
+      },
+    }),
+
+    // 11. Call Family - Weekly on weekends
+    prisma.habit.create({
+      data: {
+        id: 'habit-family',
+        userId: user.id,
+        name: 'Call Family',
+        description: 'Catch up with family members',
+        frequency: Frequency.WEEKLY,
+        habitType: HabitType.BOOLEAN,
+        daysOfWeek: [6, 7], // Sat, Sun
+        timesPerWeek: 1,
+        color: '#f97316',
+        icon: '📞',
+        category: 'Social',
+        sortOrder: 10,
+        isActive: true,
+        createdAt: daysAgo(90),
+      },
+    }),
+
+    // 12. Deep Clean - Weekly
+    prisma.habit.create({
+      data: {
+        id: 'habit-clean',
+        userId: user.id,
+        name: 'Deep Clean',
+        description: 'Deep clean one area of the house',
+        frequency: Frequency.WEEKLY,
+        habitType: HabitType.BOOLEAN,
+        daysOfWeek: [6], // Saturday
+        color: '#14b8a6',
+        icon: '🧹',
+        category: 'Other',
+        sortOrder: 11,
+        isActive: true,
+        createdAt: daysAgo(30),
       },
     }),
   ]);
 
-  console.log(`✅ Created ${habits.length} habits`);
+  console.log(`✅ Created ${habits.length} diverse habits`);
 
-  // ============ CREATE HABIT LOGS (LAST 30 DAYS) ============
+  // ============ CREATE REALISTIC HABIT LOGS (90 DAYS) ============
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const logs = [];
+  const logs: any[] = [];
 
-  for (let i = 0; i < 30; i++) {
+  // Helper to check if a date is a weekday
+  const isWeekday = (date: Date) => date.getDay() !== 0 && date.getDay() !== 6;
+  const isWeekend = (date: Date) => date.getDay() === 0 || date.getDay() === 6;
+  const getDayOfWeek = (date: Date) => (date.getDay() === 0 ? 7 : date.getDay());
+
+  for (let i = 0; i < 90; i++) {
     const date = new Date(today);
     date.setDate(date.getDate() - i);
+    date.setHours(0, 0, 0, 0);
+    const dayOfWeek = getDayOfWeek(date);
 
-    // Exercise - 90% completion rate
-    if (Math.random() > 0.1) {
+    // ===== DAILY HABITS =====
+
+    // Exercise - 85% overall, better on weekdays, strong current streak
+    if (i < 15) {
+      // Recent 15 days - 100% for good current streak
       logs.push({
         habitId: 'habit-exercise',
         userId: user.id,
         date,
         completed: true,
-        value: 25 + Math.floor(Math.random() * 15), // 25-40 minutes
-        notes: i === 0 ? 'Felt great today!' : null,
+        value: 30 + Math.floor(Math.random() * 15),
+      });
+    } else if (isWeekday(date) ? Math.random() > 0.1 : Math.random() > 0.25) {
+      logs.push({
+        habitId: 'habit-exercise',
+        userId: user.id,
+        date,
+        completed: true,
+        value: 25 + Math.floor(Math.random() * 20),
       });
     }
 
-    // Reading - 80% completion rate
-    if (Math.random() > 0.2) {
+    // Reading - 75% completion, consistent
+    if (Math.random() > 0.25) {
       logs.push({
         habitId: 'habit-reading',
         userId: user.id,
         date,
         completed: true,
-        value: 15 + Math.floor(Math.random() * 20), // 15-35 pages
+        value: 15 + Math.floor(Math.random() * 25),
       });
     }
 
-    // Meditation - 70% completion rate
-    if (Math.random() > 0.3) {
-      logs.push({
-        habitId: 'habit-meditation',
-        userId: user.id,
-        date,
-        completed: true,
-        value: 10 + Math.floor(Math.random() * 10), // 10-20 minutes
-      });
+    // Meditation - Started 60 days ago, improving trend
+    if (i < 60) {
+      // More likely to complete in recent weeks
+      const completionChance = i < 14 ? 0.9 : i < 30 ? 0.75 : 0.55;
+      if (Math.random() < completionChance) {
+        logs.push({
+          habitId: 'habit-meditation',
+          userId: user.id,
+          date,
+          completed: true,
+          value: 8 + Math.floor(Math.random() * 12),
+        });
+      }
     }
 
-    // Water - 85% completion rate
-    if (Math.random() > 0.15) {
+    // Water - 90% completion, very consistent
+    if (Math.random() > 0.1) {
       logs.push({
         habitId: 'habit-water',
         userId: user.id,
         date,
         completed: true,
-        value: 6 + Math.floor(Math.random() * 4), // 6-10 glasses
+        value: 6 + Math.floor(Math.random() * 5),
       });
     }
-  }
 
-  // Weekly planning - Sundays only
-  for (let i = 0; i < 30; i++) {
-    const date = new Date(today);
-    date.setDate(date.getDate() - i);
-    if (date.getDay() === 0 && Math.random() > 0.1) {
-      // Sunday
+    // Journal - Started 45 days ago, 65% completion
+    if (i < 45 && Math.random() > 0.35) {
+      logs.push({
+        habitId: 'habit-journal',
+        userId: user.id,
+        date,
+        completed: true,
+      });
+    }
+
+    // Coding - Started 30 days ago, better on weekdays
+    if (i < 30) {
+      const chance = isWeekday(date) ? 0.8 : 0.4;
+      if (Math.random() < chance) {
+        logs.push({
+          habitId: 'habit-coding',
+          userId: user.id,
+          date,
+          completed: true,
+          value: 45 + Math.floor(Math.random() * 45),
+        });
+      }
+    }
+
+    // No Social Media - Started 21 days ago, struggling (45% success)
+    if (i < 21 && Math.random() > 0.55) {
+      logs.push({
+        habitId: 'habit-no-social',
+        userId: user.id,
+        date,
+        completed: true,
+      });
+    }
+
+    // Vitamins - Started 75 days ago, 92% completion
+    if (i < 75 && Math.random() > 0.08) {
+      logs.push({
+        habitId: 'habit-vitamins',
+        userId: user.id,
+        date,
+        completed: true,
+      });
+    }
+
+    // ===== WEEKLY HABITS =====
+
+    // Weekly Planning - Sundays, 85% completion
+    if (dayOfWeek === 7 && Math.random() > 0.15) {
       logs.push({
         habitId: 'habit-planning',
         userId: user.id,
@@ -202,9 +411,39 @@ async function main() {
         completed: true,
       });
     }
+
+    // Gym - Mon/Wed/Fri, started 60 days ago, 75% per scheduled day
+    if (i < 60 && [1, 3, 5].includes(dayOfWeek) && Math.random() > 0.25) {
+      logs.push({
+        habitId: 'habit-gym',
+        userId: user.id,
+        date,
+        completed: true,
+      });
+    }
+
+    // Call Family - Weekends, 80% completion
+    if ([6, 7].includes(dayOfWeek) && Math.random() > 0.2) {
+      logs.push({
+        habitId: 'habit-family',
+        userId: user.id,
+        date,
+        completed: true,
+      });
+    }
+
+    // Deep Clean - Saturdays, started 30 days ago, 70% completion
+    if (i < 30 && dayOfWeek === 6 && Math.random() > 0.3) {
+      logs.push({
+        habitId: 'habit-clean',
+        userId: user.id,
+        date,
+        completed: true,
+      });
+    }
   }
 
-  // Insert logs (skip existing)
+  // Batch insert logs
   for (const log of logs) {
     await prisma.habitLog.upsert({
       where: {
@@ -213,17 +452,68 @@ async function main() {
           date: log.date,
         },
       },
-      update: {},
+      update: log,
       create: log,
     });
   }
 
-  console.log(`✅ Created ${logs.length} habit logs`);
+  console.log(`✅ Created ${logs.length} habit logs over 90 days`);
 
   // ============ UPDATE STREAK COUNTS ============
   await updateStreaks();
 
+  // ============ CREATE MILESTONES ============
+  await createMilestones(user.id);
+
   console.log('🎉 Seeding completed successfully!');
+}
+
+// ============ CREATE MILESTONES ============
+async function createMilestones(userId: string) {
+  const milestones = [
+    // Exercise milestones
+    { habitId: 'habit-exercise', type: MilestoneType.STREAK, value: 7, daysAgo: 80 },
+    { habitId: 'habit-exercise', type: MilestoneType.STREAK, value: 14, daysAgo: 70 },
+    { habitId: 'habit-exercise', type: MilestoneType.STREAK, value: 30, daysAgo: 45 },
+
+    // Water milestones
+    { habitId: 'habit-water', type: MilestoneType.STREAK, value: 7, daysAgo: 82 },
+    { habitId: 'habit-water', type: MilestoneType.STREAK, value: 30, daysAgo: 55 },
+
+    // Vitamins milestones
+    { habitId: 'habit-vitamins', type: MilestoneType.STREAK, value: 7, daysAgo: 65 },
+    { habitId: 'habit-vitamins', type: MilestoneType.STREAK, value: 30, daysAgo: 40 },
+
+    // Reading milestones
+    { habitId: 'habit-reading', type: MilestoneType.STREAK, value: 7, daysAgo: 75 },
+    { habitId: 'habit-reading', type: MilestoneType.STREAK, value: 14, daysAgo: 60 },
+  ];
+
+  const now = new Date();
+  for (const m of milestones) {
+    const achievedAt = new Date(now);
+    achievedAt.setDate(achievedAt.getDate() - m.daysAgo);
+
+    await prisma.milestone.upsert({
+      where: {
+        habitId_type_value: {
+          habitId: m.habitId,
+          type: m.type,
+          value: m.value,
+        },
+      },
+      update: {},
+      create: {
+        habitId: m.habitId,
+        userId,
+        type: m.type,
+        value: m.value,
+        achievedAt,
+      },
+    });
+  }
+
+  console.log(`✅ Created ${milestones.length} milestones`);
 }
 
 // ============ SEED TEMPLATES ============

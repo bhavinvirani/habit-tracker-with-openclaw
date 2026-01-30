@@ -93,3 +93,46 @@ export const getInsights = asyncHandler(async (req: AuthRequest, res: Response) 
 
   sendSuccess(res, insights, 'Insights retrieved successfully');
 });
+
+/**
+ * GET /analytics/calendar
+ * Get calendar data with day-by-day breakdown
+ */
+export const getCalendarData = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const year = parseInt(req.query.year as string) || new Date().getFullYear();
+  const month = parseInt(req.query.month as string) || new Date().getMonth() + 1;
+
+  const result = await analyticsService.getCalendarData(req.userId!, year, month);
+
+  sendSuccess(res, result, 'Calendar data retrieved successfully');
+});
+
+/**
+ * GET /analytics/categories
+ * Get category breakdown and habit completion rates
+ */
+export const getCategoryBreakdown = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const result = await analyticsService.getCategoryBreakdown(req.userId!);
+
+  sendSuccess(res, result, 'Category breakdown retrieved successfully');
+});
+
+/**
+ * GET /analytics/comparison
+ * Get week-over-week comparison
+ */
+export const getWeekComparison = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const result = await analyticsService.getWeekComparison(req.userId!);
+
+  sendSuccess(res, result, 'Week comparison retrieved successfully');
+});
+
+/**
+ * GET /analytics/trend
+ * Get monthly trend data
+ */
+export const getMonthlyTrend = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const result = await analyticsService.getMonthlyTrend(req.userId!);
+
+  sendSuccess(res, result, 'Monthly trend retrieved successfully');
+});

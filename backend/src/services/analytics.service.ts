@@ -689,3 +689,329 @@ export async function getInsights(userId: string): Promise<{
     suggestions,
   };
 }
+
+/**
+ * Get category breakdown stats
+ */
+export async function getCategoryBreakdown(userId: string): Promise<{
+  categories: Array<{
+    name: string;
+    color: string;
+    habitCount: number;
+    completionRate: number;
+    totalCompletions: number;
+  }>;
+  habitRates: Array<{
+    id: string;
+    name: string;
+    color: string;
+    icon: string | null;
+    category: string | null;
+    completionRate: number;
+    currentStreak: number;
+  }>;
+}> {
+  const today = getTodayDate();
+  const thirtyDaysAgo = subDays(today, 30);
+
+  const habits = await prisma.habit.findMany({
+    where: { userId, isActive: true, isArchived: false },
+    include: {
+      habitLogs: {
+        where: {
+          date: { gte: thirtyDaysAgo, lte: today },
+          completed: true,
+        },
+      },
+    },
+  });
+
+  // Calculate expected completions and actual for each habit
+  const habitStats = habits.map((habit) => {
+    const days = eachDayOfInterval({ start: thirtyDaysAgo, end: today });
+    let expectedDays = 0;
+
+    for (const day of days) {
+      if (!isAfter(habit.createdAt, day) && shouldTrackOnDate(habit, day)) {
+        expectedDays++;
+      }
+    }
+
+    const completedDays = habit.habitLogs.length;
+    const completionRate = expectedDays > 0 ? Math.round((completedDays / expectedDays) * 100) : 0;
+
+    return {
+      id: habit.id,
+      name: habit.name,
+      color: habit.color,
+      icon: habit.icon,
+      category: habit.category || 'Uncategorized',
+      completionRate,
+      currentStreak: habit.currentStreak,
+      completedDays,
+      expectedDays,
+    };
+  });
+
+  // Group by category
+  const categoryMap = new Map<
+    string,
+    { color: string; completedDays: number; expectedDays: number; count: number }
+  >();
+
+  // Category colors
+  const categoryColors: Record<string, string> = {
+    Fitness: '#10b981',
+    Health: '#3b82f6',
+    Learning: '#f59e0b',
+    Mindfulness: '#8b5cf6',
+    Productivity: '#ef4444',
+    Uncategorized: '#64748b',
+  };
+
+  for (const stat of habitStats) {
+    const existing = categoryMap.get(stat.category) || {
+      color: categoryColors[stat.category] || '#64748b',
+      completedDays: 0,
+      expectedDays: 0,
+      count: 0,
+    };
+    existing.completedDays += stat.completedDays;
+    existing.expectedDays += stat.expectedDays;
+    existing.count++;
+    categoryMap.set(stat.category, existing);
+  }
+
+  const categories = Array.from(categoryMap.entries()).map(([name, data]) => ({
+    name,
+    color: data.color,
+    habitCount: data.count,
+    completionRate:
+      data.expectedDays > 0 ? Math.round((data.completedDays / data.expectedDays) * 100) : 0,
+    totalCompletions: data.completedDays,
+  }));
+
+  return {
+    categories: categories.sort((a, b) => b.completionRate - a.completionRate),
+    habitRates: habitStats
+      .map((h) => ({
+        id: h.id,
+        name: h.name,
+        color: h.color,
+        icon: h.icon,
+        category: h.category,
+        completionRate: h.completionRate,
+        currentStreak: h.currentStreak,
+      }))
+      .sort((a, b) => b.completionRate - a.completionRate),
+  };
+}
+
+/**
+ * Get week-over-week comparison
+ */
+export async function getWeekComparison(userId: string): Promise<{
+  thisWeek: { completed: number; total: number; rate: number };
+  lastWeek: { completed: number; total: number; rate: number };
+  change: number;
+  trend: 'up' | 'down' | 'same';
+}> {
+  const today = getTodayDate();
+  const thisWeekStart = startOfWeek(today, { weekStartsOn: 1 });
+  const lastWeekStart = subWeeks(thisWeekStart, 1);
+  const lastWeekEnd = subDays(thisWeekStart, 1);
+
+  const habits = await prisma.habit.findMany({
+    where: { userId, isActive: true, isArchived: false },
+  });
+
+  const thisWeekLogs = await prisma.habitLog.findMany({
+    where: {
+      userId,
+      date: { gte: thisWeekStart, lte: today },
+      completed: true,
+    },
+  });
+
+  const lastWeekLogs = await prisma.habitLog.findMany({
+    where: {
+      userId,
+      date: { gte: lastWeekStart, lte: lastWeekEnd },
+      completed: true,
+    },
+  });
+
+  // Calculate this week
+  const thisWeekDays = eachDayOfInterval({ start: thisWeekStart, end: today });
+  let thisWeekTotal = 0;
+  for (const day of thisWeekDays) {
+    thisWeekTotal += habits.filter(
+      (h) => !isAfter(h.createdAt, day) && shouldTrackOnDate(h, day)
+    ).length;
+  }
+  const thisWeekCompleted = thisWeekLogs.length;
+  const thisWeekRate =
+    thisWeekTotal > 0 ? Math.round((thisWeekCompleted / thisWeekTotal) * 100) : 0;
+
+  // Calculate last week
+  const lastWeekDays = eachDayOfInterval({ start: lastWeekStart, end: lastWeekEnd });
+  let lastWeekTotal = 0;
+  for (const day of lastWeekDays) {
+    lastWeekTotal += habits.filter(
+      (h) => !isAfter(h.createdAt, day) && shouldTrackOnDate(h, day)
+    ).length;
+  }
+  const lastWeekCompleted = lastWeekLogs.length;
+  const lastWeekRate =
+    lastWeekTotal > 0 ? Math.round((lastWeekCompleted / lastWeekTotal) * 100) : 0;
+
+  const change = thisWeekRate - lastWeekRate;
+
+  return {
+    thisWeek: { completed: thisWeekCompleted, total: thisWeekTotal, rate: thisWeekRate },
+    lastWeek: { completed: lastWeekCompleted, total: lastWeekTotal, rate: lastWeekRate },
+    change,
+    trend: change > 0 ? 'up' : change < 0 ? 'down' : 'same',
+  };
+}
+
+/**
+ * Get monthly trend data (last 30 days)
+ */
+export async function getMonthlyTrend(userId: string): Promise<{
+  days: Array<{ date: string; rate: number; completed: number; total: number }>;
+  averageRate: number;
+}> {
+  const today = getTodayDate();
+  const thirtyDaysAgo = subDays(today, 29);
+
+  const habits = await prisma.habit.findMany({
+    where: { userId, isActive: true, isArchived: false },
+  });
+
+  const logs = await prisma.habitLog.findMany({
+    where: {
+      userId,
+      date: { gte: thirtyDaysAgo, lte: today },
+      completed: true,
+    },
+  });
+
+  const logsByDate = new Map<string, number>();
+  for (const log of logs) {
+    const dateKey = formatDate(log.date);
+    logsByDate.set(dateKey, (logsByDate.get(dateKey) || 0) + 1);
+  }
+
+  const days = eachDayOfInterval({ start: thirtyDaysAgo, end: today });
+  let totalRate = 0;
+  let daysWithData = 0;
+
+  const trendData = days.map((day) => {
+    const dateKey = formatDate(day);
+    const dayHabits = habits.filter((h) => !isAfter(h.createdAt, day) && shouldTrackOnDate(h, day));
+    const total = dayHabits.length;
+    const completed = logsByDate.get(dateKey) || 0;
+    const rate = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+    if (total > 0) {
+      totalRate += rate;
+      daysWithData++;
+    }
+
+    return { date: dateKey, rate, completed, total };
+  });
+
+  return {
+    days: trendData,
+    averageRate: daysWithData > 0 ? Math.round(totalRate / daysWithData) : 0,
+  };
+}
+
+/**
+ * Get calendar data for a specific month (day-by-day with habit details)
+ */
+export async function getCalendarData(
+  userId: string,
+  year: number,
+  month: number
+): Promise<{
+  days: DailyBreakdown[];
+  summary: { totalCompleted: number; totalPossible: number; percentage: number };
+}> {
+  // Month is 1-indexed (1 = January)
+  const startDate = new Date(Date.UTC(year, month - 1, 1));
+  const endDate = new Date(Date.UTC(year, month, 0)); // Last day of month
+  const today = getTodayDate();
+  const actualEnd = isAfter(endDate, today) ? today : endDate;
+
+  const habits = await prisma.habit.findMany({
+    where: { userId, isActive: true, isArchived: false },
+    select: {
+      id: true,
+      name: true,
+      color: true,
+      icon: true,
+      createdAt: true,
+      frequency: true,
+      daysOfWeek: true,
+    },
+  });
+
+  const logs = await prisma.habitLog.findMany({
+    where: {
+      userId,
+      date: { gte: startDate, lte: actualEnd },
+    },
+  });
+
+  const logsByDate = new Map<string, typeof logs>();
+  for (const log of logs) {
+    const dateKey = formatDate(log.date);
+    if (!logsByDate.has(dateKey)) logsByDate.set(dateKey, []);
+    logsByDate.get(dateKey)!.push(log);
+  }
+
+  const days = eachDayOfInterval({ start: startDate, end: actualEnd });
+  const dailyData: DailyBreakdown[] = days.map((day) => {
+    const dateKey = formatDate(day);
+    const dayLogs = logsByDate.get(dateKey) || [];
+
+    const dayHabits = habits.filter((h) => {
+      if (isAfter(h.createdAt, day)) return false;
+      return shouldTrackOnDate(h as unknown as Habit, day);
+    });
+
+    const completedCount = dayLogs.filter((l) => l.completed).length;
+
+    return {
+      date: dateKey,
+      completed: completedCount,
+      total: dayHabits.length,
+      percentage: dayHabits.length > 0 ? Math.round((completedCount / dayHabits.length) * 100) : 0,
+      habits: dayHabits.map((h) => {
+        const log = dayLogs.find((l) => l.habitId === h.id);
+        return {
+          id: h.id,
+          name: h.name,
+          color: h.color,
+          icon: h.icon,
+          completed: log?.completed ?? false,
+          value: log?.value ?? null,
+        };
+      }),
+    };
+  });
+
+  const totalCompleted = dailyData.reduce((sum, d) => sum + d.completed, 0);
+  const totalPossible = dailyData.reduce((sum, d) => sum + d.total, 0);
+
+  return {
+    days: dailyData,
+    summary: {
+      totalCompleted,
+      totalPossible,
+      percentage: totalPossible > 0 ? Math.round((totalCompleted / totalPossible) * 100) : 0,
+    },
+  };
+}

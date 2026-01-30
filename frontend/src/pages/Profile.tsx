@@ -77,7 +77,7 @@ const Profile: React.FC = () => {
   const recentMilestones = milestones?.slice(0, 5) || [];
 
   return (
-    <div className="space-y-6 max-w-4xl">
+    <div className="space-y-6 max-w-4xl mx-auto">
       <div>
         <h1 className="text-3xl font-bold text-white">Profile</h1>
         <p className="text-dark-400 mt-1">Manage your account and view achievements</p>

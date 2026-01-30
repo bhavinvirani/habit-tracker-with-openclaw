@@ -110,23 +110,18 @@ export const HABIT_CATEGORIES = [
 // Analytics types
 export interface WeeklyDay {
   date: string;
-  dayName: string;
   completed: number;
   total: number;
   percentage: number;
+  habits: Array<{ id: string; name: string; completed: boolean; value: number | null }>;
 }
 
 export interface WeeklyStats {
-  week: {
-    start: string;
-    end: string;
-  };
   days: WeeklyDay[];
   summary: {
-    totalCompleted: number;
-    totalPossible: number;
-    percentage: number;
-    bestDay?: string;
+    total: number;
+    completed: number;
+    rate: number;
   };
 }
 
@@ -192,10 +187,18 @@ export interface InsightsData {
     day: string;
     percentage: number;
   };
+  worstDay?: {
+    day: string;
+    percentage: number;
+  };
   topHabit?: {
     name: string;
     streak: number;
   };
+  needsAttention?: {
+    name: string;
+    missedDays: number;
+  }[];
 }
 
 // Axios Error type

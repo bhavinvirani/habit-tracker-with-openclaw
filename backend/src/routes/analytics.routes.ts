@@ -16,6 +16,10 @@ import {
   getHabitStats,
   getStreaks,
   getInsights,
+  getCalendarData,
+  getCategoryBreakdown,
+  getWeekComparison,
+  getMonthlyTrend,
 } from '../controllers/analytics.controller';
 
 const router = Router();
@@ -42,5 +46,17 @@ router.get('/streaks', validateQuery(streaksQuerySchema), getStreaks);
 
 // Insights and suggestions
 router.get('/insights', getInsights);
+
+// Calendar data (day-by-day with habit details)
+router.get('/calendar', getCalendarData);
+
+// Category breakdown and habit completion rates
+router.get('/categories', getCategoryBreakdown);
+
+// Week-over-week comparison
+router.get('/comparison', getWeekComparison);
+
+// Monthly trend (last 30 days)
+router.get('/trend', getMonthlyTrend);
 
 export default router;
