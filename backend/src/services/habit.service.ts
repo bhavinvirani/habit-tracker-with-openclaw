@@ -93,7 +93,46 @@ export async function getHabits(filters: HabitFilters): Promise<HabitWithStats[]
     orderBy: { sortOrder: 'asc' },
   });
 
-  return habits;
+  // Calculate completionRate for each habit based on last 30 days
+  const now = new Date();
+  const thirtyDaysAgo = new Date(now);
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+  const habitsWithStats: HabitWithStats[] = await Promise.all(
+    habits.map(async (habit) => {
+      // Get logs for this habit in the last 30 days
+      const logs = await prisma.habitLog.findMany({
+        where: {
+          habitId: habit.id,
+          date: { gte: thirtyDaysAgo, lte: now },
+          completed: true,
+        },
+      });
+
+      // Calculate expected days based on frequency
+      let expectedDays = 0;
+      if (habit.frequency === 'DAILY') {
+        expectedDays = 30;
+      } else if (habit.frequency === 'WEEKLY') {
+        expectedDays = 4; // ~4 weeks in 30 days
+      } else if (habit.daysOfWeek && habit.daysOfWeek.length > 0) {
+        expectedDays = habit.daysOfWeek.length * 4;
+      } else if (habit.timesPerWeek) {
+        expectedDays = habit.timesPerWeek * 4;
+      } else {
+        expectedDays = 30; // Default to daily
+      }
+
+      const completionRate = expectedDays > 0 ? Math.round((logs.length / expectedDays) * 100) : 0;
+
+      return {
+        ...habit,
+        completionRate: Math.min(completionRate, 100), // Cap at 100%
+      };
+    })
+  );
+
+  return habitsWithStats;
 }
 
 /**

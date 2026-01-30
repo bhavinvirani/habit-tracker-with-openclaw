@@ -21,6 +21,8 @@ export interface HabitWithStats extends Habit {
   currentStreak: number;
   longestStreak: number;
   completionRate: number;
+  totalCompletions: number;
+  lastCompletedAt?: string;
 }
 
 export interface HabitLog {

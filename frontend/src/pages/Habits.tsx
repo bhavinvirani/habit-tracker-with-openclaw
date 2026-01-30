@@ -373,10 +373,8 @@ const Habits: React.FC = () => {
           <p className="text-xs text-dark-500">Rate</p>
         </div>
         <div className="text-center">
-          <span className="font-bold text-dark-300">
-            {Math.round((((habit.completionRate || 0) * (habit.longestStreak || 1)) / 100) * 30)}
-          </span>
-          <p className="text-xs text-dark-500">~30d</p>
+          <span className="font-bold text-dark-300">{habit.totalCompletions || 0}</span>
+          <p className="text-xs text-dark-500">Total</p>
         </div>
       </div>
 
@@ -462,10 +460,7 @@ const Habits: React.FC = () => {
             <Target className="text-accent-green" size={24} />
             <div>
               <p className="text-2xl font-bold text-white">
-                {habits.reduce(
-                  (sum, h) => sum + Math.round(((h.completionRate || 0) * 30) / 100),
-                  0
-                )}
+                {habits.reduce((sum, h) => sum + (h.totalCompletions || 0), 0)}
               </p>
               <p className="text-xs text-dark-400">Total Done</p>
             </div>
@@ -702,7 +697,7 @@ const Habits: React.FC = () => {
                     <h3 className="font-medium text-dark-300">{habit.name}</h3>
                     <div className="flex items-center gap-2 mt-1">
                       <span className="text-xs text-dark-500">
-                        {habit.longestStreak} day best streak
+                        {habit.totalCompletions || 0} completions • {habit.longestStreak} day best
                       </span>
                       {habit.category && (
                         <span className="text-xs text-dark-500">• {habit.category}</span>

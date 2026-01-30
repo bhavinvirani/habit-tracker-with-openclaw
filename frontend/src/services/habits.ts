@@ -1,5 +1,5 @@
 import api from './api';
-import { Habit, HabitLog, InsightsData } from '../types';
+import { Habit, HabitLog, InsightsData, HabitWithStats } from '../types';
 
 // Types for API responses
 interface ApiResponse<T> {
@@ -7,13 +7,7 @@ interface ApiResponse<T> {
   data: T;
 }
 
-interface HabitWithStats extends Habit {
-  currentStreak: number;
-  longestStreak: number;
-  completionRate: number;
-}
-
-interface TodayHabit extends Habit {
+export interface TodayHabit extends Habit {
   isCompleted: boolean;
   logValue: number | null;
   logNotes: string | null;
@@ -25,7 +19,7 @@ interface TodayHabit extends Habit {
   habitType: string;
 }
 
-interface TodayResponse {
+export interface TodayResponse {
   date: string;
   habits: TodayHabit[];
   summary: {
@@ -49,14 +43,16 @@ interface OverviewStats {
   monthlyCompletionRate: number;
 }
 
-interface WeeklyStats {
-  days: Array<{
-    date: string;
-    completed: number;
-    total: number;
-    percentage: number;
-    habits: Array<{ id: string; name: string; completed: boolean; value: number | null }>;
-  }>;
+export interface WeeklyDay {
+  date: string;
+  completed: number;
+  total: number;
+  percentage: number;
+  habits: Array<{ id: string; name: string; completed: boolean; value: number | null }>;
+}
+
+export interface WeeklyStats {
+  days: WeeklyDay[];
   summary: {
     total: number;
     completed: number;

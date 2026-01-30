@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { trackingApi, analyticsApi, habitsApi } from '../services/habits';
+import { trackingApi, analyticsApi, habitsApi, TodayHabit, WeeklyDay } from '../services/habits';
 import { format, subDays } from 'date-fns';
 import clsx from 'clsx';
 import HabitModal from '../components/habits/HabitModal';
@@ -144,14 +144,14 @@ const Dashboard: React.FC = () => {
   const percentage = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
   // Separate daily and weekly habits
-  const dailyHabits = habits.filter((h: any) => h.frequency === 'DAILY');
-  const weeklyHabits = habits.filter((h: any) => h.frequency === 'WEEKLY');
+  const dailyHabits = habits.filter((h: TodayHabit) => h.frequency === 'DAILY');
+  const weeklyHabits = habits.filter((h: TodayHabit) => h.frequency === 'WEEKLY');
 
   // Calculate daily completion
-  const dailyCompleted = dailyHabits.filter((h: any) => {
+  const dailyCompleted = dailyHabits.filter((h: TodayHabit) => {
     const hasGoal = h.targetValue && h.targetValue > 0;
     const currentValue = h.logValue || 0;
-    return h.isCompleted || (hasGoal && currentValue >= h.targetValue);
+    return h.isCompleted || (hasGoal && currentValue >= (h.targetValue || 0));
   }).length;
   const allDailyDone = dailyHabits.length > 0 && dailyCompleted === dailyHabits.length;
 
@@ -159,7 +159,7 @@ const Dashboard: React.FC = () => {
   const heatmapDays = Array.from({ length: 14 }, (_, i) => {
     const date = subDays(new Date(), 13 - i);
     const dateStr = format(date, 'yyyy-MM-dd');
-    const dayData = weeklyData?.days?.find((d: any) => d.date === dateStr);
+    const dayData = weeklyData?.days?.find((d: WeeklyDay) => d.date === dateStr);
     return {
       date: dateStr,
       dayName: format(date, 'EEE'),
@@ -376,7 +376,7 @@ const Dashboard: React.FC = () => {
                 </div>
 
                 <div className="space-y-3">
-                  {dailyHabits.map((habit: any) => (
+                  {dailyHabits.map((habit: TodayHabit) => (
                     <HabitCard
                       key={habit.id}
                       habit={habit}
@@ -399,7 +399,7 @@ const Dashboard: React.FC = () => {
                 </div>
 
                 <div className="space-y-3">
-                  {weeklyHabits.map((habit: any) => (
+                  {weeklyHabits.map((habit: TodayHabit) => (
                     <HabitCard
                       key={habit.id}
                       habit={habit}
