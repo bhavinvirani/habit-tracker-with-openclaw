@@ -216,25 +216,35 @@ const Profile: React.FC = () => {
 
         {recentMilestones.length > 0 ? (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {recentMilestones.map((milestone: any) => (
-              <div key={milestone.id} className="p-4 rounded-lg bg-dark-800 border border-dark-700">
-                <div className="flex items-center gap-3 mb-2">
-                  <div
-                    className="w-10 h-10 rounded-lg flex items-center justify-center"
-                    style={{ backgroundColor: `${milestone.habit.color}20` }}
-                  >
-                    <Flame size={20} style={{ color: milestone.habit.color }} />
+            {recentMilestones.map(
+              (milestone: {
+                id: string;
+                streak: number;
+                achievedAt: string;
+                habit: { name: string; color: string };
+              }) => (
+                <div
+                  key={milestone.id}
+                  className="p-4 rounded-lg bg-dark-800 border border-dark-700"
+                >
+                  <div className="flex items-center gap-3 mb-2">
+                    <div
+                      className="w-10 h-10 rounded-lg flex items-center justify-center"
+                      style={{ backgroundColor: `${milestone.habit.color}20` }}
+                    >
+                      <Flame size={20} style={{ color: milestone.habit.color }} />
+                    </div>
+                    <div>
+                      <p className="font-medium text-white">{milestone.streak} days</p>
+                      <p className="text-xs text-dark-400">{milestone.habit.name}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-medium text-white">{milestone.streak} days</p>
-                    <p className="text-xs text-dark-400">{milestone.habit.name}</p>
-                  </div>
+                  <p className="text-xs text-dark-500">
+                    Achieved {format(new Date(milestone.achievedAt), 'MMM d, yyyy')}
+                  </p>
                 </div>
-                <p className="text-xs text-dark-500">
-                  Achieved {format(new Date(milestone.achievedAt), 'MMM d, yyyy')}
-                </p>
-              </div>
-            ))}
+              )
+            )}
           </div>
         ) : (
           <div className="text-center py-8">

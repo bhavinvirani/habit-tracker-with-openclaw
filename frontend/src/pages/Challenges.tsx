@@ -400,7 +400,7 @@ const Challenges: React.FC = () => {
                   required
                 >
                   <option value="">Select a habit...</option>
-                  {habits.map((habit: any) => (
+                  {habits.map((habit: { id: string; name: string }) => (
                     <option key={habit.id} value={habit.id}>
                       {habit.name}
                     </option>

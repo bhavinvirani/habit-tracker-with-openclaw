@@ -83,6 +83,68 @@ interface HabitTemplate {
   tips: string[];
 }
 
+interface Milestone {
+  id: string;
+  habitId: string;
+  streak: number;
+  achievedAt: string;
+  habit: {
+    name: string;
+    color: string;
+    icon?: string;
+  };
+}
+
+interface MonthlyStats {
+  days: Array<{
+    date: string;
+    completed: number;
+    total: number;
+    percentage: number;
+    habits?: Array<{ id: string; name: string; completed: boolean }>;
+  }>;
+  summary: {
+    totalCompleted: number;
+    totalPossible: number;
+    percentage: number;
+  };
+}
+
+interface HeatmapStats {
+  year: number;
+  data: Array<{
+    date: string;
+    count: number;
+    percentage: number;
+  }>;
+}
+
+interface HabitAnalyticsStats {
+  habitId: string;
+  name: string;
+  stats: {
+    currentStreak: number;
+    longestStreak: number;
+    completionRate: number;
+    totalCompletions: number;
+  };
+}
+
+interface StreaksData {
+  streaks: Array<{
+    habitId: string;
+    habitName: string;
+    currentStreak: number;
+    longestStreak: number;
+    color: string;
+  }>;
+}
+
+interface InsightsData {
+  insights: string[];
+  recommendations: string[];
+}
+
 // Habits API
 export const habitsApi = {
   getAll: async (): Promise<HabitWithStats[]> => {
@@ -156,8 +218,9 @@ export const trackingApi = {
     return response.data.data.logs;
   },
 
-  getMilestones: async (): Promise<any[]> => {
-    const response = await api.get<ApiResponse<{ milestones: any[] }>>('/tracking/milestones');
+  getMilestones: async (): Promise<Milestone[]> => {
+    const response =
+      await api.get<ApiResponse<{ milestones: Milestone[] }>>('/tracking/milestones');
     return response.data.data.milestones;
   },
 };
@@ -176,32 +239,34 @@ export const analyticsApi = {
     return response.data.data;
   },
 
-  getMonthly: async (year?: number, month?: number): Promise<any> => {
-    const response = await api.get<ApiResponse<any>>('/analytics/monthly', {
+  getMonthly: async (year?: number, month?: number): Promise<MonthlyStats> => {
+    const response = await api.get<ApiResponse<MonthlyStats>>('/analytics/monthly', {
       params: { year, month },
     });
     return response.data.data;
   },
 
-  getHeatmap: async (year?: number): Promise<any> => {
-    const response = await api.get<ApiResponse<any>>('/analytics/heatmap', {
+  getHeatmap: async (year?: number): Promise<HeatmapStats> => {
+    const response = await api.get<ApiResponse<HeatmapStats>>('/analytics/heatmap', {
       params: { year },
     });
     return response.data.data;
   },
 
-  getHabitStats: async (habitId: string): Promise<any> => {
-    const response = await api.get<ApiResponse<any>>(`/analytics/habits/${habitId}`);
+  getHabitStats: async (habitId: string): Promise<HabitAnalyticsStats> => {
+    const response = await api.get<ApiResponse<HabitAnalyticsStats>>(
+      `/analytics/habits/${habitId}`
+    );
     return response.data.data;
   },
 
-  getStreaks: async (): Promise<any> => {
-    const response = await api.get<ApiResponse<any>>('/analytics/streaks');
+  getStreaks: async (): Promise<StreaksData> => {
+    const response = await api.get<ApiResponse<StreaksData>>('/analytics/streaks');
     return response.data.data;
   },
 
-  getInsights: async (): Promise<any> => {
-    const response = await api.get<ApiResponse<any>>('/analytics/insights');
+  getInsights: async (): Promise<InsightsData> => {
+    const response = await api.get<ApiResponse<InsightsData>>('/analytics/insights');
     return response.data.data;
   },
 };

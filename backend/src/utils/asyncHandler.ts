@@ -5,7 +5,7 @@ import { Request, Response, NextFunction } from 'express';
  * Usage: router.get('/path', asyncHandler(async (req, res) => { ... }))
  */
 export const asyncHandler = (
-  fn: (req: Request, res: Response, next: NextFunction) => Promise<any>
+  fn: (req: Request, res: Response, next: NextFunction) => Promise<void | Response>
 ) => {
   return (req: Request, res: Response, next: NextFunction) => {
     Promise.resolve(fn(req, res, next)).catch(next);

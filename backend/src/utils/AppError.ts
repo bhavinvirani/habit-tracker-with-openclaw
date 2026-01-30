@@ -6,14 +6,14 @@ export class AppError extends Error {
   public readonly statusCode: number;
   public readonly isOperational: boolean;
   public readonly code?: string;
-  public readonly details?: any;
+  public readonly details?: Record<string, unknown>;
 
   constructor(
     message: string,
     statusCode: number = 500,
     isOperational: boolean = true,
     code?: string,
-    details?: any
+    details?: Record<string, unknown>
   ) {
     super(message);
 
@@ -32,7 +32,7 @@ export class AppError extends Error {
  * 400 - Bad Request
  */
 export class ValidationError extends AppError {
-  constructor(message: string = 'Validation failed', details?: any) {
+  constructor(message: string = 'Validation failed', details?: Record<string, unknown>) {
     super(message, 400, true, 'VALIDATION_ERROR', details);
   }
 }
@@ -41,7 +41,7 @@ export class ValidationError extends AppError {
  * 400 - Bad Request (alias for ValidationError)
  */
 export class BadRequestError extends AppError {
-  constructor(message: string = 'Bad request', details?: any) {
+  constructor(message: string = 'Bad request', details?: Record<string, unknown>) {
     super(message, 400, true, 'BAD_REQUEST_ERROR', details);
   }
 }
@@ -78,7 +78,7 @@ export class NotFoundError extends AppError {
  * 409 - Conflict
  */
 export class ConflictError extends AppError {
-  constructor(message: string = 'Resource already exists', details?: any) {
+  constructor(message: string = 'Resource already exists', details?: Record<string, unknown>) {
     super(message, 409, true, 'CONFLICT_ERROR', details);
   }
 }
@@ -87,7 +87,10 @@ export class ConflictError extends AppError {
  * 422 - Unprocessable Entity
  */
 export class UnprocessableEntityError extends AppError {
-  constructor(message: string = 'Unable to process the request', details?: any) {
+  constructor(
+    message: string = 'Unable to process the request',
+    details?: Record<string, unknown>
+  ) {
     super(message, 422, true, 'UNPROCESSABLE_ENTITY', details);
   }
 }
@@ -105,7 +108,10 @@ export class RateLimitError extends AppError {
  * 500 - Internal Server Error
  */
 export class InternalServerError extends AppError {
-  constructor(message: string = 'An internal server error occurred', details?: any) {
+  constructor(
+    message: string = 'An internal server error occurred',
+    details?: Record<string, unknown>
+  ) {
     super(message, 500, false, 'INTERNAL_SERVER_ERROR', details);
   }
 }
@@ -123,7 +129,7 @@ export class ServiceUnavailableError extends AppError {
  * Database-related errors
  */
 export class DatabaseError extends AppError {
-  constructor(message: string = 'Database operation failed', details?: any) {
+  constructor(message: string = 'Database operation failed', details?: Record<string, unknown>) {
     super(message, 500, false, 'DATABASE_ERROR', details);
   }
 }

@@ -14,6 +14,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 
 import { format, subWeeks, addWeeks } from 'date-fns';
 import { analyticsApi } from '../services/habits';
 import clsx from 'clsx';
+import { WeeklyDay, StreakInfo, ChartTooltipProps } from '../types';
 
 const Analytics: React.FC = () => {
   const [weekOffset, setWeekOffset] = useState(0);
@@ -60,14 +61,14 @@ const Analytics: React.FC = () => {
 
   // Prepare chart data
   const weeklyChartData =
-    weekly?.days?.map((day: any) => ({
+    weekly?.days?.map((day: WeeklyDay) => ({
       name: (day.dayName || '').slice(0, 3),
       completed: day.completed,
       total: day.total,
       percentage: day.percentage,
     })) || [];
 
-  const CustomTooltip = ({ active, payload, label }: any) => {
+  const CustomTooltip = ({ active, payload, label }: ChartTooltipProps) => {
     if (active && payload && payload.length) {
       return (
         <div className="bg-dark-800 border border-dark-600 rounded-lg p-3 shadow-xl">
@@ -172,7 +173,7 @@ const Analytics: React.FC = () => {
               <YAxis stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
               <Tooltip content={<CustomTooltip />} />
               <Bar dataKey="completed" radius={[6, 6, 0, 0]}>
-                {weeklyChartData.map((entry: any, index: number) => (
+                {weeklyChartData.map((entry: { percentage: number }, index: number) => (
                   <Cell
                     key={`cell-${index}`}
                     fill={
@@ -214,7 +215,7 @@ const Analytics: React.FC = () => {
           <h2 className="text-xl font-semibold text-white mb-4">Streak Leaders</h2>
           {streaks?.streaks?.length > 0 ? (
             <div className="space-y-3">
-              {streaks.streaks.slice(0, 5).map((habit: any, index: number) => (
+              {streaks.streaks.slice(0, 5).map((habit: StreakInfo, index: number) => (
                 <div
                   key={habit.habitId}
                   className="flex items-center gap-4 p-3 rounded-lg bg-dark-800"

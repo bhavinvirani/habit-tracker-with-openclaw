@@ -47,7 +47,15 @@ const handlePrismaError = (error: Prisma.PrismaClientKnownRequestError): AppErro
 const sendErrorResponse = (err: AppError, req: Request, res: Response) => {
   const { statusCode, message, code, details } = err;
 
-  const errorResponse: any = {
+  const errorResponse: {
+    success: boolean;
+    error: {
+      message: string;
+      code?: string;
+      stack?: string;
+      details?: Record<string, unknown>;
+    };
+  } = {
     success: false,
     error: {
       message,
@@ -80,7 +88,7 @@ const sendErrorResponse = (err: AppError, req: Request, res: Response) => {
       method: req.method,
       url: req.originalUrl,
       ip: req.ip,
-      userId: (req as any).userId,
+      userId: (req as Request & { userId?: string }).userId,
     },
   });
 

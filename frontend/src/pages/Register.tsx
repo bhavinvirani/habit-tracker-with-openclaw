@@ -67,8 +67,9 @@ const Register: React.FC = () => {
       login(user, token);
       toast.success(`Welcome, ${user.name}! Let's build some habits!`);
       navigate('/');
-    } catch (error: any) {
-      const message = error.response?.data?.error?.message || 'Registration failed';
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { error?: { message: string } } } };
+      const message = err.response?.data?.error?.message || 'Registration failed';
       toast.error(message);
     } finally {
       setIsLoading(false);

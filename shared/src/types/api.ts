@@ -2,14 +2,14 @@
  * Standard API Response Interface
  * All API endpoints return this structure for consistency
  */
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   success: boolean;
   message?: string;
   data?: T;
   error?: {
     message: string;
     code?: string;
-    details?: any;
+    details?: Record<string, unknown>;
     stack?: string; // Only in development
   };
   meta?: {

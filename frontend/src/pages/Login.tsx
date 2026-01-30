@@ -44,8 +44,9 @@ const Login: React.FC = () => {
       login(user, token);
       toast.success(`Welcome back, ${user.name}!`);
       navigate('/');
-    } catch (error: any) {
-      const message = error.response?.data?.error?.message || 'Login failed';
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { error?: { message: string } } } };
+      const message = err.response?.data?.error?.message || 'Login failed';
       toast.error(message);
     } finally {
       setIsLoading(false);

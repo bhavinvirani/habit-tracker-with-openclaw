@@ -106,3 +106,108 @@ export const HABIT_CATEGORIES = [
   'Creativity',
   'Other',
 ];
+
+// Analytics types
+export interface WeeklyDay {
+  date: string;
+  dayName: string;
+  completed: number;
+  total: number;
+  percentage: number;
+}
+
+export interface WeeklyStats {
+  week: {
+    start: string;
+    end: string;
+  };
+  days: WeeklyDay[];
+  summary: {
+    totalCompleted: number;
+    totalPossible: number;
+    percentage: number;
+    bestDay?: string;
+  };
+}
+
+export interface MonthlyDay {
+  date: string;
+  completed: number;
+  total: number;
+  percentage: number;
+  habits?: {
+    id: string;
+    name: string;
+    completed: boolean;
+  }[];
+}
+
+export interface MonthlyStats {
+  days: MonthlyDay[];
+  summary: {
+    totalCompleted: number;
+    totalPossible: number;
+    percentage: number;
+  };
+}
+
+export interface HeatmapStats {
+  year: number;
+  data: {
+    date: string;
+    count: number;
+    percentage: number;
+  }[];
+}
+
+export interface HabitAnalytics {
+  habitId: string;
+  name: string;
+  stats: {
+    currentStreak: number;
+    longestStreak: number;
+    completionRate: number;
+    totalCompletions: number;
+  };
+}
+
+export interface StreakInfo {
+  habitId: string;
+  habitName: string;
+  currentStreak: number;
+  longestStreak: number;
+  color: string;
+}
+
+export interface StreaksData {
+  streaks: StreakInfo[];
+}
+
+export interface InsightsData {
+  insights: string[];
+  recommendations: string[];
+}
+
+// Axios Error type
+export interface ApiError {
+  response?: {
+    data?: {
+      error?: {
+        message: string;
+      };
+    };
+  };
+}
+
+// Recharts tooltip props
+export interface ChartTooltipProps {
+  active?: boolean;
+  payload?: {
+    value: number;
+    payload: {
+      total: number;
+      percentage: number;
+    };
+  }[];
+  label?: string;
+}

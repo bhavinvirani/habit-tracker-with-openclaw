@@ -16,6 +16,7 @@ import {
 } from 'date-fns';
 import { analyticsApi } from '../services/habits';
 import clsx from 'clsx';
+import { MonthlyDay } from '../types';
 
 const Calendar: React.FC = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -77,9 +78,9 @@ const Calendar: React.FC = () => {
     let day = startDate;
 
     // Create a map of date -> day data
-    const dayDataMap = new Map<string, any>();
+    const dayDataMap = new Map<string, MonthlyDay>();
     if (monthlyData?.days) {
-      monthlyData.days.forEach((d: any) => {
+      monthlyData.days.forEach((d: MonthlyDay) => {
         dayDataMap.set(d.date, d);
       });
     }
@@ -148,7 +149,7 @@ const Calendar: React.FC = () => {
 
   // Get selected day details
   const selectedDayData = selectedDate
-    ? monthlyData?.days?.find((d: any) => d.date === format(selectedDate, 'yyyy-MM-dd'))
+    ? monthlyData?.days?.find((d: MonthlyDay) => d.date === format(selectedDate, 'yyyy-MM-dd'))
     : null;
 
   if (isLoading) {
@@ -216,26 +217,28 @@ const Calendar: React.FC = () => {
 
               {selectedDayData.habits?.length > 0 && (
                 <div className="space-y-2">
-                  {selectedDayData.habits.map((habit: any) => (
-                    <div
-                      key={habit.id}
-                      className="flex items-center gap-3 p-3 rounded-lg bg-dark-800"
-                    >
-                      {habit.completed ? (
-                        <CheckCircle2 size={18} className="text-accent-green" />
-                      ) : (
-                        <Circle size={18} className="text-dark-500" />
-                      )}
-                      <span
-                        className={clsx(
-                          'text-sm',
-                          habit.completed ? 'text-dark-200' : 'text-dark-400'
-                        )}
+                  {selectedDayData.habits.map(
+                    (habit: { id: string; name: string; completed: boolean }) => (
+                      <div
+                        key={habit.id}
+                        className="flex items-center gap-3 p-3 rounded-lg bg-dark-800"
                       >
-                        {habit.name}
-                      </span>
-                    </div>
-                  ))}
+                        {habit.completed ? (
+                          <CheckCircle2 size={18} className="text-accent-green" />
+                        ) : (
+                          <Circle size={18} className="text-dark-500" />
+                        )}
+                        <span
+                          className={clsx(
+                            'text-sm',
+                            habit.completed ? 'text-dark-200' : 'text-dark-400'
+                          )}
+                        >
+                          {habit.name}
+                        </span>
+                      </div>
+                    )
+                  )}
                 </div>
               )}
             </div>
