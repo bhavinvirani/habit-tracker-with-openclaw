@@ -1,6 +1,11 @@
 declare module 'react-hot-toast' {
   import { ReactNode } from 'react';
 
+  export interface IconTheme {
+    primary: string;
+    secondary: string;
+  }
+
   export interface ToastOptions {
     id?: string;
     icon?: ReactNode;
@@ -14,6 +19,15 @@ declare module 'react-hot-toast' {
       | 'bottom-right';
     style?: React.CSSProperties;
     className?: string;
+    iconTheme?: IconTheme;
+  }
+
+  export interface DefaultToastOptions extends ToastOptions {
+    success?: ToastOptions;
+    error?: ToastOptions;
+    loading?: ToastOptions;
+    blank?: ToastOptions;
+    custom?: ToastOptions;
   }
 
   export interface Toast {
@@ -56,7 +70,7 @@ declare module 'react-hot-toast' {
     gutter?: number;
     containerStyle?: React.CSSProperties;
     containerClassName?: string;
-    toastOptions?: ToastOptions;
+    toastOptions?: DefaultToastOptions;
   }
 
   export const Toaster: React.FC<ToasterProps>;
