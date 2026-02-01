@@ -20,6 +20,7 @@
     "test:challenges": "NODE_ENV=test jest challenges.test.ts --runInBand --forceExit",
     "test:templates": "NODE_ENV=test jest templates.test.ts --runInBand --forceExit",
     "test:smoke": "NODE_ENV=test jest smoke.test.ts --runInBand --forceExit",
+    "test:bot": "NODE_ENV=test jest bot.test.ts --runInBand --forceExit",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:migrate:deploy": "prisma migrate deploy",
@@ -41,6 +42,7 @@
     "helmet": "^8.0.0",
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.0",
+    "node-cron": "^4.2.1",
     "winston": "^3.19.0",
     "winston-daily-rotate-file": "^5.0.0",
     "zod": "^4.3.6"
@@ -55,6 +57,7 @@
     "@types/mocha": "^10.0.10",
     "@types/morgan": "^1.9.9",
     "@types/node": "^22.10.2",
+    "@types/node-cron": "^3.0.11",
     "@types/qs": "^6.14.0",
     "@types/supertest": "^6.0.3",
     "@typescript-eslint/eslint-plugin": "^8.54.0",

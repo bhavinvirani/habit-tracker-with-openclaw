@@ -23,13 +23,16 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  habits            Habit[]
-  habitLogs         HabitLog[]
-  milestones        Milestone[]
-  books             Book[]
-  challenges        Challenge[]
-  challengeProgress ChallengeProgress[]
-  refreshTokens     RefreshToken[]
+  habits               Habit[]
+  habitLogs            HabitLog[]
+  milestones           Milestone[]
+  books                Book[]
+  challenges           Challenge[]
+  challengeProgress    ChallengeProgress[]
+  refreshTokens        RefreshToken[]
+  connectedApps        ConnectedApp[]
+  habitReminders       HabitReminder[]
+  notificationSettings UserNotificationSettings?
 
   @@map("users")
 }
@@ -75,10 +78,10 @@ model Habit {
   isArchived Boolean @default(false) // Archived habits (keep history, hide from view)
 
   // Pause/Vacation Mode
-  isPaused     Boolean   @default(false)
-  pausedAt     DateTime?
-  pausedUntil  DateTime? // Auto-resume date (optional)
-  pauseReason  String?   // Optional reason for pausing
+  isPaused    Boolean   @default(false)
+  pausedAt    DateTime?
+  pausedUntil DateTime? // Auto-resume date (optional)
+  pauseReason String? // Optional reason for pausing
 
   // Habit Stacking/Chaining
   stackedAfterHabitId String? // The habit this one comes after
@@ -102,6 +105,7 @@ model Habit {
   habitLogs       HabitLog[]
   milestones      Milestone[]
   challengeHabits ChallengeHabit[]
+  reminder        HabitReminder?
 
   @@index([userId])
   @@index([userId, isActive, isArchived])
@@ -278,6 +282,56 @@ model ChallengeProgress {
   @@unique([challengeId, date])
   @@index([challengeId])
   @@map("challenge_progress")
+}
+
+// ============ INTEGRATIONS & REMINDERS ============
+
+model ConnectedApp {
+  id        String   @id @default(uuid())
+  userId    String
+  provider  String // 'telegram', 'whatsapp', etc.
+  chatId    String // Platform-specific chat/channel ID
+  username  String? // Display name from the platform
+  isActive  Boolean  @default(true)
+  metadata  Json? // Platform-specific extra data
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, provider])
+  @@unique([provider, chatId])
+  @@map("connected_apps")
+}
+
+model HabitReminder {
+  id        String   @id @default(uuid())
+  habitId   String   @unique
+  userId    String
+  time      String // HH:mm in user's timezone
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  habit Habit @relation(fields: [habitId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("habit_reminders")
+}
+
+model UserNotificationSettings {
+  id                  String   @id @default(uuid())
+  userId              String   @unique
+  dailySummaryEnabled Boolean  @default(false)
+  dailySummaryTime    String? // HH:mm in user's timezone
+  reminderEnabled     Boolean  @default(true)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_notification_settings")
 }
 
 // ============ ENUMS ============
