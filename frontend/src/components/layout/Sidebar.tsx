@@ -199,10 +199,20 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         </div>
 
         {/* Help Link */}
-        <button className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-dark-500 hover:bg-dark-800 hover:text-dark-300 transition-colors">
+        <NavLink
+          to="/help"
+          className={({ isActive }) =>
+            clsx(
+              'w-full flex items-center gap-3 px-4 py-2.5 rounded-xl transition-colors',
+              isActive
+                ? 'bg-primary-500/10 text-primary-400'
+                : 'text-dark-500 hover:bg-dark-800 hover:text-dark-300'
+            )
+          }
+        >
           <HelpCircle size={18} />
           <span className="text-sm">Help & Support</span>
-        </button>
+        </NavLink>
       </div>
     </>
   );

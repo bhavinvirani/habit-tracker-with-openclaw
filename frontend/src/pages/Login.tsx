@@ -124,11 +124,16 @@ const Login: React.FC = () => {
               </Link>
             </p>
           </div>
-        </div>
 
-        {/* Demo credentials hint */}
-        <div className="mt-6 text-center">
-          <p className="text-dark-500 text-sm">Demo: test@example.com / password123</p>
+          {/* Dev mode test credentials */}
+          {process.env.NODE_ENV === 'development' && (
+            <div className="mt-4 p-3 bg-dark-800/50 rounded-lg border border-dark-700">
+              <p className="text-dark-400 text-sm text-center">
+                <span className="text-primary-400 font-medium">Dev Mode:</span> test@example.com /
+                password123
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </div>

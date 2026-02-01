@@ -3,7 +3,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Plus,
   Trophy,
-  Loader2,
   Pencil,
   Trash2,
   X,
@@ -11,20 +10,23 @@ import {
   Target,
   Calendar,
   CheckCircle2,
-  XCircle,
-  Pause,
   TrendingUp,
   Zap,
   Award,
   ChevronRight,
   BarChart3,
+  Loader2,
 } from 'lucide-react';
 import { format, parseISO, addDays } from 'date-fns';
 import toast from 'react-hot-toast';
 import api from '../services/api';
 import clsx from 'clsx';
-
-type ChallengeStatus = 'ACTIVE' | 'COMPLETED' | 'FAILED' | 'CANCELLED';
+import {
+  CHALLENGE_STATUS_CONFIG,
+  DURATION_PRESETS,
+  type ChallengeStatus,
+} from '../constants/status';
+import { CircularProgress } from '../components/ui';
 
 interface ChallengeHabit {
   id: string;
@@ -92,30 +94,6 @@ const challengesApi = {
     await api.post(`/challenges/${id}/sync`);
   },
 };
-
-const STATUS_CONFIG: Record<
-  ChallengeStatus,
-  { label: string; color: string; bgColor: string; icon: React.ElementType }
-> = {
-  ACTIVE: { label: 'Active', color: 'text-primary-400', bgColor: 'bg-primary-500/20', icon: Flame },
-  COMPLETED: {
-    label: 'Completed',
-    color: 'text-accent-green',
-    bgColor: 'bg-accent-green/20',
-    icon: Trophy,
-  },
-  FAILED: { label: 'Failed', color: 'text-accent-red', bgColor: 'bg-accent-red/20', icon: XCircle },
-  CANCELLED: { label: 'Cancelled', color: 'text-dark-400', bgColor: 'bg-dark-700', icon: Pause },
-};
-
-const DURATION_PRESETS = [
-  { label: '7 days', value: 7, description: 'Perfect for testing new habits' },
-  { label: '14 days', value: 14, description: 'Build initial momentum' },
-  { label: '21 days', value: 21, description: 'Form new neural pathways' },
-  { label: '30 days', value: 30, description: 'Establish lasting habits' },
-  { label: '60 days', value: 60, description: 'Deep habit formation' },
-  { label: '90 days', value: 90, description: 'Transform your lifestyle' },
-];
 
 const Challenges: React.FC = () => {
   const queryClient = useQueryClient();
@@ -384,8 +362,8 @@ const Challenges: React.FC = () => {
         >
           All ({challenges.length})
         </button>
-        {(Object.keys(STATUS_CONFIG) as ChallengeStatus[]).map((status) => {
-          const config = STATUS_CONFIG[status];
+        {(Object.keys(CHALLENGE_STATUS_CONFIG) as ChallengeStatus[]).map((status) => {
+          const config = CHALLENGE_STATUS_CONFIG[status];
           const count = groupedChallenges[status].length;
           return (
             <button
@@ -427,8 +405,8 @@ const Challenges: React.FC = () => {
                         <span
                           className={clsx(
                             'badge',
-                            STATUS_CONFIG.ACTIVE.bgColor,
-                            STATUS_CONFIG.ACTIVE.color
+                            CHALLENGE_STATUS_CONFIG.ACTIVE.bgColor,
+                            CHALLENGE_STATUS_CONFIG.ACTIVE.color
                           )}
                         >
                           Day {challenge.daysElapsed} of {challenge.duration}
@@ -528,7 +506,7 @@ const Challenges: React.FC = () => {
                   ...groupedChallenges.CANCELLED,
                 ]
             ).map((challenge) => {
-              const config = STATUS_CONFIG[challenge.status];
+              const config = CHALLENGE_STATUS_CONFIG[challenge.status];
               const StatusIcon = config.icon;
               return (
                 <div
@@ -611,23 +589,23 @@ const Challenges: React.FC = () => {
                 <div
                   className={clsx(
                     'p-3 rounded-xl',
-                    STATUS_CONFIG[selectedChallenge.status].bgColor
+                    CHALLENGE_STATUS_CONFIG[selectedChallenge.status].bgColor
                   )}
                 >
-                  {React.createElement(STATUS_CONFIG[selectedChallenge.status].icon, {
+                  {React.createElement(CHALLENGE_STATUS_CONFIG[selectedChallenge.status].icon, {
                     size: 24,
-                    className: STATUS_CONFIG[selectedChallenge.status].color,
+                    className: CHALLENGE_STATUS_CONFIG[selectedChallenge.status].color,
                   })}
                 </div>
                 <div>
                   <span
                     className={clsx(
                       'badge mb-1',
-                      STATUS_CONFIG[selectedChallenge.status].bgColor,
-                      STATUS_CONFIG[selectedChallenge.status].color
+                      CHALLENGE_STATUS_CONFIG[selectedChallenge.status].bgColor,
+                      CHALLENGE_STATUS_CONFIG[selectedChallenge.status].color
                     )}
                   >
-                    {STATUS_CONFIG[selectedChallenge.status].label}
+                    {CHALLENGE_STATUS_CONFIG[selectedChallenge.status].label}
                   </span>
                   <h2 className="text-xl font-bold text-white">{selectedChallenge.name}</h2>
                 </div>
@@ -679,34 +657,18 @@ const Challenges: React.FC = () => {
                 <div className="card bg-dark-900/50">
                   <h3 className="font-medium text-white mb-3">Final Results</h3>
                   <div className="flex items-center gap-4">
-                    <div className="relative w-20 h-20">
-                      <svg className="w-full h-full -rotate-90">
-                        <circle
-                          cx="40"
-                          cy="40"
-                          r="35"
-                          className="fill-none stroke-dark-700 stroke-[6]"
-                        />
-                        <circle
-                          cx="40"
-                          cy="40"
-                          r="35"
-                          className={clsx(
-                            'fill-none stroke-[6] transition-all',
-                            selectedChallenge.completionRate >= 80
-                              ? 'stroke-accent-green'
-                              : selectedChallenge.completionRate >= 50
-                                ? 'stroke-primary-500'
-                                : 'stroke-accent-red'
-                          )}
-                          strokeDasharray={`${(selectedChallenge.completionRate / 100) * 220} 220`}
-                          strokeLinecap="round"
-                        />
-                      </svg>
-                      <span className="absolute inset-0 flex items-center justify-center text-lg font-bold text-white">
-                        {Math.round(selectedChallenge.completionRate)}%
-                      </span>
-                    </div>
+                    <CircularProgress
+                      percent={selectedChallenge.completionRate}
+                      size={80}
+                      gradientColors={
+                        selectedChallenge.completionRate >= 80
+                          ? ['#22c55e', '#22c55e']
+                          : selectedChallenge.completionRate >= 50
+                            ? ['#6366f1', '#8b5cf6']
+                            : ['#ef4444', '#ef4444']
+                      }
+                      gradientId={`final-results-${selectedChallenge.id}`}
+                    />
                     <div>
                       <p className="text-white font-medium">
                         {selectedChallenge.completionRate >= 80

@@ -68,6 +68,77 @@ Authenticate and receive JWT token.
 }
 ```
 
+**Note:** Also sets an HTTP-only cookie `refreshToken` for token refresh.
+
+---
+
+### POST `/auth/refresh`
+
+Refresh access token using refresh token cookie.
+
+**Request:**
+No body required. The refresh token is sent automatically via HTTP-only cookie.
+
+**Response:** `200 OK`
+
+```json
+{
+  "success": true,
+  "data": {
+    "token": "new-jwt-token"
+  }
+}
+```
+
+**Error Response:** `401 Unauthorized`
+
+```json
+{
+  "success": false,
+  "error": {
+    "message": "Invalid or expired refresh token"
+  }
+}
+```
+
+---
+
+### POST `/auth/logout`
+
+Logout and invalidate refresh token. **Requires authentication.**
+
+**Response:** `200 OK`
+
+```json
+{
+  "success": true,
+  "message": "Logged out successfully"
+}
+```
+
+---
+
+### GET `/auth/me`
+
+Get current authenticated user. **Requires authentication.**
+
+**Response:** `200 OK`
+
+```json
+{
+  "success": true,
+  "data": {
+    "user": {
+      "id": "uuid",
+      "email": "user@example.com",
+      "name": "John Doe",
+      "timezone": "America/New_York",
+      "createdAt": "2026-01-01T00:00:00Z"
+    }
+  }
+}
+```
+
 ---
 
 ## Habits
@@ -715,6 +786,347 @@ Get all streak information.
 
 ---
 
+### GET `/analytics/insights`
+
+Get AI-style insights and suggestions.
+
+**Response:** `200 OK`
+
+```json
+{
+  "success": true,
+  "data": {
+    "insights": [
+      {
+        "type": "streak_risk",
+        "title": "Streak at Risk",
+        "message": "Your 'Morning Exercise' streak of 12 days might break - you haven't logged it today!",
+        "habitId": "uuid",
+        "priority": "high"
+      },
+      {
+        "type": "improvement",
+        "title": "Great Progress!",
+        "message": "Your completion rate improved by 15% this week compared to last week.",
+        "priority": "low"
+      },
+      {
+        "type": "suggestion",
+        "title": "Try Stacking",
+        "message": "You complete 'Read Book' and 'Meditation' together 80% of the time. Consider habit stacking!",
+        "priority": "medium"
+      }
+    ]
+  }
+}
+```
+
+---
+
+### GET `/analytics/calendar`
+
+Get detailed day-by-day data for calendar view.
+
+**Query Parameters:**
+| Param | Type | Default | Description |
+|-------|------|---------|-------------|
+| `startDate` | string (YYYY-MM-DD) | 30 days ago | Start of range |
+| `endDate` | string (YYYY-MM-DD) | today | End of range |
+
+**Response:** `200 OK`
+
+```json
+{
+  "success": true,
+  "data": {
+    "days": [
+      {
+        "date": "2026-01-29",
+        "completed": 4,
+        "total": 5,
+        "percentage": 80,
+        "habits": [
+          {
+            "id": "uuid",
+            "name": "Exercise",
+            "color": "#10B981",
+            "icon": "🏃",
+            "completed": true,
+            "value": null
+          },
+          {
+            "id": "uuid-2",
+            "name": "Read",
+            "color": "#3B82F6",
+            "icon": "📚",
+            "completed": false,
+            "value": null
+          }
+        ]
+      }
+    ],
+    "summary": {
+      "totalCompleted": 120,
+      "totalPossible": 150,
+      "percentage": 80
+    }
+  }
+}
+```
+
+---
+
+### GET `/analytics/categories`
+
+Get category-wise completion breakdown.
+
+**Response:** `200 OK`
+
+```json
+{
+  "success": true,
+  "data": {
+    "categories": [
+      {
+        "category": "Health",
+        "habitCount": 3,
+        "completedToday": 2,
+        "completionRate": 85.5,
+        "habits": ["Exercise", "Drink Water", "Sleep 8hrs"]
+      },
+      {
+        "category": "Learning",
+        "habitCount": 2,
+        "completedToday": 1,
+        "completionRate": 72.3,
+        "habits": ["Read Book", "Practice Coding"]
+      }
+    ]
+  }
+}
+```
+
+---
+
+### GET `/analytics/comparison`
+
+Get week-over-week comparison.
+
+**Response:** `200 OK`
+
+```json
+{
+  "success": true,
+  "data": {
+    "thisWeek": {
+      "completed": 28,
+      "total": 35,
+      "percentage": 80
+    },
+    "lastWeek": {
+      "completed": 25,
+      "total": 35,
+      "percentage": 71.4
+    },
+    "change": {
+      "absolute": 3,
+      "percentage": 8.6,
+      "trend": "improving"
+    }
+  }
+}
+```
+
+---
+
+### GET `/analytics/trend`
+
+Get monthly trend data (last 30 days rolling).
+
+**Response:** `200 OK`
+
+```json
+{
+  "success": true,
+  "data": {
+    "trend": [
+      { "date": "2026-01-01", "completed": 4, "total": 5, "percentage": 80 },
+      { "date": "2026-01-02", "completed": 5, "total": 5, "percentage": 100 }
+    ],
+    "average": 82.5,
+    "best": { "date": "2026-01-15", "percentage": 100 },
+    "worst": { "date": "2026-01-10", "percentage": 40 }
+  }
+}
+```
+
+---
+
+### GET `/analytics/productivity`
+
+Get comprehensive productivity score with breakdown.
+
+**Response:** `200 OK`
+
+```json
+{
+  "success": true,
+  "data": {
+    "score": 78,
+    "grade": "B",
+    "trend": "improving",
+    "breakdown": {
+      "consistency": 32,
+      "streaks": 24,
+      "completion": 22
+    }
+  }
+}
+```
+
+**Score Components:**
+
+- `consistency` (0-40): Days with at least one completion in last 30 days
+- `streaks` (0-30): Based on current active streak lengths
+- `completion` (0-30): Overall completion rate
+
+**Grades:**
+
+- A: 85-100
+- B: 70-84
+- C: 55-69
+- D: 40-54
+- F: 0-39
+
+---
+
+### GET `/analytics/performance`
+
+Get best and worst performing days/habits analysis.
+
+**Response:** `200 OK`
+
+```json
+{
+  "success": true,
+  "data": {
+    "bestDayOfWeek": {
+      "day": "Monday",
+      "dayNumber": 1,
+      "completionRate": 92.5
+    },
+    "worstDayOfWeek": {
+      "day": "Saturday",
+      "dayNumber": 6,
+      "completionRate": 55.0
+    },
+    "byDayOfWeek": [
+      { "day": "Sunday", "dayNumber": 0, "completionRate": 65.0, "completions": 13 },
+      { "day": "Monday", "dayNumber": 1, "completionRate": 92.5, "completions": 18 }
+    ],
+    "mostConsistentHabit": {
+      "id": "uuid",
+      "name": "Morning Exercise",
+      "color": "#10B981",
+      "rate": 96.7
+    },
+    "leastConsistentHabit": {
+      "id": "uuid-2",
+      "name": "Evening Journal",
+      "color": "#F59E0B",
+      "rate": 43.3
+    }
+  }
+}
+```
+
+---
+
+### GET `/analytics/correlations`
+
+Find habits that tend to be completed together (or inversely).
+
+**Response:** `200 OK`
+
+```json
+{
+  "success": true,
+  "data": {
+    "correlations": [
+      {
+        "habit1": { "id": "uuid-1", "name": "Morning Exercise" },
+        "habit2": { "id": "uuid-2", "name": "Healthy Breakfast" },
+        "correlation": 0.82,
+        "interpretation": "Strong positive - often completed together"
+      },
+      {
+        "habit1": { "id": "uuid-3", "name": "Late Night TV" },
+        "habit2": { "id": "uuid-4", "name": "Early Wake Up" },
+        "correlation": -0.65,
+        "interpretation": "Strong negative - rarely done on same day"
+      }
+    ]
+  }
+}
+```
+
+**Correlation Values:**
+
+- `> 0.5`: Strong positive correlation
+- `0.2 to 0.5`: Moderate positive correlation
+- `-0.2 to 0.2`: Weak/no correlation
+- `-0.5 to -0.2`: Moderate negative correlation
+- `< -0.5`: Strong negative correlation
+
+---
+
+### GET `/analytics/predictions`
+
+Get streak milestone predictions and risk assessment.
+
+**Response:** `200 OK`
+
+```json
+{
+  "success": true,
+  "data": {
+    "predictions": [
+      {
+        "habitId": "uuid",
+        "habitName": "Morning Exercise",
+        "currentStreak": 25,
+        "predictedDaysToMilestone": 5,
+        "nextMilestone": 30,
+        "riskLevel": "low",
+        "riskReason": null
+      },
+      {
+        "habitId": "uuid-2",
+        "habitName": "Read Book",
+        "currentStreak": 12,
+        "predictedDaysToMilestone": 9,
+        "nextMilestone": 21,
+        "riskLevel": "medium",
+        "riskReason": "Missed some days recently"
+      },
+      {
+        "habitId": "uuid-3",
+        "habitName": "Meditation",
+        "currentStreak": 5,
+        "predictedDaysToMilestone": 2,
+        "nextMilestone": 7,
+        "riskLevel": "high",
+        "riskReason": "Declining activity pattern"
+      }
+    ]
+  }
+}
+```
+
+**Milestone Targets:** 7, 14, 21, 30, 60, 90, 100, 180, 365 days
+
+---
+
 ## Milestones
 
 ### GET `/milestones`
@@ -1077,6 +1489,46 @@ Get all books for the user.
 
 ---
 
+### GET `/books/current`
+
+Get the currently reading book (for dashboard widget). Returns the most recently started book with status "READING".
+
+**Response:** `200 OK`
+
+```json
+{
+  "success": true,
+  "data": {
+    "book": {
+      "id": "uuid",
+      "title": "Atomic Habits",
+      "author": "James Clear",
+      "coverUrl": "https://...",
+      "totalPages": 320,
+      "currentPage": 150,
+      "progress": 47,
+      "status": "READING",
+      "startedAt": "2026-01-15T00:00:00Z",
+      "pagesReadThisWeek": 45,
+      "estimatedDaysToFinish": 12
+    }
+  }
+}
+```
+
+**Response when no book is being read:** `200 OK`
+
+```json
+{
+  "success": true,
+  "data": {
+    "book": null
+  }
+}
+```
+
+---
+
 ### POST `/books`
 
 Add a new book.
@@ -1380,7 +1832,104 @@ Cancel/delete a challenge.
 
 ---
 
-## API Access (Future)
+## User Profile
+
+### GET `/user/profile`
+
+Get current user profile.
+
+**Response:** `200 OK`
+
+```json
+{
+  "success": true,
+  "data": {
+    "user": {
+      "id": "uuid",
+      "email": "user@example.com",
+      "name": "John Doe",
+      "timezone": "America/New_York",
+      "createdAt": "2026-01-01T00:00:00Z",
+      "updatedAt": "2026-01-29T00:00:00Z"
+    }
+  }
+}
+```
+
+---
+
+### PUT `/user/profile`
+
+Update user profile.
+
+**Request:**
+
+```json
+{
+  "name": "John Updated",
+  "timezone": "Europe/London"
+}
+```
+
+**Response:** `200 OK`
+
+```json
+{
+  "success": true,
+  "data": {
+    "user": {
+      "id": "uuid",
+      "email": "user@example.com",
+      "name": "John Updated",
+      "timezone": "Europe/London"
+    }
+  }
+}
+```
+
+---
+
+### GET `/user/export`
+
+Export all user data (GDPR compliance).
+
+**Response:** `200 OK`
+
+```json
+{
+  "success": true,
+  "data": {
+    "user": { "...": "user profile data" },
+    "habits": ["...array of all habits..."],
+    "habitLogs": ["...array of all logs..."],
+    "books": ["...array of all books..."],
+    "challenges": ["...array of all challenges..."],
+    "exportedAt": "2026-01-29T12:00:00Z"
+  }
+}
+```
+
+---
+
+## API Key Management
+
+### GET `/user/api-key`
+
+Check if user has an API key (does not return the key itself).
+
+**Response:** `200 OK`
+
+```json
+{
+  "success": true,
+  "data": {
+    "hasApiKey": true,
+    "createdAt": "2026-01-29T00:00:00Z"
+  }
+}
+```
+
+---
 
 ### POST `/user/api-key`
 
@@ -1416,22 +1965,266 @@ Revoke API key.
 
 ---
 
-### External API Usage (Future)
+## Error Responses
 
-When API key is implemented, external apps can use:
+All endpoints return consistent error format:
+
+```json
+{
+  "success": false,
+  "error": {
+    "message": "Error description",
+    "code": "ERROR_CODE",
+    "details": {}
+  }
+}
+```
+
+**Common HTTP Status Codes:**
+| Code | Meaning |
+|------|---------|
+| 400 | Bad Request - Invalid input |
+| 401 | Unauthorized - Missing or invalid token |
+| 403 | Forbidden - No permission |
+| 404 | Not Found - Resource doesn't exist |
+| 422 | Validation Error - Invalid data format |
+| 429 | Too Many Requests - Rate limited |
+| 500 | Server Error |
+
+---
+
+## Rate Limiting
+
+- **Auth endpoints**: 5 requests per minute per IP
+- **All other endpoints**: 100 requests per minute per user
+
+---
+
+## AI Integration Guide
+
+This API is designed for easy integration with AI agents, automation tools, and external applications.
+
+### Quick Start for AI Agents
+
+1. **Authenticate** with email/password to get JWT token
+2. **Include token** in all requests: `Authorization: Bearer <token>`
+3. **Use refresh endpoint** when token expires (15 min)
+
+### Recommended Endpoints for AI
+
+#### Daily Check-in Flow
+
+```bash
+# 1. Get today's habits
+GET /api/tracking/today
+
+# 2. Mark habit complete
+POST /api/tracking/check-in
+{
+  "habitId": "uuid",
+  "completed": true,
+  "value": null,
+  "date": "2026-01-29"
+}
+
+# 3. Get updated stats
+GET /api/analytics/overview
+```
+
+#### Insights & Analysis
+
+```bash
+# Get productivity score
+GET /api/analytics/productivity
+
+# Get streak predictions (who's at risk?)
+GET /api/analytics/predictions
+
+# Get habit correlations
+GET /api/analytics/correlations
+
+# Get personalized insights
+GET /api/analytics/insights
+```
+
+#### Reading Progress
+
+```bash
+# Get current book
+GET /api/books/current
+
+# Update pages read
+PUT /api/books/:id/progress
+{ "currentPage": 175 }
+```
+
+### Example: Voice Assistant Integration
+
+```python
+# Example Python code for voice assistant
+import requests
+
+BASE_URL = "http://localhost:8080/api"
+TOKEN = "your-jwt-token"
+
+headers = {"Authorization": f"Bearer {TOKEN}"}
+
+# User says: "Mark exercise as done"
+def mark_habit_done(habit_name):
+    # Get today's habits
+    today = requests.get(f"{BASE_URL}/tracking/today", headers=headers).json()
+
+    # Find matching habit
+    habits = today["data"]["habits"]
+    habit = next((h for h in habits if habit_name.lower() in h["name"].lower()), None)
+
+    if habit:
+        # Mark complete
+        requests.post(f"{BASE_URL}/tracking/check-in",
+            headers=headers,
+            json={"habitId": habit["id"], "completed": True}
+        )
+        return f"✅ {habit['name']} marked complete! Streak: {habit['currentStreak'] + 1} days"
+
+    return "Habit not found"
+
+# User says: "How am I doing?"
+def get_summary():
+    overview = requests.get(f"{BASE_URL}/analytics/overview", headers=headers).json()
+    data = overview["data"]
+
+    return f"""
+    Today: {data['completedToday']}/{data['totalToday']} habits ({data['todayPercentage']}%)
+    Best streak: {data['currentBestStreak']} days
+    Monthly average: {data['monthlyCompletionRate']}%
+    """
+```
+
+### Example: Zapier/Make.com Integration
+
+**Trigger:** Daily at 8 PM
 
 ```
-Authorization: Bearer ht_live_xxxxxxxxxxxxxxxxxxxx
+1. GET /api/tracking/today
+2. Filter incomplete habits
+3. Send notification: "You have 3 habits left: Exercise, Read, Meditate"
 ```
 
-**Endpoints available via API key:**
-
-- `POST /api/external/check-in` - Quick habit check-in
-- `GET /api/external/today` - Get today's habits status
-
-**Example WhatsApp Integration (Future):**
+**Trigger:** When streak reaches milestone
 
 ```
-You: "done exercise"
-Bot: ✅ Morning Exercise marked complete! 🔥 Streak: 7 days
+1. GET /api/analytics/streaks
+2. Check for new milestones
+3. Send celebration message
 ```
+
+### Example: n8n Workflow
+
+```json
+{
+  "nodes": [
+    {
+      "name": "Check Streaks at Risk",
+      "type": "HTTP Request",
+      "parameters": {
+        "url": "http://localhost:8080/api/analytics/predictions",
+        "method": "GET",
+        "headers": {
+          "Authorization": "Bearer {{$json.token}}"
+        }
+      }
+    },
+    {
+      "name": "Filter High Risk",
+      "type": "Filter",
+      "parameters": {
+        "conditions": {
+          "string": [{ "value1": "={{$json.riskLevel}}", "value2": "high" }]
+        }
+      }
+    },
+    {
+      "name": "Send Alert",
+      "type": "Telegram",
+      "parameters": {
+        "text": "⚠️ Streak at risk: {{$json.habitName}} ({{$json.currentStreak}} days)"
+      }
+    }
+  ]
+}
+```
+
+### Webhooks (Future)
+
+Planned webhook events for real-time integrations:
+
+- `habit.completed` - When a habit is checked off
+- `streak.milestone` - When a streak milestone is reached
+- `streak.broken` - When a streak is broken
+- `challenge.completed` - When a challenge is finished
+
+### Best Practices for AI Integration
+
+1. **Cache tokens**: Store JWT and only refresh when expired
+2. **Use bulk operations**: Fetch all habits once, don't call per habit
+3. **Respect rate limits**: 100 req/min for authenticated endpoints
+4. **Handle errors gracefully**: Check `success` field in responses
+5. **Use insights endpoint**: Pre-computed insights are more efficient than calculating yourself
+
+### Full Endpoint Reference
+
+| Category       | Method | Endpoint                | Description             |
+| -------------- | ------ | ----------------------- | ----------------------- |
+| **Auth**       | POST   | /auth/register          | Create account          |
+|                | POST   | /auth/login             | Get JWT token           |
+|                | POST   | /auth/refresh           | Refresh token           |
+|                | POST   | /auth/logout            | Invalidate session      |
+|                | GET    | /auth/me                | Get current user        |
+| **Habits**     | GET    | /habits                 | List all habits         |
+|                | POST   | /habits                 | Create habit            |
+|                | GET    | /habits/:id             | Get habit details       |
+|                | PATCH  | /habits/:id             | Update habit            |
+|                | DELETE | /habits/:id             | Delete habit            |
+|                | POST   | /habits/:id/archive     | Archive habit           |
+|                | POST   | /habits/:id/unarchive   | Restore habit           |
+|                | GET    | /habits/archived        | List archived           |
+| **Tracking**   | GET    | /tracking/today         | Today's habits + status |
+|                | POST   | /tracking/check-in      | Complete a habit        |
+|                | DELETE | /tracking/check-in      | Undo completion         |
+|                | GET    | /tracking/history       | Historical logs         |
+|                | GET    | /tracking/date/:date    | Specific day data       |
+| **Analytics**  | GET    | /analytics/overview     | Dashboard stats         |
+|                | GET    | /analytics/weekly       | Weekly breakdown        |
+|                | GET    | /analytics/monthly      | Monthly breakdown       |
+|                | GET    | /analytics/heatmap      | Year heatmap            |
+|                | GET    | /analytics/habits/:id   | Per-habit stats         |
+|                | GET    | /analytics/streaks      | All streaks             |
+|                | GET    | /analytics/insights     | AI insights             |
+|                | GET    | /analytics/calendar     | Calendar data           |
+|                | GET    | /analytics/categories   | Category breakdown      |
+|                | GET    | /analytics/comparison   | Week comparison         |
+|                | GET    | /analytics/trend        | 30-day trend            |
+|                | GET    | /analytics/productivity | Productivity score      |
+|                | GET    | /analytics/performance  | Best/worst analysis     |
+|                | GET    | /analytics/correlations | Habit correlations      |
+|                | GET    | /analytics/predictions  | Streak predictions      |
+| **Books**      | GET    | /books                  | List all books          |
+|                | GET    | /books/current          | Currently reading       |
+|                | POST   | /books                  | Add book                |
+|                | PATCH  | /books/:id              | Update book             |
+|                | DELETE | /books/:id              | Delete book             |
+|                | PUT    | /books/:id/progress     | Update pages            |
+|                | POST   | /books/:id/log          | Log reading session     |
+|                | GET    | /books/stats            | Reading stats           |
+| **Challenges** | GET    | /challenges             | List challenges         |
+|                | POST   | /challenges             | Create challenge        |
+|                | GET    | /challenges/:id         | Challenge details       |
+|                | DELETE | /challenges/:id         | Cancel challenge        |
+| **User**       | GET    | /user/profile           | Get profile             |
+|                | PUT    | /user/profile           | Update profile          |
+|                | GET    | /user/export            | Export all data         |
+|                | GET    | /user/api-key           | Check API key           |
+|                | POST   | /user/api-key           | Generate API key        |
+|                | DELETE | /user/api-key           | Revoke API key          |
+| **Templates**  | GET    | /templates              | Habit templates         |
+|                | POST   | /templates/:id/use      | Use template            |

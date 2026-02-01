@@ -3,31 +3,30 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Plus,
   BookOpen,
-  Loader2,
   Pencil,
   Trash2,
   X,
   Star,
   Library,
-  Search,
   Filter,
   Calendar,
   FileText,
   Bookmark,
-  XCircle,
   CheckCircle,
   Clock,
   Target,
   Play,
   Minus,
   RotateCcw,
+  Loader2,
+  Search,
 } from 'lucide-react';
 import { format, parseISO, differenceInDays, addDays } from 'date-fns';
 import toast from 'react-hot-toast';
 import api from '../services/api';
 import clsx from 'clsx';
-
-type BookStatus = 'WANT_TO_READ' | 'READING' | 'FINISHED' | 'ABANDONED';
+import { CircularProgress } from '../components/ui';
+import { BOOK_STATUS_CONFIG, type BookStatus } from '../constants/status';
 
 interface Book {
   id: string;
@@ -83,79 +82,6 @@ const booksApi = {
   ): Promise<void> => {
     await api.post(`/books/${id}/log`, data);
   },
-};
-
-const STATUS_CONFIG: Record<
-  BookStatus,
-  { label: string; color: string; icon: React.ElementType; bgColor: string }
-> = {
-  WANT_TO_READ: {
-    label: 'Want to Read',
-    color: 'text-dark-300',
-    icon: Bookmark,
-    bgColor: 'bg-dark-700',
-  },
-  READING: {
-    label: 'Reading',
-    color: 'text-primary-400',
-    icon: BookOpen,
-    bgColor: 'bg-primary-500/20',
-  },
-  FINISHED: {
-    label: 'Finished',
-    color: 'text-accent-green',
-    icon: CheckCircle,
-    bgColor: 'bg-accent-green/20',
-  },
-  ABANDONED: { label: 'Abandoned', color: 'text-dark-500', icon: XCircle, bgColor: 'bg-dark-700' },
-};
-
-// Circular Progress Component
-const CircularProgress: React.FC<{ percent: number; size?: number; strokeWidth?: number }> = ({
-  percent,
-  size = 80,
-  strokeWidth = 6,
-}) => {
-  const radius = (size - strokeWidth) / 2;
-  const circumference = radius * 2 * Math.PI;
-  const offset = circumference - (percent / 100) * circumference;
-
-  return (
-    <div className="relative" style={{ width: size, height: size }}>
-      <svg width={size} height={size} className="transform -rotate-90">
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          stroke="currentColor"
-          strokeWidth={strokeWidth}
-          fill="none"
-          className="text-dark-700"
-        />
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          stroke="url(#progressGradient)"
-          strokeWidth={strokeWidth}
-          fill="none"
-          strokeLinecap="round"
-          strokeDasharray={circumference}
-          strokeDashoffset={offset}
-          className="transition-all duration-500"
-        />
-        <defs>
-          <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#6366f1" />
-            <stop offset="100%" stopColor="#8b5cf6" />
-          </linearGradient>
-        </defs>
-      </svg>
-      <div className="absolute inset-0 flex items-center justify-center">
-        <span className="text-lg font-bold text-white">{percent}%</span>
-      </div>
-    </div>
-  );
 };
 
 const Books: React.FC = () => {
@@ -904,8 +830,8 @@ const Books: React.FC = () => {
           >
             All ({books.length})
           </button>
-          {(Object.keys(STATUS_CONFIG) as BookStatus[]).map((status) => {
-            const config = STATUS_CONFIG[status];
+          {(Object.keys(BOOK_STATUS_CONFIG) as BookStatus[]).map((status) => {
+            const config = BOOK_STATUS_CONFIG[status];
             const count = books.filter((b) => b.status === status).length;
             return (
               <button
@@ -1003,7 +929,7 @@ const Books: React.FC = () => {
                 ...(filterStatus === 'ABANDONED' ? [] : groupedBooks.FINISHED),
                 ...(filterStatus === 'FINISHED' ? [] : groupedBooks.ABANDONED),
               ].map((book) => {
-                const config = STATUS_CONFIG[book.status];
+                const config = BOOK_STATUS_CONFIG[book.status];
                 const StatusIcon = config.icon;
                 return (
                   <div
@@ -1136,11 +1062,11 @@ const Books: React.FC = () => {
                   <span
                     className={clsx(
                       'badge mb-2',
-                      STATUS_CONFIG[selectedBook.status].bgColor,
-                      STATUS_CONFIG[selectedBook.status].color
+                      BOOK_STATUS_CONFIG[selectedBook.status].bgColor,
+                      BOOK_STATUS_CONFIG[selectedBook.status].color
                     )}
                   >
-                    {STATUS_CONFIG[selectedBook.status].label}
+                    {BOOK_STATUS_CONFIG[selectedBook.status].label}
                   </span>
                   <h2 className="text-xl font-bold text-white line-clamp-2">
                     {selectedBook.title}
@@ -1502,8 +1428,8 @@ const Books: React.FC = () => {
               <div>
                 <label className="label">Status</label>
                 <div className="grid grid-cols-2 gap-2">
-                  {(Object.keys(STATUS_CONFIG) as BookStatus[]).map((status) => {
-                    const config = STATUS_CONFIG[status];
+                  {(Object.keys(BOOK_STATUS_CONFIG) as BookStatus[]).map((status) => {
+                    const config = BOOK_STATUS_CONFIG[status];
                     const StatusIcon = config.icon;
                     return (
                       <button

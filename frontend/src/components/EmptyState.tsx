@@ -1,70 +1,12 @@
 import React from 'react';
-import {
-  Zap,
-  BookOpen,
-  Dumbbell,
-  Brain,
-  Moon,
-  Droplets,
-  PenLine,
-  Coffee,
-  Target,
-  Plus,
-  Sparkles,
-  ArrowRight,
-} from 'lucide-react';
+import { Target, Plus, Sparkles, ArrowRight, Zap, BookOpen, Coffee } from 'lucide-react';
+import { SUGGESTED_HABITS } from '../constants/habits';
 
 interface EmptyStateProps {
   type: 'habits' | 'books' | 'challenges' | 'analytics' | 'dashboard';
   onAction?: () => void;
   actionLabel?: string;
 }
-
-// Suggested habits for new users
-const SUGGESTED_HABITS = [
-  {
-    name: 'Drink Water',
-    icon: Droplets,
-    color: '#3b82f6',
-    description: '8 glasses daily',
-    category: 'Health',
-  },
-  {
-    name: 'Exercise',
-    icon: Dumbbell,
-    color: '#ef4444',
-    description: '30 min workout',
-    category: 'Fitness',
-  },
-  {
-    name: 'Read',
-    icon: BookOpen,
-    color: '#8b5cf6',
-    description: '20 pages daily',
-    category: 'Learning',
-  },
-  {
-    name: 'Meditate',
-    icon: Brain,
-    color: '#14b8a6',
-    description: '10 min mindfulness',
-    category: 'Mindfulness',
-  },
-  {
-    name: 'Sleep 8 Hours',
-    icon: Moon,
-    color: '#6366f1',
-    description: 'Better rest',
-    category: 'Health',
-  },
-  {
-    name: 'Journal',
-    icon: PenLine,
-    color: '#f59e0b',
-    description: 'Daily reflection',
-    category: 'Mindfulness',
-  },
-];
 
 const EmptyState: React.FC<EmptyStateProps> = ({ type, onAction, actionLabel }) => {
   if (type === 'habits') {

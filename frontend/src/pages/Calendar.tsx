@@ -3,7 +3,6 @@ import { useQuery } from '@tanstack/react-query';
 import {
   ChevronLeft,
   ChevronRight,
-  Loader2,
   CheckCircle2,
   Circle,
   Calendar as CalendarIcon,
@@ -11,6 +10,7 @@ import {
   BarChart3,
   TrendingUp,
   Target,
+  Loader2,
 } from 'lucide-react';
 import {
   format,
@@ -30,8 +30,16 @@ import {
 } from 'date-fns';
 import { analyticsApi } from '../services/habits';
 import clsx from 'clsx';
+import { ViewToggle, type ViewOption } from '../components/ui';
 
 type ViewMode = 'calendar' | 'heatmap' | 'stats';
+
+// View mode options
+const VIEW_MODE_OPTIONS: ViewOption<ViewMode>[] = [
+  { id: 'calendar', icon: CalendarIcon, label: 'Calendar' },
+  { id: 'heatmap', icon: Grid3X3, label: 'Heatmap' },
+  { id: 'stats', icon: BarChart3, label: 'Stats' },
+];
 
 interface CalendarDay {
   date: string;
@@ -114,27 +122,7 @@ const Calendar: React.FC = () => {
   );
 
   const renderViewToggle = () => (
-    <div className="flex items-center gap-1 p-1 bg-dark-800 rounded-lg">
-      {[
-        { id: 'calendar', icon: CalendarIcon, label: 'Calendar' },
-        { id: 'heatmap', icon: Grid3X3, label: 'Heatmap' },
-        { id: 'stats', icon: BarChart3, label: 'Stats' },
-      ].map(({ id, icon: Icon, label }) => (
-        <button
-          key={id}
-          onClick={() => setViewMode(id as ViewMode)}
-          className={clsx(
-            'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all',
-            viewMode === id
-              ? 'bg-primary-600 text-white'
-              : 'text-dark-400 hover:text-white hover:bg-dark-700'
-          )}
-        >
-          <Icon size={16} />
-          <span className="hidden sm:inline">{label}</span>
-        </button>
-      ))}
-    </div>
+    <ViewToggle value={viewMode} onChange={setViewMode} options={VIEW_MODE_OPTIONS} />
   );
 
   const renderDays = () => {

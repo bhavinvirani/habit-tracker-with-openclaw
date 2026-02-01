@@ -41,6 +41,7 @@ module.exports = {
           pink: '#ec4899',
           cyan: '#06b6d4',
           orange: '#f97316',
+          blue: '#3b82f6',
         },
       },
       boxShadow: {

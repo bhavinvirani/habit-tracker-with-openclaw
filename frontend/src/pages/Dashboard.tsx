@@ -4,20 +4,28 @@ import {
   CheckCircle2,
   Flame,
   TrendingUp,
-  Loader2,
   Plus,
-  Sparkles,
   CalendarDays,
   Trophy,
   Clock,
+  BookOpen,
+  Sparkles,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { trackingApi, analyticsApi, habitsApi, TodayHabit, WeeklyDay } from '../services/habits';
+import {
+  trackingApi,
+  analyticsApi,
+  habitsApi,
+  booksApi,
+  TodayHabit,
+  WeeklyDay,
+} from '../services/habits';
 import { format, subDays } from 'date-fns';
 import clsx from 'clsx';
 import HabitModal from '../components/habits/HabitModal';
 import { Habit } from '../types';
+import { LoadingSpinner, PageHeader, StatCard, CircularProgress, Button } from '../components/ui';
 
 const Dashboard: React.FC = () => {
   const queryClient = useQueryClient();
@@ -39,6 +47,12 @@ const Dashboard: React.FC = () => {
   const { data: weeklyData } = useQuery({
     queryKey: ['weekly'],
     queryFn: () => analyticsApi.getWeekly(),
+  });
+
+  // Fetch currently reading book
+  const { data: currentBook } = useQuery({
+    queryKey: ['currentBook'],
+    queryFn: booksApi.getCurrentlyReading,
   });
 
   // Create habit mutation
@@ -93,6 +107,19 @@ const Dashboard: React.FC = () => {
     },
   });
 
+  // Update book progress mutation
+  const updateBookProgressMutation = useMutation({
+    mutationFn: ({ bookId, currentPage }: { bookId: string; currentPage: number }) =>
+      booksApi.updateProgress(bookId, currentPage),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['currentBook'] });
+      toast.success('Reading progress updated! 📚');
+    },
+    onError: () => {
+      toast.error('Failed to update progress');
+    },
+  });
+
   // Handle habit click - increment for numeric habits, toggle for boolean
   const handleHabitClick = (habit: {
     id: string;
@@ -130,11 +157,7 @@ const Dashboard: React.FC = () => {
   const isLoading = loadingToday || loadingStats;
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-96">
-        <Loader2 className="w-8 h-8 animate-spin text-primary-500" />
-      </div>
-    );
+    return <LoadingSpinner />;
   }
 
   const habits = todayData?.habits || [];
@@ -176,15 +199,81 @@ const Dashboard: React.FC = () => {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-white">Dashboard</h1>
-          <p className="text-dark-400 mt-1">{format(new Date(), 'EEEE, MMMM d, yyyy')}</p>
+      <PageHeader
+        title="Dashboard"
+        subtitle={format(new Date(), 'EEEE, MMMM d, yyyy')}
+        action={
+          <Button icon={Plus} onClick={() => setIsModalOpen(true)}>
+            New Habit
+          </Button>
+        }
+      />
+
+      {/* Today's Progress Ring + Stats */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Progress Ring */}
+        <div className="card flex flex-col items-center justify-center py-8">
+          <CircularProgress
+            percent={percentage}
+            size={160}
+            strokeWidth={12}
+            gradientColors={['#6366f1', '#22c55e']}
+            label="complete"
+            gradientId="dashboardProgress"
+          />
+          <div className="mt-4 text-center">
+            <p className="text-lg font-semibold text-white">Today's Progress</p>
+            <p className="text-dark-400">
+              {completedCount} of {totalCount} habits done
+            </p>
+          </div>
         </div>
-        <button onClick={() => setIsModalOpen(true)} className="btn btn-primary">
-          <Plus size={18} />
-          New Habit
-        </button>
+
+        {/* Stats Cards - Compact Row */}
+        <div className="card p-4">
+          <h3 className="text-sm font-medium text-dark-400 uppercase tracking-wider mb-4">
+            Your Stats
+          </h3>
+          <div className="grid grid-cols-3 gap-3">
+            <StatCard
+              icon={Flame}
+              value={stats?.currentBestStreak || 0}
+              label="Current Streak"
+              color="orange"
+            />
+            <StatCard
+              icon={Trophy}
+              value={stats?.longestEverStreak || 0}
+              label="Best Streak"
+              color="green"
+            />
+            <StatCard
+              icon={TrendingUp}
+              value={stats?.monthlyCompletionRate || 0}
+              label="30-Day Avg"
+              suffix="%"
+              color="purple"
+            />
+          </div>
+
+          {/* Additional Quick Stats */}
+          <div className="grid grid-cols-2 gap-3 mt-4 pt-4 border-t border-dark-700">
+            <StatCard
+              icon={CheckCircle2}
+              value={stats?.totalCompletions || 0}
+              label="Total Check-ins"
+              color="primary"
+              variant="minimal"
+            />
+            <StatCard
+              icon={CalendarDays}
+              value={stats?.activeHabits || 0}
+              label="Active Habits"
+              color="yellow"
+              variant="minimal"
+            />
+          </div>
+        </div>
       </div>
 
       {/* Mini Heatmap - Last 14 Days */}
@@ -239,111 +328,122 @@ const Dashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Today's Progress Ring + Stats */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Progress Ring */}
-        <div className="card flex flex-col items-center justify-center py-8">
-          <div className="relative w-40 h-40">
-            {/* Background circle */}
-            <svg className="w-full h-full transform -rotate-90">
-              <circle
-                cx="80"
-                cy="80"
-                r="70"
-                stroke="currentColor"
-                strokeWidth="12"
-                fill="none"
-                className="text-dark-700"
-              />
-              {/* Progress circle */}
-              <circle
-                cx="80"
-                cy="80"
-                r="70"
-                stroke="url(#progressGradient)"
-                strokeWidth="12"
-                fill="none"
-                strokeLinecap="round"
-                strokeDasharray={2 * Math.PI * 70}
-                strokeDashoffset={2 * Math.PI * 70 * (1 - percentage / 100)}
-                className="transition-all duration-700 ease-out"
-              />
-              <defs>
-                <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stopColor="#6366f1" />
-                  <stop offset="100%" stopColor="#22c55e" />
-                </linearGradient>
-              </defs>
-            </svg>
-            {/* Center text */}
-            <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-4xl font-bold text-white">{percentage}%</span>
-              <span className="text-sm text-dark-400">complete</span>
-            </div>
+      {/* Currently Reading Widget - Compact with Progress Bar */}
+      <div className="card p-4">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <BookOpen className="w-4 h-4 text-accent-blue" />
+            <h3 className="text-sm font-medium text-white">Currently Reading</h3>
           </div>
-          <div className="mt-4 text-center">
-            <p className="text-lg font-semibold text-white">Today's Progress</p>
-            <p className="text-dark-400">
-              {completedCount} of {totalCount} habits done
-            </p>
-          </div>
+          <Link to="/books" className="text-xs text-primary-400 hover:text-primary-300">
+            View all →
+          </Link>
         </div>
 
-        {/* Stats Cards - Compact Row */}
-        <div className="card p-4">
-          <h3 className="text-sm font-medium text-dark-400 uppercase tracking-wider mb-4">
-            Your Stats
-          </h3>
-          <div className="grid grid-cols-3 gap-3">
-            {/* Current Streak */}
-            <div className="flex flex-col items-center p-4 rounded-xl bg-accent-orange/10 border border-accent-orange/20">
-              <Flame className="w-6 h-6 text-accent-orange mb-2" />
-              <span className="text-2xl font-bold text-accent-orange">
-                {stats?.currentBestStreak || 0}
-              </span>
-              <span className="text-xs text-dark-400 text-center mt-1">Current Streak</span>
-            </div>
+        <div className="flex items-center gap-4">
+          {/* Book Icon / Cover */}
+          <Link to="/books" className="flex-shrink-0">
+            {currentBook?.coverUrl ? (
+              <div className="w-12 h-16 rounded-lg overflow-hidden hover:scale-105 transition-transform">
+                <img
+                  src={currentBook.coverUrl}
+                  alt={currentBook.title}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            ) : (
+              <div className="w-12 h-12 rounded-xl bg-accent-blue/20 flex items-center justify-center">
+                <BookOpen className="w-6 h-6 text-accent-blue" />
+              </div>
+            )}
+          </Link>
 
-            {/* Longest Streak */}
-            <div className="flex flex-col items-center p-4 rounded-xl bg-accent-green/10 border border-accent-green/20">
-              <Trophy className="w-6 h-6 text-accent-green mb-2" />
-              <span className="text-2xl font-bold text-accent-green">
-                {stats?.longestEverStreak || 0}
-              </span>
-              <span className="text-xs text-dark-400 text-center mt-1">Best Streak</span>
-            </div>
-
-            {/* Avg Completion */}
-            <div className="flex flex-col items-center p-4 rounded-xl bg-accent-purple/10 border border-accent-purple/20">
-              <TrendingUp className="w-6 h-6 text-accent-purple mb-2" />
-              <span className="text-2xl font-bold text-accent-purple">
-                {stats?.monthlyCompletionRate || 0}%
-              </span>
-              <span className="text-xs text-dark-400 text-center mt-1">30-Day Avg</span>
-            </div>
+          {/* Book Info & Progress */}
+          <div className="flex-1 min-w-0">
+            {currentBook ? (
+              <>
+                <div className="min-w-0">
+                  <h3 className="font-medium text-white text-sm truncate">{currentBook.title}</h3>
+                  <p className="text-xs text-dark-400 truncate">{currentBook.author}</p>
+                </div>
+                {/* Progress Bar */}
+                <div className="mt-2">
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 h-2 bg-dark-700 rounded-full overflow-hidden">
+                      <div
+                        className="h-full rounded-full transition-all duration-300"
+                        style={{
+                          width: `${currentBook.progress ?? (currentBook.totalPages ? Math.round((currentBook.currentPage / currentBook.totalPages) * 100) : 0)}%`,
+                          background: 'linear-gradient(to right, #3b82f6, #6366f1)',
+                        }}
+                      />
+                    </div>
+                    <span className="text-xs font-semibold text-blue-400 w-10 text-right">
+                      {currentBook.progress ??
+                        (currentBook.totalPages
+                          ? Math.round((currentBook.currentPage / currentBook.totalPages) * 100)
+                          : 0)}
+                      %
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between mt-1">
+                    <span className="text-xs text-dark-500">
+                      p.{currentBook.currentPage}
+                      {currentBook.totalPages ? `/${currentBook.totalPages}` : ''}
+                      {currentBook.pagesReadThisWeek > 0 && (
+                        <span className="text-dark-400">
+                          {' '}
+                          · {currentBook.pagesReadThisWeek} this week
+                        </span>
+                      )}
+                    </span>
+                    {currentBook.estimatedDaysToFinish && (
+                      <span className="text-xs text-dark-500">
+                        ~{currentBook.estimatedDaysToFinish}d left
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </>
+            ) : (
+              <p className="text-sm text-dark-400">
+                No book in progress. Start reading to track your progress!
+              </p>
+            )}
           </div>
 
-          {/* Additional Quick Stats */}
-          <div className="grid grid-cols-2 gap-3 mt-4 pt-4 border-t border-dark-700">
-            <div className="flex items-center gap-3 p-3 rounded-lg bg-dark-800/50">
-              <div className="w-10 h-10 rounded-lg bg-primary-500/20 flex items-center justify-center">
-                <CheckCircle2 className="w-5 h-5 text-primary-400" />
-              </div>
-              <div>
-                <span className="text-lg font-bold text-white">{stats?.totalCompletions || 0}</span>
-                <p className="text-xs text-dark-400">Total Check-ins</p>
-              </div>
+          {/* Quick Page Update Buttons */}
+          {currentBook && (
+            <div className="flex-shrink-0 flex gap-1.5">
+              {[5, 10, 25, 50].map((increment) => {
+                const newPage = currentBook.currentPage + increment;
+                const isDisabled = !!(currentBook.totalPages && newPage > currentBook.totalPages);
+                return (
+                  <button
+                    key={increment}
+                    onClick={() => {
+                      if (!isDisabled) {
+                        updateBookProgressMutation.mutate({
+                          bookId: currentBook.id,
+                          currentPage: Math.min(newPage, currentBook.totalPages || newPage),
+                        });
+                      }
+                    }}
+                    disabled={updateBookProgressMutation.isPending || isDisabled}
+                    className={clsx(
+                      'py-1.5 px-2.5 rounded-lg text-xs font-medium transition-all',
+                      isDisabled
+                        ? 'bg-dark-800 text-dark-600 cursor-not-allowed'
+                        : 'bg-dark-700 text-dark-300 hover:bg-accent-blue/20 hover:text-accent-blue'
+                    )}
+                  >
+                    +{increment}
+                  </button>
+                );
+              })}
             </div>
-            <div className="flex items-center gap-3 p-3 rounded-lg bg-dark-800/50">
-              <div className="w-10 h-10 rounded-lg bg-accent-yellow/20 flex items-center justify-center">
-                <CalendarDays className="w-5 h-5 text-accent-yellow" />
-              </div>
-              <div>
-                <span className="text-lg font-bold text-white">{stats?.activeHabits || 0}</span>
-                <p className="text-xs text-dark-400">Active Habits</p>
-              </div>
-            </div>
-          </div>
+          )}
         </div>
       </div>
 

@@ -4,6 +4,7 @@ import { Habit, HabitLog, Milestone, Prisma } from '@prisma/client';
 import { CheckInInput, UndoCheckInInput, HistoryQuery } from '../validators/tracking.validator';
 import * as habitService from './habit.service';
 import logger from '../utils/logger';
+import { getUserTimezone, getTodayForTimezone } from '../utils/timezone';
 import {
   endOfDay,
   subDays,
@@ -61,14 +62,6 @@ const COMPLETION_MILESTONES = [10, 25, 50, 100, 250, 500, 1000];
 // ============ HELPER FUNCTIONS ============
 
 /**
- * Get today's date as a Date object (UTC midnight)
- */
-function getTodayDate(): Date {
-  const today = new Date();
-  return new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()));
-}
-
-/**
  * Parse a date string (YYYY-MM-DD) to Date object (UTC midnight)
  */
 function parseDateString(dateStr: string): Date {
@@ -109,7 +102,11 @@ function shouldTrackOnDate(habit: Habit, date: Date): boolean {
 /**
  * Calculate streak for a habit
  */
-async function calculateStreak(habitId: string, userId: string): Promise<StreakInfo> {
+async function calculateStreak(
+  habitId: string,
+  userId: string,
+  todayOverride?: Date
+): Promise<StreakInfo> {
   const habit = await prisma.habit.findFirst({
     where: { id: habitId, userId },
   });
@@ -134,7 +131,7 @@ async function calculateStreak(habitId: string, userId: string): Promise<StreakI
     };
   }
 
-  const today = getTodayDate();
+  const today = todayOverride ?? getTodayForTimezone(await getUserTimezone(userId));
   let currentStreak = 0;
   let longestStreak = habit.longestStreak;
   const lastCompletedAt = logs[0].date;
@@ -265,8 +262,11 @@ async function checkMilestones(
 /**
  * Get today's habits with completion status
  */
-export async function getTodayHabits(userId: string): Promise<TodayHabit[]> {
-  const today = getTodayDate();
+export async function getTodayHabits(
+  userId: string
+): Promise<{ habits: TodayHabit[]; date: string }> {
+  const timezone = await getUserTimezone(userId);
+  const today = getTodayForTimezone(timezone);
 
   // Get all active, non-archived habits
   const habits = await prisma.habit.findMany({
@@ -294,7 +294,7 @@ export async function getTodayHabits(userId: string): Promise<TodayHabit[]> {
   const logMap = new Map(logs.map((log) => [log.habitId, log]));
 
   // Build response
-  return todayHabits.map((habit) => {
+  const todayHabitList = todayHabits.map((habit) => {
     const log = logMap.get(habit.id);
     return {
       id: habit.id,
@@ -315,6 +315,8 @@ export async function getTodayHabits(userId: string): Promise<TodayHabit[]> {
       logId: log?.id ?? null,
     };
   });
+
+  return { habits: todayHabitList, date: formatDate(today) };
 }
 
 /**
@@ -324,7 +326,8 @@ export async function checkIn(
   userId: string,
   data: CheckInInput
 ): Promise<{ log: HabitLog; streak: StreakInfo; milestones: Milestone[] }> {
-  const date = data.date ? parseDateString(data.date) : getTodayDate();
+  const timezone = await getUserTimezone(userId);
+  const date = data.date ? parseDateString(data.date) : getTodayForTimezone(timezone);
 
   // Verify habit ownership
   await habitService.getHabitById(data.habitId, userId);
@@ -399,7 +402,8 @@ export async function checkIn(
  * Undo a check-in (delete log)
  */
 export async function undoCheckIn(userId: string, data: UndoCheckInInput): Promise<void> {
-  const date = data.date ? parseDateString(data.date) : getTodayDate();
+  const timezone = await getUserTimezone(userId);
+  const date = data.date ? parseDateString(data.date) : getTodayForTimezone(timezone);
 
   // Verify habit ownership
   await habitService.getHabitById(data.habitId, userId);
@@ -507,7 +511,8 @@ export async function getHistory(
   userId: string,
   query: HistoryQuery
 ): Promise<{ entries: HeatmapEntry[]; logs: HabitLog[] }> {
-  const endDate = query.endDate ? parseDateString(query.endDate) : getTodayDate();
+  const timezone = await getUserTimezone(userId);
+  const endDate = query.endDate ? parseDateString(query.endDate) : getTodayForTimezone(timezone);
   const startDate = query.startDate
     ? parseDateString(query.startDate)
     : subDays(endDate, (query.limit || 90) - 1);

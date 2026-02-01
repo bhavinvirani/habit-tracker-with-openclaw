@@ -20,6 +20,10 @@ import {
   getCategoryBreakdown,
   getWeekComparison,
   getMonthlyTrend,
+  getProductivityScore,
+  getBestPerforming,
+  getCorrelations,
+  getPredictions,
 } from '../controllers/analytics.controller';
 
 const router = Router();
@@ -58,5 +62,17 @@ router.get('/comparison', getWeekComparison);
 
 // Monthly trend (last 30 days)
 router.get('/trend', getMonthlyTrend);
+
+// Productivity score with breakdown
+router.get('/productivity', getProductivityScore);
+
+// Best performing days and habits
+router.get('/performance', getBestPerforming);
+
+// Habit correlations
+router.get('/correlations', getCorrelations);
+
+// Streak predictions and risk
+router.get('/predictions', getPredictions);
 
 export default router;

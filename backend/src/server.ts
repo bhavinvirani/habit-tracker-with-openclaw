@@ -1,11 +1,14 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
 import logger from './utils/logger';
 import { requestLogger } from './middleware/requestLogger';
 import { errorHandler } from './middleware/errorHandler';
 import { notFoundHandler } from './middleware/notFoundHandler';
+import { generalLimiter } from './middleware/rateLimiter';
+import prisma from './config/database';
 import authRoutes from './routes/auth.routes';
 import habitRoutes from './routes/habit.routes';
 import templateRoutes from './routes/template.routes';
@@ -17,25 +20,55 @@ import challengeRoutes from './routes/challenge.routes';
 
 dotenv.config();
 
-const app = express();
-const PORT = process.env.PORT || 5000;
+// Validate critical environment variables (skip in test)
+if (process.env.NODE_ENV !== 'test') {
+  if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
+    logger.error('JWT_SECRET must be set and at least 32 characters');
+    process.exit(1);
+  }
+}
 
-// Middleware
+const app = express();
+const PORT = process.env.PORT || 8080;
+
+// Security middleware
 app.use(helmet());
 app.use(
   cors({
-    origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+    origin: (process.env.CORS_ORIGIN || 'http://localhost:3000').split(',').map((o) => o.trim()),
     credentials: true,
   })
 );
-app.use(requestLogger); // Custom request logger
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 
-// Health check
-app.get('/health', (_req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+// Cookie and request parsing
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+app.use(cookieParser() as any);
+app.use(requestLogger);
+app.use(express.json({ limit: '10kb' }));
+app.use(express.urlencoded({ extended: true, limit: '10kb' }));
+
+// Health check (before rate limiter)
+app.get('/health', async (_req, res) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    res.json({
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+      database: 'connected',
+      version: process.env.npm_package_version || '1.0.0',
+    });
+  } catch {
+    res.status(503).json({
+      status: 'error',
+      timestamp: new Date().toISOString(),
+      database: 'disconnected',
+    });
+  }
 });
+
+// Rate limiting for all API routes
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+app.use('/api', generalLimiter as any);
 
 // API Routes
 app.use('/api/auth', authRoutes);
@@ -52,11 +85,33 @@ app.use(notFoundHandler);
 app.use(errorHandler);
 
 app.listen(Number(PORT), '0.0.0.0', () => {
-  logger.info('🚀 Server started successfully', {
+  logger.info('Server started successfully', {
     port: PORT,
     environment: process.env.NODE_ENV || 'development',
     healthCheck: `http://localhost:${PORT}/health`,
   });
+
+  // Cleanup expired refresh tokens every hour
+  setInterval(
+    async () => {
+      try {
+        // Check if refreshToken model exists (migration may not have run yet)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const prismaAny = prisma as any;
+        if (prismaAny.refreshToken) {
+          const deleted = await prismaAny.refreshToken.deleteMany({
+            where: { expiresAt: { lt: new Date() } },
+          });
+          if (deleted.count > 0) {
+            logger.info(`Cleaned up ${deleted.count} expired refresh tokens`);
+          }
+        }
+      } catch (error) {
+        logger.error('Failed to cleanup expired tokens', { error });
+      }
+    },
+    60 * 60 * 1000
+  );
 });
 
 export default app;

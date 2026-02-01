@@ -13,6 +13,9 @@ model User {
   password String
   name     String
 
+  // User preferences
+  timezone String @default("UTC") // IANA timezone (e.g., "Asia/Kolkata")
+
   // API Access for future integrations (WhatsApp, automations, etc.)
   apiKey          String?   @unique
   apiKeyCreatedAt DateTime?
@@ -26,8 +29,23 @@ model User {
   books             Book[]
   challenges        Challenge[]
   challengeProgress ChallengeProgress[]
+  refreshTokens     RefreshToken[]
 
   @@map("users")
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("refresh_tokens")
 }
 
 model Habit {

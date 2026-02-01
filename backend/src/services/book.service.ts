@@ -359,3 +359,46 @@ export const getReadingStats = async (userId: string, query: ReadingStatsQueryIn
       })),
   };
 };
+
+// ============ GET CURRENTLY READING (for Dashboard) ============
+export const getCurrentlyReading = async (userId: string) => {
+  const book = await prisma.book.findFirst({
+    where: { userId, status: 'READING' },
+    orderBy: { updatedAt: 'desc' },
+    include: {
+      readingLogs: {
+        orderBy: { date: 'desc' },
+        take: 7,
+      },
+    },
+  });
+
+  if (!book) {
+    return null;
+  }
+
+  const progress = book.totalPages ? Math.round((book.currentPage / book.totalPages) * 100) : null;
+
+  const pagesReadThisWeek = book.readingLogs.reduce((sum, log) => sum + log.pagesRead, 0);
+  const avgPagesPerDay =
+    book.readingLogs.length > 0 ? Math.round(pagesReadThisWeek / book.readingLogs.length) : 0;
+
+  // Estimate days to finish
+  const pagesRemaining = book.totalPages ? book.totalPages - book.currentPage : null;
+  const estimatedDaysToFinish =
+    pagesRemaining && avgPagesPerDay > 0 ? Math.ceil(pagesRemaining / avgPagesPerDay) : null;
+
+  return {
+    id: book.id,
+    title: book.title,
+    author: book.author,
+    coverUrl: book.coverUrl,
+    currentPage: book.currentPage,
+    totalPages: book.totalPages,
+    progress,
+    pagesReadThisWeek,
+    avgPagesPerDay,
+    estimatedDaysToFinish,
+    startedAt: book.startedAt,
+  };
+};

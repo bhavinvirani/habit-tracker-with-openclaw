@@ -8,8 +8,6 @@ import {
   Pencil,
   Trash2,
   RotateCcw,
-  Loader2,
-  Sparkles,
   CheckCircle2,
   TrendingUp,
   Filter,
@@ -18,60 +16,18 @@ import {
   Calendar,
   Target,
   Zap,
-  Search,
-  X,
   LayoutGrid,
   List,
+  Search,
+  X,
+  Sparkles,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import clsx from 'clsx';
 import { habitsApi, analyticsApi } from '../services/habits';
 import { Habit, HabitWithStats } from '../types';
 import HabitModal from '../components/habits/HabitModal';
-
-// Mini sparkline component for 7-day history
-const Sparkline: React.FC<{ data: boolean[]; color: string }> = ({ data, color }) => {
-  return (
-    <div className="flex items-end gap-0.5 h-4">
-      {data.map((completed, i) => (
-        <div
-          key={i}
-          className={clsx(
-            'w-1.5 rounded-full transition-all',
-            completed ? 'h-4' : 'h-1.5 opacity-30'
-          )}
-          style={{ backgroundColor: completed ? color : '#4b5563' }}
-          title={`${i === 6 ? 'Today' : `${6 - i} days ago`}: ${completed ? 'Done' : 'Missed'}`}
-        />
-      ))}
-    </div>
-  );
-};
-
-// Category badge with color
-const CategoryBadge: React.FC<{ category: string }> = ({ category }) => {
-  const categoryColors: Record<string, string> = {
-    Health: '#3b82f6',
-    Fitness: '#10b981',
-    Learning: '#f59e0b',
-    Productivity: '#ef4444',
-    Mindfulness: '#8b5cf6',
-    Social: '#ec4899',
-    Finance: '#14b8a6',
-    Other: '#64748b',
-  };
-
-  const color = categoryColors[category] || categoryColors.Other;
-
-  return (
-    <span
-      className="px-2 py-0.5 rounded-full text-xs font-medium"
-      style={{ backgroundColor: `${color}20`, color }}
-    >
-      {category}
-    </span>
-  );
-};
+import { LoadingSpinner, Sparkline, CategoryBadge } from '../components/ui';
 
 const Habits: React.FC = () => {
   const queryClient = useQueryClient();
@@ -284,11 +240,7 @@ const Habits: React.FC = () => {
   };
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-96">
-        <Loader2 className="w-8 h-8 animate-spin text-primary-500" />
-      </div>
-    );
+    return <LoadingSpinner />;
   }
 
   const renderHabitCard = (habit: HabitWithStats, isGrid = false) => (

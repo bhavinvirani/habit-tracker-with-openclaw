@@ -8,7 +8,6 @@ import {
   Flame,
   Target,
   LogOut,
-  Loader2,
   Check,
   Shield,
   BookOpen,
@@ -27,11 +26,15 @@ import {
   ChevronRight,
   CheckCircle,
   Keyboard,
+  HelpCircle,
+  Loader2,
+  Archive,
+  RotateCcw,
 } from 'lucide-react';
 import { format, differenceInDays } from 'date-fns';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../store/authStore';
-import { analyticsApi, trackingApi } from '../services/habits';
+import { analyticsApi, trackingApi, habitsApi } from '../services/habits';
 import api from '../services/api';
 import clsx from 'clsx';
 import ApiDashboard from '../components/ApiDashboard';
@@ -144,7 +147,24 @@ const BADGES = [
   },
 ];
 
-type Tab = 'overview' | 'achievements' | 'settings';
+type Tab = 'overview' | 'achievements' | 'archived' | 'settings';
+
+// Level system explanation
+const LEVEL_INFO = {
+  title: 'How Levels Work',
+  description:
+    'Your level is based on the total number of habit completions. Keep completing your habits to level up!',
+  tiers: [
+    { level: '1-5', completions: '0-249', title: 'Beginner', color: 'text-dark-300' },
+    { level: '6-10', completions: '250-499', title: 'Developing', color: 'text-primary-400' },
+    { level: '11-20', completions: '500-999', title: 'Consistent', color: 'text-accent-green' },
+    { level: '21-50', completions: '1000-2499', title: 'Dedicated', color: 'text-accent-purple' },
+    { level: '51+', completions: '2500+', title: 'Master', color: 'text-accent-yellow' },
+  ],
+  formula: 'Level = (Total Completions ÷ 50) + 1',
+  xpPerCompletion: '1 completion = 1 XP',
+  xpPerLevel: '50 XP per level',
+};
 
 const Profile: React.FC = () => {
   const navigate = useNavigate();
@@ -154,6 +174,7 @@ const Profile: React.FC = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
+  const [showLevelInfo, setShowLevelInfo] = useState(false);
   const [formData, setFormData] = useState({
     name: user?.name || '',
   });
@@ -185,6 +206,25 @@ const Profile: React.FC = () => {
       } catch {
         return [];
       }
+    },
+  });
+
+  // Fetch archived habits
+  const { data: archivedHabits, isLoading: loadingArchived } = useQuery({
+    queryKey: ['habits', 'archived'],
+    queryFn: habitsApi.getArchived,
+  });
+
+  // Unarchive habit mutation
+  const unarchiveMutation = useMutation({
+    mutationFn: habitsApi.unarchive,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['habits'] });
+      queryClient.invalidateQueries({ queryKey: ['overview'] });
+      toast.success('Habit restored successfully!');
+    },
+    onError: () => {
+      toast.error('Failed to restore habit');
     },
   });
 
@@ -266,6 +306,7 @@ const Profile: React.FC = () => {
   const tabs: { id: Tab; label: string; icon: React.ElementType }[] = [
     { id: 'overview', label: 'Overview', icon: User },
     { id: 'achievements', label: 'Achievements', icon: Trophy },
+    { id: 'archived', label: 'Archived', icon: Archive },
     { id: 'settings', label: 'Settings', icon: Settings },
   ];
 
@@ -306,7 +347,14 @@ const Profile: React.FC = () => {
           {/* Level Progress */}
           <div className="w-full md:w-48">
             <div className="flex items-center justify-between text-sm mb-1">
-              <span className="text-dark-400">Level {level.level}</span>
+              <button
+                onClick={() => setShowLevelInfo(true)}
+                className="flex items-center gap-1.5 text-dark-400 hover:text-primary-400 transition-colors group"
+                title="How do levels work?"
+              >
+                <span>Level {level.level}</span>
+                <HelpCircle size={14} className="opacity-60 group-hover:opacity-100" />
+              </button>
               <span className="text-primary-400">
                 {level.completions}/{level.nextLevelAt}
               </span>
@@ -323,6 +371,71 @@ const Profile: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Level Info Modal */}
+      {showLevelInfo && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-dark-950/80 backdrop-blur-sm">
+          <div className="card max-w-md w-full animate-in fade-in zoom-in duration-200">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <div className="w-10 h-10 rounded-xl bg-accent-yellow/20 flex items-center justify-center">
+                  <Star className="w-5 h-5 text-accent-yellow" />
+                </div>
+                <h2 className="text-xl font-bold text-white">{LEVEL_INFO.title}</h2>
+              </div>
+              <button
+                onClick={() => setShowLevelInfo(false)}
+                className="text-dark-400 hover:text-white transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+
+            <p className="text-dark-300 mb-4">{LEVEL_INFO.description}</p>
+
+            {/* Formula */}
+            <div className="bg-dark-800/50 rounded-lg p-3 mb-4">
+              <p className="text-sm text-dark-400 mb-1">Level Formula:</p>
+              <code className="text-primary-400 font-mono">{LEVEL_INFO.formula}</code>
+              <div className="flex gap-4 mt-2 text-xs text-dark-500">
+                <span>• {LEVEL_INFO.xpPerCompletion}</span>
+                <span>• {LEVEL_INFO.xpPerLevel}</span>
+              </div>
+            </div>
+
+            {/* Level Tiers */}
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-dark-400">Level Tiers:</p>
+              {LEVEL_INFO.tiers.map((tier) => (
+                <div
+                  key={tier.level}
+                  className="flex items-center justify-between p-2 rounded-lg bg-dark-800/30"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className={clsx('font-bold', tier.color)}>Lv {tier.level}</span>
+                    <span className="text-white">{tier.title}</span>
+                  </div>
+                  <span className="text-xs text-dark-500">{tier.completions} completions</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Your Progress */}
+            <div className="mt-4 pt-4 border-t border-dark-700">
+              <div className="flex items-center justify-between">
+                <span className="text-dark-400">Your progress:</span>
+                <span className="text-white font-bold">
+                  Level {level.level} ({level.completions} completions)
+                </span>
+              </div>
+            </div>
+
+            <button onClick={() => setShowLevelInfo(false)} className="w-full mt-4 btn btn-primary">
+              Got it!
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Tabs */}
       <div className="flex gap-2 border-b border-dark-700 pb-2">
@@ -670,6 +783,134 @@ const Profile: React.FC = () => {
                 </p>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Archived Tab */}
+      {activeTab === 'archived' && (
+        <div className="space-y-6">
+          {/* Info Banner */}
+          <div className="card bg-dark-800/50 border-dark-700">
+            <div className="flex items-start gap-3">
+              <Archive className="text-dark-400 mt-0.5" size={20} />
+              <div>
+                <h3 className="font-medium text-white">Archived Habits</h3>
+                <p className="text-dark-400 text-sm mt-1">
+                  Archived habits are hidden from your daily tracking but their historical data is
+                  preserved. You can restore them at any time to resume tracking.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Archived Habits List */}
+          <div className="card">
+            <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+              <Archive size={20} className="text-dark-400" />
+              Archived Habits
+              {archivedHabits && archivedHabits.length > 0 && (
+                <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-dark-700 text-dark-400">
+                  {archivedHabits.length}
+                </span>
+              )}
+            </h3>
+
+            {loadingArchived ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="animate-spin text-primary-500" size={24} />
+              </div>
+            ) : archivedHabits && archivedHabits.length > 0 ? (
+              <div className="space-y-3">
+                {archivedHabits.map((habit) => (
+                  <div
+                    key={habit.id}
+                    className="flex items-center justify-between p-4 bg-dark-800 rounded-xl border border-dark-700"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div
+                        className="w-10 h-10 rounded-lg flex items-center justify-center"
+                        style={{ backgroundColor: `${habit.color}20` }}
+                      >
+                        <Target size={20} style={{ color: habit.color }} />
+                      </div>
+                      <div>
+                        <h4 className="font-medium text-white">{habit.name}</h4>
+                        <div className="flex items-center gap-2 text-xs text-dark-400">
+                          <span className="capitalize">
+                            {habit.category?.toLowerCase() || 'general'}
+                          </span>
+                          <span>•</span>
+                          <span className="capitalize">
+                            {habit.frequency?.toLowerCase() || 'daily'}
+                          </span>
+                          {habit.totalCompletions !== undefined && (
+                            <>
+                              <span>•</span>
+                              <span>{habit.totalCompletions} completions</span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => unarchiveMutation.mutate(habit.id)}
+                      disabled={unarchiveMutation.isPending}
+                      className="btn btn-secondary btn-sm flex items-center gap-2"
+                    >
+                      <RotateCcw size={14} />
+                      Restore
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <Archive size={40} className="mx-auto text-dark-600 mb-3" />
+                <p className="text-dark-400">No archived habits</p>
+                <p className="text-dark-500 text-sm mt-1">
+                  Habits you archive will appear here. You can archive habits from the Habits page.
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Data Info */}
+          <div className="card">
+            <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+              <BarChart3 size={20} className="text-primary-400" />
+              Data Retention
+            </h3>
+            <div className="space-y-3 text-sm">
+              <div className="flex items-start gap-3 p-3 bg-dark-800 rounded-lg">
+                <CheckCircle size={16} className="text-accent-green mt-0.5" />
+                <div>
+                  <p className="text-white font-medium">Historical data is preserved</p>
+                  <p className="text-dark-400">
+                    All your completion logs, streaks, and statistics are kept when you archive a
+                    habit.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3 p-3 bg-dark-800 rounded-lg">
+                <CheckCircle size={16} className="text-accent-green mt-0.5" />
+                <div>
+                  <p className="text-white font-medium">Calendar history intact</p>
+                  <p className="text-dark-400">
+                    Archived habits still appear in your calendar for past dates.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3 p-3 bg-dark-800 rounded-lg">
+                <CheckCircle size={16} className="text-accent-green mt-0.5" />
+                <div>
+                  <p className="text-white font-medium">Restore anytime</p>
+                  <p className="text-dark-400">
+                    Click "Restore" to bring back any archived habit and continue tracking.
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}

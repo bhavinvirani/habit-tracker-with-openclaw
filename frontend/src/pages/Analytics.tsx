@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
-  Loader2,
   Flame,
   TrendingUp,
   Target,
@@ -9,10 +8,10 @@ import {
   ChevronLeft,
   ChevronRight,
   Lightbulb,
+  BarChart3,
   ArrowUpRight,
   ArrowDownRight,
   Minus,
-  BarChart3,
 } from 'lucide-react';
 import {
   BarChart,
@@ -31,6 +30,7 @@ import { format, subWeeks, addWeeks } from 'date-fns';
 import { analyticsApi } from '../services/habits';
 import clsx from 'clsx';
 import { WeeklyDay, StreakInfo, ChartTooltipProps } from '../types';
+import { LoadingSpinner, PageHeader } from '../components/ui';
 
 const Analytics: React.FC = () => {
   const [weekOffset, setWeekOffset] = useState(0);
@@ -90,11 +90,7 @@ const Analytics: React.FC = () => {
     loadingTrend;
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-96">
-        <Loader2 className="w-8 h-8 animate-spin text-primary-500" />
-      </div>
-    );
+    return <LoadingSpinner />;
   }
 
   // Prepare chart data
@@ -150,10 +146,7 @@ const Analytics: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-white">Analytics</h1>
-        <p className="text-dark-400 mt-1">Track your progress and insights</p>
-      </div>
+      <PageHeader title="Analytics" subtitle="Track your progress and insights" />
 
       {/* Week Comparison Banner */}
       {comparison && (

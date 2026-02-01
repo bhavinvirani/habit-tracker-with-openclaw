@@ -2,6 +2,7 @@ import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { asyncHandler } from '../utils/asyncHandler';
 import { sendSuccess } from '../utils/response';
+import { ValidationError } from '../utils/AppError';
 import logger from '../utils/logger';
 import prisma from '../config/database';
 import crypto from 'crypto';
@@ -13,6 +14,7 @@ export const getProfile = asyncHandler(async (req: AuthRequest, res: Response) =
       id: true,
       email: true,
       name: true,
+      timezone: true,
       apiKey: true,
       apiKeyCreatedAt: true,
       createdAt: true,
@@ -36,6 +38,7 @@ export const getProfile = asyncHandler(async (req: AuthRequest, res: Response) =
     id: user.id,
     email: user.email,
     name: user.name,
+    timezone: user.timezone,
     hasApiKey: !!user.apiKey,
     apiKeyCreatedAt: user.apiKeyCreatedAt,
     createdAt: user.createdAt,
@@ -52,15 +55,29 @@ export const getProfile = asyncHandler(async (req: AuthRequest, res: Response) =
 });
 
 export const updateProfile = asyncHandler(async (req: AuthRequest, res: Response) => {
-  const { name } = req.body;
+  const { name, timezone } = req.body;
+
+  const data: Record<string, string> = {};
+  if (name) data.name = name;
+
+  if (timezone) {
+    // Validate IANA timezone
+    try {
+      Intl.DateTimeFormat(undefined, { timeZone: timezone });
+      data.timezone = timezone;
+    } catch {
+      throw new ValidationError('Invalid timezone');
+    }
+  }
 
   const updatedUser = await prisma.user.update({
     where: { id: req.userId },
-    data: { name },
+    data,
     select: {
       id: true,
       email: true,
       name: true,
+      timezone: true,
       createdAt: true,
       updatedAt: true,
     },

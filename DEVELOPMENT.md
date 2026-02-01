@@ -33,7 +33,7 @@ cd habit-tracker
 docker-compose -f docker-compose.dev.yml up --build
 
 # 3. Wait for services to start (you'll see logs from all containers)
-# Backend should show: "🚀 Server running on port 5000"
+# Backend should show: "🚀 Server running on port 8080"
 # Frontend should show: "webpack compiled successfully"
 
 # 4. In a new terminal, run database migrations

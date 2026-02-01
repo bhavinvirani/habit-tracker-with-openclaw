@@ -197,6 +197,12 @@ export const habitsApi = {
     return response.data.data.habits;
   },
 
+  getArchived: async (): Promise<HabitWithStats[]> => {
+    const response =
+      await api.get<ApiResponse<{ habits: HabitWithStats[] }>>('/habits?isArchived=true');
+    return response.data.data.habits;
+  },
+
   getById: async (id: string): Promise<HabitWithStats> => {
     const response = await api.get<ApiResponse<{ habit: HabitWithStats }>>(`/habits/${id}`);
     return response.data.data.habit;
@@ -356,6 +362,94 @@ export const analyticsApi = {
 
   getMonthlyTrend: async (): Promise<MonthlyTrend> => {
     const response = await api.get<ApiResponse<MonthlyTrend>>('/analytics/trend');
+    return response.data.data;
+  },
+
+  getProductivityScore: async () => {
+    const response = await api.get<
+      ApiResponse<{
+        score: number;
+        grade: 'A' | 'B' | 'C' | 'D' | 'F';
+        trend: 'improving' | 'stable' | 'declining';
+        breakdown: { consistency: number; streaks: number; completion: number };
+      }>
+    >('/analytics/productivity');
+    return response.data.data;
+  },
+
+  getBestPerforming: async () => {
+    const response = await api.get<
+      ApiResponse<{
+        bestDayOfWeek: { day: string; completionRate: number };
+        worstDayOfWeek: { day: string; completionRate: number };
+        mostConsistentHabit: { id: string; name: string; color: string; rate: number } | null;
+        leastConsistentHabit: { id: string; name: string; color: string; rate: number } | null;
+      }>
+    >('/analytics/performance');
+    return response.data.data;
+  },
+
+  getCorrelations: async () => {
+    const response = await api.get<
+      ApiResponse<{
+        correlations: Array<{
+          habit1: { id: string; name: string };
+          habit2: { id: string; name: string };
+          correlation: number;
+          interpretation: string;
+        }>;
+      }>
+    >('/analytics/correlations');
+    return response.data.data.correlations;
+  },
+
+  getPredictions: async () => {
+    const response = await api.get<
+      ApiResponse<{
+        predictions: Array<{
+          habitId: string;
+          habitName: string;
+          currentStreak: number;
+          predictedDaysToMilestone: number;
+          nextMilestone: number;
+          riskLevel: 'low' | 'medium' | 'high';
+          riskReason: string | null;
+        }>;
+      }>
+    >('/analytics/predictions');
+    return response.data.data.predictions;
+  },
+};
+
+// Books API
+export interface CurrentlyReadingBook {
+  id: string;
+  title: string;
+  author: string;
+  coverUrl: string | null;
+  currentPage: number;
+  totalPages: number | null;
+  progress: number | null;
+  pagesReadThisWeek: number;
+  avgPagesPerDay: number;
+  estimatedDaysToFinish: number | null;
+  startedAt: string | null;
+}
+
+export const booksApi = {
+  getCurrentlyReading: async (): Promise<CurrentlyReadingBook | null> => {
+    const response =
+      await api.get<ApiResponse<{ book: CurrentlyReadingBook | null }>>('/books/current');
+    return response.data.data.book;
+  },
+
+  updateProgress: async (bookId: string, currentPage: number, notes?: string) => {
+    const response = await api.put(`/books/${bookId}/progress`, { currentPage, notes });
+    return response.data.data;
+  },
+
+  logReading: async (bookId: string, pagesRead: number, notes?: string) => {
+    const response = await api.post(`/books/${bookId}/log`, { pagesRead, notes });
     return response.data.data;
   },
 };
