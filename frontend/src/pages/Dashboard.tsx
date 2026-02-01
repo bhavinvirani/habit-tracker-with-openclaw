@@ -30,7 +30,6 @@ import { Habit } from '../types';
 const Dashboard: React.FC = () => {
   const queryClient = useQueryClient();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [pageInput, setPageInput] = useState('');
 
   // Fetch today's habits
   const { data: todayData, isLoading: loadingToday } = useQuery({
@@ -114,7 +113,6 @@ const Dashboard: React.FC = () => {
       booksApi.updateProgress(bookId, currentPage),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['currentBook'] });
-      setPageInput('');
       toast.success('Reading progress updated! 📚');
     },
     onError: () => {
@@ -214,6 +212,112 @@ const Dashboard: React.FC = () => {
           <Plus size={18} />
           New Habit
         </button>
+      </div>
+
+      {/* Currently Reading Widget - At Top */}
+      <div className="card">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <BookOpen className="w-5 h-5 text-accent-blue" />
+            <h2 className="text-lg font-semibold text-white">Currently Reading</h2>
+          </div>
+          <Link to="/books" className="text-sm text-primary-400 hover:text-primary-300">
+            View all →
+          </Link>
+        </div>
+
+        {currentBook ? (
+          <>
+            <div className="flex gap-4">
+              {/* Book Cover */}
+              <div className="flex-shrink-0 w-16 h-24 rounded-lg bg-dark-700 overflow-hidden">
+                {currentBook.coverUrl ? (
+                  <img
+                    src={currentBook.coverUrl}
+                    alt={currentBook.title}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-dark-500">
+                    <BookOpen size={20} />
+                  </div>
+                )}
+              </div>
+
+              {/* Book Info */}
+              <div className="flex-1 min-w-0">
+                <h3 className="font-semibold text-white truncate">{currentBook.title}</h3>
+                <p className="text-sm text-dark-400 truncate">{currentBook.author}</p>
+
+                {/* Progress Info */}
+                <div className="flex items-center gap-4 mt-2">
+                  <span className="text-sm text-dark-400">
+                    Page {currentBook.currentPage}
+                    {currentBook.totalPages ? ` of ${currentBook.totalPages}` : ''}
+                  </span>
+                  <span className="text-sm text-accent-blue font-medium">
+                    {currentBook.progress || 0}%
+                  </span>
+                </div>
+
+                {/* Quick Stats */}
+                <div className="flex items-center gap-4 mt-1 text-xs text-dark-500">
+                  <span>{currentBook.pagesReadThisWeek} pages this week</span>
+                  {currentBook.estimatedDaysToFinish && (
+                    <span>~{currentBook.estimatedDaysToFinish} days left</span>
+                  )}
+                </div>
+              </div>
+
+              {/* Quick Page Update Buttons - Right Side */}
+              <div className="flex-shrink-0">
+                <p className="text-xs text-dark-500 mb-2">Add pages:</p>
+                <div className="flex gap-1.5">
+                  {[5, 10, 25, 50].map((increment) => {
+                    const newPage = currentBook.currentPage + increment;
+                    const isDisabled = !!(
+                      currentBook.totalPages && newPage > currentBook.totalPages
+                    );
+                    return (
+                      <button
+                        key={increment}
+                        onClick={() => {
+                          if (!isDisabled) {
+                            updateBookProgressMutation.mutate({
+                              bookId: currentBook.id,
+                              currentPage: Math.min(newPage, currentBook.totalPages || newPage),
+                            });
+                          }
+                        }}
+                        disabled={updateBookProgressMutation.isPending || isDisabled}
+                        className={clsx(
+                          'py-2 px-3 rounded-lg text-sm font-medium transition-all',
+                          isDisabled
+                            ? 'bg-dark-800 text-dark-600 cursor-not-allowed'
+                            : 'bg-dark-700 text-dark-300 hover:bg-accent-blue/20 hover:text-accent-blue'
+                        )}
+                      >
+                        +{increment}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </>
+        ) : (
+          <div className="flex items-center gap-4">
+            <div className="w-16 h-24 rounded-lg bg-dark-800 flex items-center justify-center">
+              <BookOpen size={24} className="text-dark-500" />
+            </div>
+            <div className="flex-1">
+              <p className="text-dark-400">No book in progress</p>
+            </div>
+            <Link to="/books" className="btn btn-primary">
+              Start Reading
+            </Link>
+          </div>
+        )}
       </div>
 
       {/* Mini Heatmap - Last 14 Days */}
@@ -532,44 +636,44 @@ const Dashboard: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Quick Page Update */}
+                  {/* Quick Page Update Buttons */}
                   <div className="mt-4 pt-4 border-t border-dark-700">
-                    <form
-                      onSubmit={(e) => {
-                        e.preventDefault();
-                        const newPage = parseInt(pageInput);
-                        if (newPage > 0 && newPage > currentBook.currentPage) {
-                          updateBookProgressMutation.mutate({
-                            bookId: currentBook.id,
-                            currentPage: newPage,
-                          });
-                        } else if (newPage <= currentBook.currentPage) {
-                          toast.error('Page must be greater than current page');
-                        }
-                      }}
-                      className="flex gap-2"
-                    >
-                      <input
-                        type="number"
-                        placeholder={`Current: ${currentBook.currentPage}`}
-                        value={pageInput}
-                        onChange={(e) => setPageInput(e.target.value)}
-                        className="input flex-1 text-sm"
-                        min={currentBook.currentPage + 1}
-                        max={currentBook.totalPages || undefined}
-                      />
-                      <button
-                        type="submit"
-                        disabled={updateBookProgressMutation.isPending || !pageInput}
-                        className="btn btn-primary text-sm px-4"
-                      >
-                        {updateBookProgressMutation.isPending ? (
-                          <Loader2 size={16} className="animate-spin" />
-                        ) : (
-                          'Update'
-                        )}
-                      </button>
-                    </form>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-dark-500">Add pages:</span>
+                      <div className="flex gap-2 flex-1">
+                        {[5, 10, 25, 50].map((increment) => {
+                          const newPage = currentBook.currentPage + increment;
+                          const isDisabled = !!(
+                            currentBook.totalPages && newPage > currentBook.totalPages
+                          );
+                          return (
+                            <button
+                              key={increment}
+                              onClick={() => {
+                                if (!isDisabled) {
+                                  updateBookProgressMutation.mutate({
+                                    bookId: currentBook.id,
+                                    currentPage: Math.min(
+                                      newPage,
+                                      currentBook.totalPages || newPage
+                                    ),
+                                  });
+                                }
+                              }}
+                              disabled={updateBookProgressMutation.isPending || isDisabled}
+                              className={clsx(
+                                'flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all',
+                                isDisabled
+                                  ? 'bg-dark-800 text-dark-600 cursor-not-allowed'
+                                  : 'bg-dark-700 text-dark-300 hover:bg-accent-blue/20 hover:text-accent-blue'
+                              )}
+                            >
+                              +{increment}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
                   </div>
                 </>
               ) : (
