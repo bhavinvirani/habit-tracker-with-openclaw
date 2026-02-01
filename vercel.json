@@ -1,6 +1,6 @@
 {
   "buildCommand": "npm run build --workspace=frontend",
-  "outputDirectory": "frontend/build",
+  "outputDirectory": "./frontend/build",
   "installCommand": "npm install --legacy-peer-deps",
   "framework": null
 }
