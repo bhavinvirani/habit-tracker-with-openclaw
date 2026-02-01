@@ -11,6 +11,9 @@
   },
   "dependencies": {
     "@tanstack/react-query": "^5.62.11",
+    "ajv": "^8.17.1",
+    "ajv-formats": "^3.0.1",
+    "ajv-keywords": "^5.1.0",
     "axios": "^1.7.9",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
@@ -28,9 +31,6 @@
     "@types/react-dom": "^18.3.5",
     "@typescript-eslint/eslint-plugin": "^8.54.0",
     "@typescript-eslint/parser": "^8.54.0",
-    "ajv": "^8.17.1",
-    "ajv-formats": "^2.1.1",
-    "ajv-keywords": "^5.1.0",
     "autoprefixer": "^10.4.20",
     "eslint": "^8.57.1",
     "eslint-config-react-app": "^7.0.1",
@@ -58,6 +58,9 @@
     "@typescript-eslint/parser": "^8.54.0",
     "@typescript-eslint/eslint-plugin": "^8.54.0",
     "@typescript-eslint/typescript-estree": "^8.54.0",
-    "ajv": "^8.17.1"
+    "react-scripts": {
+      "ajv": "^8.17.1",
+      "ajv-keywords": "^5.1.0"
+    }
   }
 }
