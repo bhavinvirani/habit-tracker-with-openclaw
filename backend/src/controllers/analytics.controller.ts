@@ -136,3 +136,43 @@ export const getMonthlyTrend = asyncHandler(async (req: AuthRequest, res: Respon
 
   sendSuccess(res, result, 'Monthly trend retrieved successfully');
 });
+
+/**
+ * GET /analytics/productivity
+ * Get productivity score with breakdown
+ */
+export const getProductivityScore = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const result = await analyticsService.getProductivityScore(req.userId!);
+
+  sendSuccess(res, result, 'Productivity score retrieved successfully');
+});
+
+/**
+ * GET /analytics/performance
+ * Get best performing days and habits analysis
+ */
+export const getBestPerforming = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const result = await analyticsService.getBestPerformingAnalysis(req.userId!);
+
+  sendSuccess(res, result, 'Performance analysis retrieved successfully');
+});
+
+/**
+ * GET /analytics/correlations
+ * Get habit correlations
+ */
+export const getCorrelations = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const result = await analyticsService.getHabitCorrelations(req.userId!);
+
+  sendSuccess(res, { correlations: result }, 'Habit correlations retrieved successfully');
+});
+
+/**
+ * GET /analytics/predictions
+ * Get streak predictions and risk assessment
+ */
+export const getPredictions = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const result = await analyticsService.getStreakPredictions(req.userId!);
+
+  sendSuccess(res, { predictions: result }, 'Streak predictions retrieved successfully');
+});

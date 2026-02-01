@@ -172,7 +172,7 @@ This project is designed for future AI tool integration:
 - **Strict TypeScript**: Both backend and frontend use strict mode
 - **Containerized**: All services run in Docker for consistency and easy deployment
 - **Database**: PostgreSQL in Docker container (no local installation needed)
-- **Backend Port**: 8080 (mapped from container port 5000)
+- **Backend Port**: 8080
 - **API prefix**: All backend routes under `/api/*` (e.g., `/api/habits`)
 - **Protected routes**: ALL routes except `/api/auth/*` require authentication
 - **Package versions**: Using latest stable versions to minimize security vulnerabilities

@@ -25,6 +25,9 @@ router.get('/', validateQuery(bookQuerySchema), bookController.getBooks);
 // GET /books/stats - Get reading statistics
 router.get('/stats', validateQuery(readingStatsQuerySchema), bookController.getReadingStats);
 
+// GET /books/current - Get currently reading book (for dashboard widget)
+router.get('/current', bookController.getCurrentlyReading);
+
 // GET /books/:id - Get book by ID
 router.get('/:id', validateParams(bookIdParamSchema), bookController.getBookById);
 

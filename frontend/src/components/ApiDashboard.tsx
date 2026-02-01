@@ -217,8 +217,6 @@ const ApiDashboard: React.FC = () => {
             </div>
             <a
               href="/docs/api"
-              target="_blank"
-              rel="noopener noreferrer"
               className="mt-3 inline-flex items-center gap-1 text-sm text-primary-400 hover:text-primary-300"
             >
               View API Documentation

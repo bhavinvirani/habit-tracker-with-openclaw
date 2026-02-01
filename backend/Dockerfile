@@ -49,6 +49,6 @@ COPY --from=builder --chown=expressjs:nodejs /app/prisma ./prisma
 
 USER expressjs
 
-EXPOSE 5000
+EXPOSE 8080
 
 CMD ["node", "dist/server.js"]

@@ -10,6 +10,7 @@ import Books from './pages/Books';
 import Challenges from './pages/Challenges';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import ApiDocs from './pages/ApiDocs';
 import { useAuthStore } from './store/authStore';
 
 function App() {
@@ -20,6 +21,7 @@ function App() {
       <Routes>
         <Route path="/login" element={isAuthenticated ? <Navigate to="/" /> : <Login />} />
         <Route path="/register" element={isAuthenticated ? <Navigate to="/" /> : <Register />} />
+        <Route path="/docs/api" element={<ApiDocs />} />
 
         <Route path="/" element={isAuthenticated ? <Layout /> : <Navigate to="/login" />}>
           <Route index element={<Dashboard />} />

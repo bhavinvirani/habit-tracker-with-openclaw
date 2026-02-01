@@ -1,3 +1,17 @@
+# ============================================
+# HABIT TRACKER - DOCKER COMPOSE
+# ============================================
+# ⚠️  WARNING: LOCAL DEVELOPMENT ONLY!
+# ⚠️  This file contains hardcoded credentials.
+# ⚠️  DO NOT use this configuration in production.
+#
+# For production deployment:
+# - Use environment variables or secrets management
+# - Generate strong passwords and JWT secrets
+# - Use SSL/TLS for database connections
+# - Configure proper CORS origins
+# ============================================
+
 services:
   # PostgreSQL Database
   postgres:
@@ -26,10 +40,10 @@ services:
     container_name: habit-tracker-backend
     restart: unless-stopped
     ports:
-      - '5000:5000'
+      - '8080:8080'
     environment:
       NODE_ENV: development
-      PORT: 5000
+      PORT: 8080
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/habit_tracker
       JWT_SECRET: your-super-secret-jwt-key-change-in-production-minimum-32-characters
       JWT_EXPIRES_IN: 7d
@@ -60,7 +74,7 @@ services:
       - ./frontend/src:/app/src
       - ./frontend/public:/app/public
     environment:
-      - REACT_APP_API_URL=http://localhost:5000/api
+      - REACT_APP_API_URL=http://localhost:8080/api
 
 volumes:
   postgres_data:

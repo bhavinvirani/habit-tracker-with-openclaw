@@ -10,10 +10,18 @@ import {
   CalendarDays,
   Trophy,
   Clock,
+  BookOpen,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { trackingApi, analyticsApi, habitsApi, TodayHabit, WeeklyDay } from '../services/habits';
+import {
+  trackingApi,
+  analyticsApi,
+  habitsApi,
+  booksApi,
+  TodayHabit,
+  WeeklyDay,
+} from '../services/habits';
 import { format, subDays } from 'date-fns';
 import clsx from 'clsx';
 import HabitModal from '../components/habits/HabitModal';
@@ -22,6 +30,7 @@ import { Habit } from '../types';
 const Dashboard: React.FC = () => {
   const queryClient = useQueryClient();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [pageInput, setPageInput] = useState('');
 
   // Fetch today's habits
   const { data: todayData, isLoading: loadingToday } = useQuery({
@@ -39,6 +48,12 @@ const Dashboard: React.FC = () => {
   const { data: weeklyData } = useQuery({
     queryKey: ['weekly'],
     queryFn: () => analyticsApi.getWeekly(),
+  });
+
+  // Fetch currently reading book
+  const { data: currentBook } = useQuery({
+    queryKey: ['currentBook'],
+    queryFn: booksApi.getCurrentlyReading,
   });
 
   // Create habit mutation
@@ -90,6 +105,20 @@ const Dashboard: React.FC = () => {
     },
     onError: () => {
       toast.error('Failed to undo check-in');
+    },
+  });
+
+  // Update book progress mutation
+  const updateBookProgressMutation = useMutation({
+    mutationFn: ({ bookId, currentPage }: { bookId: string; currentPage: number }) =>
+      booksApi.updateProgress(bookId, currentPage),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['currentBook'] });
+      setPageInput('');
+      toast.success('Reading progress updated! 📚');
+    },
+    onError: () => {
+      toast.error('Failed to update progress');
     },
   });
 
@@ -436,6 +465,125 @@ const Dashboard: React.FC = () => {
                 </div>
               </div>
             )}
+
+            {/* Currently Reading Widget - Always show */}
+            <div className="card">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <BookOpen className="w-5 h-5 text-accent-blue" />
+                  <h2 className="text-lg font-semibold text-white">Currently Reading</h2>
+                </div>
+                <Link to="/books" className="text-sm text-primary-400 hover:text-primary-300">
+                  View all →
+                </Link>
+              </div>
+
+              {currentBook ? (
+                <>
+                  <div className="flex gap-4">
+                    {/* Book Cover */}
+                    <div className="flex-shrink-0 w-20 h-28 rounded-lg bg-dark-700 overflow-hidden">
+                      {currentBook.coverUrl ? (
+                        <img
+                          src={currentBook.coverUrl}
+                          alt={currentBook.title}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-dark-500">
+                          <BookOpen size={24} />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Book Info */}
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-white truncate">{currentBook.title}</h3>
+                      <p className="text-sm text-dark-400 truncate">{currentBook.author}</p>
+
+                      {/* Progress Bar */}
+                      {currentBook.progress !== null && (
+                        <div className="mt-3">
+                          <div className="flex items-center justify-between text-xs mb-1">
+                            <span className="text-dark-400">
+                              Page {currentBook.currentPage}
+                              {currentBook.totalPages ? ` of ${currentBook.totalPages}` : ''}
+                            </span>
+                            <span className="text-accent-blue font-medium">
+                              {currentBook.progress}%
+                            </span>
+                          </div>
+                          <div className="h-2 bg-dark-700 rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-accent-blue rounded-full transition-all duration-300"
+                              style={{ width: `${currentBook.progress}%` }}
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Quick Stats */}
+                      <div className="flex items-center gap-4 mt-3 text-xs text-dark-400">
+                        <span>{currentBook.pagesReadThisWeek} pages this week</span>
+                        {currentBook.estimatedDaysToFinish && (
+                          <span>~{currentBook.estimatedDaysToFinish} days left</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Quick Page Update */}
+                  <div className="mt-4 pt-4 border-t border-dark-700">
+                    <form
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        const newPage = parseInt(pageInput);
+                        if (newPage > 0 && newPage > currentBook.currentPage) {
+                          updateBookProgressMutation.mutate({
+                            bookId: currentBook.id,
+                            currentPage: newPage,
+                          });
+                        } else if (newPage <= currentBook.currentPage) {
+                          toast.error('Page must be greater than current page');
+                        }
+                      }}
+                      className="flex gap-2"
+                    >
+                      <input
+                        type="number"
+                        placeholder={`Current: ${currentBook.currentPage}`}
+                        value={pageInput}
+                        onChange={(e) => setPageInput(e.target.value)}
+                        className="input flex-1 text-sm"
+                        min={currentBook.currentPage + 1}
+                        max={currentBook.totalPages || undefined}
+                      />
+                      <button
+                        type="submit"
+                        disabled={updateBookProgressMutation.isPending || !pageInput}
+                        className="btn btn-primary text-sm px-4"
+                      >
+                        {updateBookProgressMutation.isPending ? (
+                          <Loader2 size={16} className="animate-spin" />
+                        ) : (
+                          'Update'
+                        )}
+                      </button>
+                    </form>
+                  </div>
+                </>
+              ) : (
+                <div className="text-center py-6">
+                  <div className="w-16 h-16 rounded-2xl bg-dark-800 flex items-center justify-center mx-auto mb-4">
+                    <BookOpen size={28} className="text-dark-500" />
+                  </div>
+                  <p className="text-dark-400 mb-4">No book in progress</p>
+                  <Link to="/books" className="btn btn-primary">
+                    Start Reading
+                  </Link>
+                </div>
+              )}
+            </div>
           </>
         )}
       </div>

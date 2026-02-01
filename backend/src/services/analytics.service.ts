@@ -7,6 +7,7 @@ import {
   HeatmapQuery,
   StreaksQuery,
 } from '../validators/analytics.validator';
+import { getUserTimezone, getTodayForTimezone } from '../utils/timezone';
 import {
   startOfWeek,
   endOfWeek,
@@ -96,11 +97,6 @@ export interface StreakLeader {
 
 // ============ HELPER FUNCTIONS ============
 
-function getTodayDate(): Date {
-  const today = new Date();
-  return new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()));
-}
-
 function parseDateString(dateStr: string): Date {
   const [year, month, day] = dateStr.split('-').map(Number);
   return new Date(Date.UTC(year, month - 1, day));
@@ -143,7 +139,8 @@ export async function getOverview(
   stats: OverviewStats;
   weeklyProgress: WeeklyProgress[];
 }> {
-  const today = getTodayDate();
+  const timezone = await getUserTimezone(userId);
+  const today = getTodayForTimezone(timezone);
   const weekStart = startOfWeek(today, { weekStartsOn: 1 }); // Monday
   const monthStart = startOfMonth(today);
 
@@ -256,7 +253,9 @@ export async function getWeeklyAnalytics(
   days: DailyBreakdown[];
   summary: { total: number; completed: number; rate: number };
 }> {
-  const endDate = query.endDate ? parseDateString(query.endDate) : getTodayDate();
+  const endDate = query.endDate
+    ? parseDateString(query.endDate)
+    : getTodayForTimezone(await getUserTimezone(userId));
   const startDate = query.startDate
     ? parseDateString(query.startDate)
     : startOfWeek(endDate, { weekStartsOn: 1 });
@@ -333,7 +332,9 @@ export async function getMonthlyAnalytics(
   weeks: { weekStart: string; weekEnd: string; completed: number; total: number; rate: number }[];
   summary: { total: number; completed: number; rate: number };
 }> {
-  const endDate = query.endDate ? parseDateString(query.endDate) : getTodayDate();
+  const endDate = query.endDate
+    ? parseDateString(query.endDate)
+    : getTodayForTimezone(await getUserTimezone(userId));
   const startDate = query.startDate ? parseDateString(query.startDate) : startOfMonth(endDate);
 
   const habits = await prisma.habit.findMany({
@@ -395,7 +396,7 @@ export async function getHeatmap(userId: string, query: HeatmapQuery): Promise<H
   const year = query.year || new Date().getFullYear();
   const startDate = new Date(Date.UTC(year, 0, 1));
   const endDate = new Date(Date.UTC(year, 11, 31));
-  const today = getTodayDate();
+  const today = getTodayForTimezone(await getUserTimezone(userId));
   const actualEnd = isAfter(endDate, today) ? today : endDate;
 
   const habits = await prisma.habit.findMany({
@@ -455,7 +456,7 @@ export async function getHabitStats(userId: string, habitId: string): Promise<Ha
     throw new NotFoundError('Habit', habitId);
   }
 
-  const today = getTodayDate();
+  const today = getTodayForTimezone(await getUserTimezone(userId));
   const thirtyDaysAgo = subDays(today, 30);
 
   // Get logs for the last 30 days
@@ -597,7 +598,7 @@ export async function getInsights(userId: string): Promise<{
   needsAttention: { name: string; missedDays: number }[];
   suggestions: string[];
 }> {
-  const today = getTodayDate();
+  const today = getTodayForTimezone(await getUserTimezone(userId));
   const fourWeeksAgo = subWeeks(today, 4);
 
   const habits = await prisma.habit.findMany({
@@ -711,7 +712,7 @@ export async function getCategoryBreakdown(userId: string): Promise<{
     currentStreak: number;
   }>;
 }> {
-  const today = getTodayDate();
+  const today = getTodayForTimezone(await getUserTimezone(userId));
   const thirtyDaysAgo = subDays(today, 30);
 
   const habits = await prisma.habit.findMany({
@@ -816,7 +817,7 @@ export async function getWeekComparison(userId: string): Promise<{
   change: number;
   trend: 'up' | 'down' | 'same';
 }> {
-  const today = getTodayDate();
+  const today = getTodayForTimezone(await getUserTimezone(userId));
   const thisWeekStart = startOfWeek(today, { weekStartsOn: 1 });
   const lastWeekStart = subWeeks(thisWeekStart, 1);
   const lastWeekEnd = subDays(thisWeekStart, 1);
@@ -882,7 +883,7 @@ export async function getMonthlyTrend(userId: string): Promise<{
   days: Array<{ date: string; rate: number; completed: number; total: number }>;
   averageRate: number;
 }> {
-  const today = getTodayDate();
+  const today = getTodayForTimezone(await getUserTimezone(userId));
   const thirtyDaysAgo = subDays(today, 29);
 
   const habits = await prisma.habit.findMany({
@@ -942,7 +943,7 @@ export async function getCalendarData(
   // Month is 1-indexed (1 = January)
   const startDate = new Date(Date.UTC(year, month - 1, 1));
   const endDate = new Date(Date.UTC(year, month, 0)); // Last day of month
-  const today = getTodayDate();
+  const today = getTodayForTimezone(await getUserTimezone(userId));
   const actualEnd = isAfter(endDate, today) ? today : endDate;
 
   const habits = await prisma.habit.findMany({
@@ -1014,4 +1015,350 @@ export async function getCalendarData(
       percentage: totalPossible > 0 ? Math.round((totalCompleted / totalPossible) * 100) : 0,
     },
   };
+}
+
+// ============ ADVANCED ANALYTICS ============
+
+export interface ProductivityScore {
+  score: number; // 0-100
+  grade: 'A' | 'B' | 'C' | 'D' | 'F';
+  trend: 'improving' | 'stable' | 'declining';
+  breakdown: {
+    consistency: number; // 0-40 points
+    streaks: number; // 0-30 points
+    completion: number; // 0-30 points
+  };
+}
+
+export interface BestPerformingAnalysis {
+  bestDayOfWeek: { day: string; dayNumber: number; completionRate: number };
+  worstDayOfWeek: { day: string; dayNumber: number; completionRate: number };
+  byDayOfWeek: { day: string; dayNumber: number; completionRate: number; completions: number }[];
+  mostConsistentHabit: { id: string; name: string; color: string; rate: number } | null;
+  leastConsistentHabit: { id: string; name: string; color: string; rate: number } | null;
+}
+
+export interface HabitCorrelation {
+  habit1: { id: string; name: string };
+  habit2: { id: string; name: string };
+  correlation: number; // -1 to 1
+  interpretation: string;
+}
+
+export interface StreakPrediction {
+  habitId: string;
+  habitName: string;
+  currentStreak: number;
+  predictedDaysToMilestone: number;
+  nextMilestone: number;
+  riskLevel: 'low' | 'medium' | 'high';
+  riskReason: string | null;
+}
+
+/**
+ * Calculate productivity score based on multiple factors
+ */
+export async function getProductivityScore(userId: string): Promise<ProductivityScore> {
+  const timezone = await getUserTimezone(userId);
+  const today = getTodayForTimezone(timezone);
+  const thirtyDaysAgo = subDays(today, 30);
+  const sixtyDaysAgo = subDays(today, 60);
+
+  // Get habits and logs
+  const habits = await prisma.habit.findMany({
+    where: { userId, isActive: true, isArchived: false },
+  });
+
+  const recentLogs = await prisma.habitLog.findMany({
+    where: { userId, date: { gte: thirtyDaysAgo, lte: today }, completed: true },
+  });
+
+  const olderLogs = await prisma.habitLog.findMany({
+    where: { userId, date: { gte: sixtyDaysAgo, lt: thirtyDaysAgo }, completed: true },
+  });
+
+  // Calculate consistency (0-40): How many days had at least one completion
+  const uniqueDays = new Set(recentLogs.map((l) => formatDate(l.date)));
+  const daysWithActivity = uniqueDays.size;
+  const consistency = Math.min(40, Math.round((daysWithActivity / 30) * 40));
+
+  // Calculate streaks score (0-30): Based on current active streaks
+  const maxStreak = Math.max(...habits.map((h) => h.currentStreak), 0);
+  const avgStreak =
+    habits.length > 0 ? habits.reduce((sum, h) => sum + h.currentStreak, 0) / habits.length : 0;
+  const streaks = Math.min(30, Math.round((maxStreak * 0.5 + avgStreak * 0.5) * 2));
+
+  // Calculate completion rate (0-30): Overall completion rate last 30 days
+  let totalExpected = 0;
+  for (let i = 0; i < 30; i++) {
+    const day = subDays(today, i);
+    totalExpected += habits.filter(
+      (h) => !isAfter(h.createdAt, day) && shouldTrackOnDate(h, day)
+    ).length;
+  }
+  const completionRate = totalExpected > 0 ? recentLogs.length / totalExpected : 0;
+  const completion = Math.min(30, Math.round(completionRate * 30));
+
+  const score = consistency + streaks + completion;
+
+  // Determine grade
+  let grade: 'A' | 'B' | 'C' | 'D' | 'F';
+  if (score >= 85) grade = 'A';
+  else if (score >= 70) grade = 'B';
+  else if (score >= 55) grade = 'C';
+  else if (score >= 40) grade = 'D';
+  else grade = 'F';
+
+  // Determine trend
+  const recentRate = totalExpected > 0 ? recentLogs.length / totalExpected : 0;
+  let olderExpected = 0;
+  for (let i = 30; i < 60; i++) {
+    const day = subDays(today, i);
+    olderExpected += habits.filter(
+      (h) => !isAfter(h.createdAt, day) && shouldTrackOnDate(h, day)
+    ).length;
+  }
+  const olderRate = olderExpected > 0 ? olderLogs.length / olderExpected : 0;
+
+  let trend: 'improving' | 'stable' | 'declining';
+  if (recentRate > olderRate + 0.1) trend = 'improving';
+  else if (recentRate < olderRate - 0.1) trend = 'declining';
+  else trend = 'stable';
+
+  return {
+    score,
+    grade,
+    trend,
+    breakdown: { consistency, streaks, completion },
+  };
+}
+
+/**
+ * Analyze best performing days and habits
+ */
+export async function getBestPerformingAnalysis(userId: string): Promise<BestPerformingAnalysis> {
+  const timezone = await getUserTimezone(userId);
+  const today = getTodayForTimezone(timezone);
+  const thirtyDaysAgo = subDays(today, 30);
+
+  const habits = await prisma.habit.findMany({
+    where: { userId, isActive: true, isArchived: false },
+  });
+
+  const logs = await prisma.habitLog.findMany({
+    where: { userId, date: { gte: thirtyDaysAgo, lte: today }, completed: true },
+  });
+
+  // Analyze by day of week
+  const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const dayStats = Array.from({ length: 7 }, () => ({ completions: 0, expected: 0 }));
+
+  const days = eachDayOfInterval({ start: thirtyDaysAgo, end: today });
+  for (const day of days) {
+    const dayOfWeek = getDay(day);
+    const dayHabits = habits.filter((h) => !isAfter(h.createdAt, day) && shouldTrackOnDate(h, day));
+    const dayLogs = logs.filter((l) => formatDate(l.date) === formatDate(day));
+
+    dayStats[dayOfWeek].expected += dayHabits.length;
+    dayStats[dayOfWeek].completions += dayLogs.length;
+  }
+
+  const byDayOfWeek = dayStats.map((stat, i) => ({
+    day: dayNames[i],
+    dayNumber: i,
+    completionRate: stat.expected > 0 ? Math.round((stat.completions / stat.expected) * 100) : 0,
+    completions: stat.completions,
+  }));
+
+  const sorted = [...byDayOfWeek].sort((a, b) => b.completionRate - a.completionRate);
+  const bestDayOfWeek = sorted[0];
+  const worstDayOfWeek = sorted[sorted.length - 1];
+
+  // Find most/least consistent habits
+  const habitStats = habits.map((h) => {
+    const habitLogs = logs.filter((l) => l.habitId === h.id);
+    let expected = 0;
+    for (const day of days) {
+      if (!isAfter(h.createdAt, day) && shouldTrackOnDate(h, day)) {
+        expected++;
+      }
+    }
+    return {
+      id: h.id,
+      name: h.name,
+      color: h.color,
+      rate: expected > 0 ? Math.round((habitLogs.length / expected) * 100) : 0,
+    };
+  });
+
+  const sortedHabits = [...habitStats].sort((a, b) => b.rate - a.rate);
+  const mostConsistentHabit = sortedHabits.length > 0 ? sortedHabits[0] : null;
+  const leastConsistentHabit =
+    sortedHabits.length > 0 ? sortedHabits[sortedHabits.length - 1] : null;
+
+  return {
+    bestDayOfWeek,
+    worstDayOfWeek,
+    byDayOfWeek,
+    mostConsistentHabit,
+    leastConsistentHabit,
+  };
+}
+
+/**
+ * Find habit correlations (which habits tend to be completed together)
+ */
+export async function getHabitCorrelations(userId: string): Promise<HabitCorrelation[]> {
+  const timezone = await getUserTimezone(userId);
+  const today = getTodayForTimezone(timezone);
+  const thirtyDaysAgo = subDays(today, 30);
+
+  const habits = await prisma.habit.findMany({
+    where: { userId, isActive: true, isArchived: false },
+    take: 10, // Limit to prevent expensive calculations
+    orderBy: { totalCompletions: 'desc' },
+  });
+
+  if (habits.length < 2) return [];
+
+  const logs = await prisma.habitLog.findMany({
+    where: { userId, date: { gte: thirtyDaysAgo, lte: today }, completed: true },
+  });
+
+  // Group logs by date
+  const logsByDate = new Map<string, Set<string>>();
+  for (const log of logs) {
+    const dateKey = formatDate(log.date);
+    if (!logsByDate.has(dateKey)) logsByDate.set(dateKey, new Set());
+    logsByDate.get(dateKey)!.add(log.habitId);
+  }
+
+  const correlations: HabitCorrelation[] = [];
+
+  // Calculate pairwise correlations
+  for (let i = 0; i < habits.length; i++) {
+    for (let j = i + 1; j < habits.length; j++) {
+      const h1 = habits[i];
+      const h2 = habits[j];
+
+      let bothDone = 0;
+      let onlyFirst = 0;
+      let onlySecond = 0;
+      let neitherDone = 0;
+
+      const days = eachDayOfInterval({ start: thirtyDaysAgo, end: today });
+      for (const day of days) {
+        const dateKey = formatDate(day);
+        const dayLogs = logsByDate.get(dateKey) || new Set();
+
+        const h1Done = dayLogs.has(h1.id);
+        const h2Done = dayLogs.has(h2.id);
+
+        if (h1Done && h2Done) bothDone++;
+        else if (h1Done) onlyFirst++;
+        else if (h2Done) onlySecond++;
+        else neitherDone++;
+      }
+
+      // Calculate phi coefficient (correlation for binary variables)
+      const num = bothDone * neitherDone - onlyFirst * onlySecond;
+      const denom = Math.sqrt(
+        (bothDone + onlyFirst) *
+          (bothDone + onlySecond) *
+          (neitherDone + onlyFirst) *
+          (neitherDone + onlySecond)
+      );
+      const correlation = denom > 0 ? Math.round((num / denom) * 100) / 100 : 0;
+
+      let interpretation: string;
+      if (correlation > 0.5) interpretation = 'Strong positive - often completed together';
+      else if (correlation > 0.2) interpretation = 'Moderate positive - tend to be done together';
+      else if (correlation < -0.5) interpretation = 'Strong negative - rarely done on same day';
+      else if (correlation < -0.2)
+        interpretation = 'Moderate negative - completing one may reduce other';
+      else interpretation = 'Weak/no correlation';
+
+      // Only include notable correlations
+      if (Math.abs(correlation) >= 0.2) {
+        correlations.push({
+          habit1: { id: h1.id, name: h1.name },
+          habit2: { id: h2.id, name: h2.name },
+          correlation,
+          interpretation,
+        });
+      }
+    }
+  }
+
+  return correlations.sort((a, b) => Math.abs(b.correlation) - Math.abs(a.correlation));
+}
+
+/**
+ * Predict streak milestones and risk assessment
+ */
+export async function getStreakPredictions(userId: string): Promise<StreakPrediction[]> {
+  const timezone = await getUserTimezone(userId);
+  const today = getTodayForTimezone(timezone);
+  const sevenDaysAgo = subDays(today, 7);
+
+  const habits = await prisma.habit.findMany({
+    where: { userId, isActive: true, isArchived: false, currentStreak: { gt: 0 } },
+  });
+
+  const logs = await prisma.habitLog.findMany({
+    where: { userId, date: { gte: sevenDaysAgo, lte: today } },
+  });
+
+  const predictions: StreakPrediction[] = [];
+
+  for (const habit of habits) {
+    const milestones = [7, 14, 21, 30, 60, 90, 100, 180, 365];
+    const nextMilestone =
+      milestones.find((m) => m > habit.currentStreak) || habit.currentStreak + 30;
+    const daysToMilestone = nextMilestone - habit.currentStreak;
+
+    // Calculate recent activity
+    const recentLogs = logs.filter((l) => l.habitId === habit.id);
+    const expectedDays = 7;
+    const activeDays = recentLogs.filter((l) => l.completed).length;
+    const recentRate = activeDays / expectedDays;
+
+    // Determine risk
+    let riskLevel: 'low' | 'medium' | 'high';
+    let riskReason: string | null = null;
+
+    if (recentRate >= 0.9) {
+      riskLevel = 'low';
+    } else if (recentRate >= 0.7) {
+      riskLevel = 'medium';
+      riskReason = 'Missed some days recently';
+    } else {
+      riskLevel = 'high';
+      riskReason = 'Declining activity pattern';
+    }
+
+    // Check for missed days in last 3 days
+    const lastThreeDays = [0, 1, 2].map((i) => subDays(today, i));
+    const missedRecently = lastThreeDays.some((day) => {
+      if (!shouldTrackOnDate(habit, day)) return false;
+      return !recentLogs.some((l) => formatDate(l.date) === formatDate(day) && l.completed);
+    });
+
+    if (missedRecently && riskLevel !== 'high') {
+      riskLevel = 'medium';
+      riskReason = 'Missed check-in in last 3 days';
+    }
+
+    predictions.push({
+      habitId: habit.id,
+      habitName: habit.name,
+      currentStreak: habit.currentStreak,
+      predictedDaysToMilestone: daysToMilestone,
+      nextMilestone,
+      riskLevel,
+      riskReason,
+    });
+  }
+
+  return predictions.sort((a, b) => a.predictedDaysToMilestone - b.predictedDaysToMilestone);
 }

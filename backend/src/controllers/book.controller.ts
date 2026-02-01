@@ -96,3 +96,13 @@ export const getReadingStats = async (req: AuthRequest, res: Response, next: Nex
     next(error);
   }
 };
+
+// ============ GET CURRENTLY READING ============
+export const getCurrentlyReading = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const book = await bookService.getCurrentlyReading(req.userId!);
+    sendSuccess(res, { book }, 'Currently reading book retrieved successfully');
+  } catch (error) {
+    next(error);
+  }
+};

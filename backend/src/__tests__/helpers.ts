@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import cookieParser from 'cookie-parser';
 import { errorHandler } from '../middleware/errorHandler';
 import { notFoundHandler } from '../middleware/notFoundHandler';
 import authRoutes from '../routes/auth.routes';
@@ -19,7 +20,9 @@ export const createTestApp = () => {
   const app = express();
 
   app.use(helmet());
-  app.use(cors());
+  app.use(cors({ credentials: true }));
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  app.use(cookieParser() as any);
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
 

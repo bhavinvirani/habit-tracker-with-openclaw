@@ -49,7 +49,7 @@ Create a `.env` file in the backend directory (see `.env.example`):
 
 ```env
 # Server
-PORT=5000
+PORT=8080
 NODE_ENV=development
 
 # Database
