@@ -17,6 +17,10 @@ import analyticsRoutes from './routes/analytics.routes';
 import userRoutes from './routes/user.routes';
 import bookRoutes from './routes/book.routes';
 import challengeRoutes from './routes/challenge.routes';
+import botRoutes from './routes/bot.routes';
+import integrationRoutes from './routes/integration.routes';
+import reminderRoutes from './routes/reminder.routes';
+import { initReminderScheduler } from './services/reminder.service';
 
 dotenv.config();
 
@@ -84,6 +88,9 @@ app.use('/api/analytics', analyticsRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/books', bookRoutes);
 app.use('/api/challenges', challengeRoutes);
+app.use('/api/bot', botRoutes);
+app.use('/api/integrations', integrationRoutes);
+app.use('/api/reminders', reminderRoutes);
 
 // Error handling
 app.use(notFoundHandler);
@@ -95,6 +102,9 @@ app.listen(Number(PORT), '0.0.0.0', () => {
     environment: process.env.NODE_ENV || 'development',
     healthCheck: `http://localhost:${PORT}/health`,
   });
+
+  // Initialize reminder scheduler
+  initReminderScheduler();
 
   // Cleanup expired refresh tokens every hour
   setInterval(

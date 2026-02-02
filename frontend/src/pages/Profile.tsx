@@ -38,6 +38,8 @@ import { analyticsApi, trackingApi, habitsApi } from '../services/habits';
 import api from '../services/api';
 import clsx from 'clsx';
 import ApiDashboard from '../components/ApiDashboard';
+import ConnectedApps from '../components/ConnectedApps';
+import NotificationSettings from '../components/NotificationSettings';
 import KeyboardShortcutsModal from '../components/KeyboardShortcutsModal';
 
 // Types for the page
@@ -1069,6 +1071,12 @@ const Profile: React.FC = () => {
 
           {/* API Access */}
           <ApiDashboard />
+
+          {/* Connected Apps */}
+          <ConnectedApps />
+
+          {/* Notifications & Reminders */}
+          <NotificationSettings />
 
           {/* Danger Zone */}
           <div className="card border-accent-red/20">

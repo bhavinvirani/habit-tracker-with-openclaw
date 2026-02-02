@@ -5,7 +5,6 @@ import {
   Sparkles,
   Flame,
   Bell,
-  Search,
   ChevronDown,
   User,
   Settings,
@@ -85,18 +84,6 @@ const Header: React.FC<HeaderProps> = ({
               <p className="text-[10px] text-dark-500 -mt-0.5">Build better habits</p>
             </div>
           </Link>
-        </div>
-
-        {/* Center: Search (optional, hidden on mobile) */}
-        <div className="hidden md:flex flex-1 max-w-md mx-4">
-          <div className="relative w-full">
-            <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-dark-500" />
-            <input
-              type="text"
-              placeholder="Search habits, books..."
-              className="w-full pl-10 pr-4 py-2 bg-dark-800/50 border border-dark-700/50 rounded-xl text-sm text-white placeholder-dark-500 focus:outline-none focus:border-primary-500/50 focus:ring-1 focus:ring-primary-500/20 transition-all"
-            />
-          </div>
         </div>
 
         {/* Right: Stats, Notifications, Profile */}

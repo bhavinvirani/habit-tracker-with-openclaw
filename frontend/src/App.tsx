@@ -11,6 +11,7 @@ import Challenges from './pages/Challenges';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import ApiDocs from './pages/ApiDocs';
+import IntegrationDocs from './pages/IntegrationDocs';
 import Help from './pages/Help';
 import { useAuthStore } from './store/authStore';
 
@@ -23,6 +24,7 @@ function App() {
         <Route path="/login" element={isAuthenticated ? <Navigate to="/" /> : <Login />} />
         <Route path="/register" element={isAuthenticated ? <Navigate to="/" /> : <Register />} />
         <Route path="/docs/api" element={<ApiDocs />} />
+        <Route path="/docs/integration" element={<IntegrationDocs />} />
 
         <Route path="/" element={isAuthenticated ? <Layout /> : <Navigate to="/login" />}>
           <Route index element={<Dashboard />} />

@@ -211,17 +211,23 @@ const ApiDashboard: React.FC = () => {
             </h4>
             <div className="p-3 rounded-lg bg-dark-900 border border-dark-700">
               <code className="text-xs text-dark-300 font-mono">
-                curl -H "Authorization: Bearer YOUR_API_KEY" \<br />
-                &nbsp;&nbsp;{window.location.origin}/api/habits
+                curl -H "X-API-Key: YOUR_API_KEY" \<br />
+                &nbsp;&nbsp;{window.location.origin}/api/bot/habits/today
               </code>
             </div>
-            <a
-              href="/docs/api"
-              className="mt-3 inline-flex items-center gap-1 text-sm text-primary-400 hover:text-primary-300"
-            >
-              View API Documentation
-              <ExternalLink size={14} />
-            </a>
+            <p className="mt-3 text-sm text-dark-400">
+              Use with{' '}
+              <a
+                href="https://openclaw.ai"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary-400 hover:text-primary-300"
+              >
+                OpenClaw
+                <ExternalLink size={12} className="inline ml-1" />
+              </a>{' '}
+              to track habits via WhatsApp, Telegram, and more.
+            </p>
           </div>
         </>
       )}
