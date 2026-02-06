@@ -79,18 +79,25 @@ app.get('/health', async (_req, res) => {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 app.use('/api', generalLimiter as any);
 
-// API Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/habits', habitRoutes);
-app.use('/api/templates', templateRoutes);
-app.use('/api/tracking', trackingRoutes);
-app.use('/api/analytics', analyticsRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/books', bookRoutes);
-app.use('/api/challenges', challengeRoutes);
-app.use('/api/bot', botRoutes);
-app.use('/api/integrations', integrationRoutes);
-app.use('/api/reminders', reminderRoutes);
+// Versioned API router (v1)
+const v1Router = express.Router();
+v1Router.use('/auth', authRoutes);
+v1Router.use('/habits', habitRoutes);
+v1Router.use('/templates', templateRoutes);
+v1Router.use('/tracking', trackingRoutes);
+v1Router.use('/analytics', analyticsRoutes);
+v1Router.use('/users', userRoutes);
+v1Router.use('/books', bookRoutes);
+v1Router.use('/challenges', challengeRoutes);
+v1Router.use('/bot', botRoutes);
+v1Router.use('/integrations', integrationRoutes);
+v1Router.use('/reminders', reminderRoutes);
+
+// Mount versioned routes
+app.use('/api/v1', v1Router);
+
+// Backward compatibility: /api/* still works
+app.use('/api', v1Router);
 
 // Error handling
 app.use(notFoundHandler);

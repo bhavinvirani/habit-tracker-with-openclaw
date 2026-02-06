@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
+import ErrorBoundary from './components/ErrorBoundary';
 import Layout from './components/layout/Layout';
 import Dashboard from './pages/Dashboard';
 import Habits from './pages/Habits';
@@ -19,22 +20,114 @@ function App() {
   const { isAuthenticated } = useAuthStore();
 
   return (
-    <>
+    <ErrorBoundary>
       <Routes>
-        <Route path="/login" element={isAuthenticated ? <Navigate to="/" /> : <Login />} />
-        <Route path="/register" element={isAuthenticated ? <Navigate to="/" /> : <Register />} />
-        <Route path="/docs/api" element={<ApiDocs />} />
-        <Route path="/docs/integration" element={<IntegrationDocs />} />
+        <Route
+          path="/login"
+          element={
+            isAuthenticated ? (
+              <Navigate to="/" />
+            ) : (
+              <ErrorBoundary>
+                <Login />
+              </ErrorBoundary>
+            )
+          }
+        />
+        <Route
+          path="/register"
+          element={
+            isAuthenticated ? (
+              <Navigate to="/" />
+            ) : (
+              <ErrorBoundary>
+                <Register />
+              </ErrorBoundary>
+            )
+          }
+        />
+        <Route
+          path="/docs/api"
+          element={
+            <ErrorBoundary>
+              <ApiDocs />
+            </ErrorBoundary>
+          }
+        />
+        <Route
+          path="/docs/integration"
+          element={
+            <ErrorBoundary>
+              <IntegrationDocs />
+            </ErrorBoundary>
+          }
+        />
 
         <Route path="/" element={isAuthenticated ? <Layout /> : <Navigate to="/login" />}>
-          <Route index element={<Dashboard />} />
-          <Route path="habits" element={<Habits />} />
-          <Route path="calendar" element={<Calendar />} />
-          <Route path="analytics" element={<Analytics />} />
-          <Route path="books" element={<Books />} />
-          <Route path="challenges" element={<Challenges />} />
-          <Route path="profile" element={<Profile />} />
-          <Route path="help" element={<Help />} />
+          <Route
+            index
+            element={
+              <ErrorBoundary>
+                <Dashboard />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="habits"
+            element={
+              <ErrorBoundary>
+                <Habits />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="calendar"
+            element={
+              <ErrorBoundary>
+                <Calendar />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="analytics"
+            element={
+              <ErrorBoundary>
+                <Analytics />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="books"
+            element={
+              <ErrorBoundary>
+                <Books />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="challenges"
+            element={
+              <ErrorBoundary>
+                <Challenges />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="profile"
+            element={
+              <ErrorBoundary>
+                <Profile />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="help"
+            element={
+              <ErrorBoundary>
+                <Help />
+              </ErrorBoundary>
+            }
+          />
         </Route>
       </Routes>
       <Toaster
@@ -60,7 +153,7 @@ function App() {
           },
         }}
       />
-    </>
+    </ErrorBoundary>
   );
 }
 

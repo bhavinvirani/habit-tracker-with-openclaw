@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { authenticate } from '../middleware/auth';
+import { readLimiter, writeLimiter, sensitiveLimiter } from '../middleware/rateLimiter';
 import {
   getProfile,
   updateProfile,
@@ -14,15 +15,21 @@ const router = Router();
 router.use(authenticate);
 
 // Profile
-router.get('/profile', getProfile);
-router.put('/profile', updateProfile);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+router.get('/profile', readLimiter as any, getProfile);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+router.put('/profile', writeLimiter as any, updateProfile);
 
-// Data Export
-router.get('/export', exportData);
+// Data Export (sensitive — heavy operation)
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+router.get('/export', sensitiveLimiter as any, exportData);
 
-// API Key Management
-router.get('/api-key', getApiKey);
-router.post('/api-key', generateApiKey);
-router.delete('/api-key', revokeApiKey);
+// API Key Management (sensitive)
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+router.get('/api-key', readLimiter as any, getApiKey);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+router.post('/api-key', sensitiveLimiter as any, generateApiKey);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+router.delete('/api-key', sensitiveLimiter as any, revokeApiKey);
 
 export default router;

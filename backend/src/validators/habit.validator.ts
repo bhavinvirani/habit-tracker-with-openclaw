@@ -123,6 +123,8 @@ export const getHabitsQuerySchema = z.object({
     .optional(),
   category: z.string().optional(),
   frequency: FrequencyEnum.optional(),
+  limit: z.coerce.number().int().positive().max(100).optional().default(50),
+  offset: z.coerce.number().int().min(0).optional().default(0),
 });
 
 export type GetHabitsQuery = z.infer<typeof getHabitsQuerySchema>;

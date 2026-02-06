@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { authenticateApiKey } from '../middleware/apiKeyAuth';
 import { botRequestLogger } from '../middleware/botRequestLogger';
+import { botLimiter } from '../middleware/rateLimiter';
 import { validateBody } from '../middleware/validate';
 import {
   checkInSchema,
@@ -17,8 +18,10 @@ import {
 
 const router = Router();
 
-// All bot routes require API key authentication and detailed logging
+// All bot routes require rate limiting, API key auth, and detailed logging
 router.use(botRequestLogger);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+router.use(botLimiter as any);
 router.use(authenticateApiKey);
 
 // Habit tracking
