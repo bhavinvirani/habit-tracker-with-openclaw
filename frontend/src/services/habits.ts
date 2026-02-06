@@ -380,8 +380,14 @@ export const analyticsApi = {
   getBestPerforming: async () => {
     const response = await api.get<
       ApiResponse<{
-        bestDayOfWeek: { day: string; completionRate: number };
-        worstDayOfWeek: { day: string; completionRate: number };
+        bestDayOfWeek: { day: string; dayNumber: number; completionRate: number };
+        worstDayOfWeek: { day: string; dayNumber: number; completionRate: number };
+        byDayOfWeek: Array<{
+          day: string;
+          dayNumber: number;
+          completionRate: number;
+          completions: number;
+        }>;
         mostConsistentHabit: { id: string; name: string; color: string; rate: number } | null;
         leastConsistentHabit: { id: string; name: string; color: string; rate: number } | null;
       }>

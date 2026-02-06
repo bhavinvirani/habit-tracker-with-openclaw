@@ -81,12 +81,12 @@ export const readLimiter = createLimiter({
 // ============ ANALYTICS (expensive queries) ============
 
 /**
- * Analytics endpoints: 30 requests per 15 minutes
- * These run heavy DB aggregations
+ * Analytics endpoints: 120 requests per 15 minutes
+ * The analytics page loads ~12 endpoints per visit
  */
 export const analyticsLimiter = createLimiter({
   windowMs: 15 * 60 * 1000,
-  limit: 30,
+  limit: 120,
   keyGenerator: (req: Request) => {
     return (req as AuthRequest).userId || req.ip || 'unknown';
   },

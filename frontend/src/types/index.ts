@@ -210,6 +210,47 @@ export interface InsightsData {
   }[];
 }
 
+// Productivity score from /analytics/productivity
+export interface ProductivityScore {
+  score: number;
+  grade: 'A' | 'B' | 'C' | 'D' | 'F';
+  trend: 'improving' | 'stable' | 'declining';
+  breakdown: { consistency: number; streaks: number; completion: number };
+}
+
+// Best performing analysis from /analytics/performance
+export interface BestPerformingData {
+  bestDayOfWeek: { day: string; dayNumber: number; completionRate: number };
+  worstDayOfWeek: { day: string; dayNumber: number; completionRate: number };
+  byDayOfWeek: Array<{
+    day: string;
+    dayNumber: number;
+    completionRate: number;
+    completions: number;
+  }>;
+  mostConsistentHabit: { id: string; name: string; color: string; rate: number } | null;
+  leastConsistentHabit: { id: string; name: string; color: string; rate: number } | null;
+}
+
+// Habit correlation from /analytics/correlations
+export interface HabitCorrelation {
+  habit1: { id: string; name: string };
+  habit2: { id: string; name: string };
+  correlation: number;
+  interpretation: string;
+}
+
+// Streak prediction from /analytics/predictions
+export interface StreakPrediction {
+  habitId: string;
+  habitName: string;
+  currentStreak: number;
+  predictedDaysToMilestone: number;
+  nextMilestone: number;
+  riskLevel: 'low' | 'medium' | 'high';
+  riskReason: string | null;
+}
+
 // Axios Error type
 export interface ApiError {
   response?: {

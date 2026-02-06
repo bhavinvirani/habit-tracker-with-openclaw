@@ -19,6 +19,7 @@ import {
   habitsApi,
   booksApi,
   TodayHabit,
+  TodayResponse,
   WeeklyDay,
 } from '../services/habits';
 import { format, subDays } from 'date-fns';
@@ -76,7 +77,7 @@ const Dashboard: React.FC = () => {
     },
   });
 
-  // Check-in mutation for habits with target values (increments value)
+  // Check-in mutation with optimistic update
   const checkInMutation = useMutation({
     mutationFn: ({
       habitId,
@@ -87,30 +88,86 @@ const Dashboard: React.FC = () => {
       value?: number;
       completed?: boolean;
     }) => trackingApi.checkIn(habitId, { value, completed }),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['today'] });
-      queryClient.invalidateQueries({ queryKey: ['overview'] });
+    onMutate: async (variables) => {
+      await queryClient.cancelQueries({ queryKey: ['today'] });
+      const previous = queryClient.getQueryData<TodayResponse>(['today']);
+      if (previous) {
+        queryClient.setQueryData<TodayResponse>(['today'], {
+          ...previous,
+          habits: previous.habits.map((h) =>
+            h.id === variables.habitId
+              ? {
+                  ...h,
+                  isCompleted: variables.completed ?? h.isCompleted,
+                  logValue: variables.value ?? h.logValue,
+                }
+              : h
+          ),
+          summary: {
+            ...previous.summary,
+            completed: variables.completed
+              ? previous.summary.completed + 1
+              : previous.summary.completed,
+            remaining: variables.completed
+              ? previous.summary.remaining - 1
+              : previous.summary.remaining,
+          },
+        });
+      }
       if (variables.completed) {
         toast.success('Habit completed! 🎉');
       } else {
         toast.success('Progress updated! 💪');
       }
+      return { previous };
     },
-    onError: () => {
+    onError: (_err, _vars, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(['today'], context.previous);
+      }
       toast.error('Failed to check in');
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['today'] });
+      queryClient.invalidateQueries({ queryKey: ['overview'] });
     },
   });
 
-  // Undo mutation
+  // Undo mutation with optimistic update
   const undoMutation = useMutation({
     mutationFn: (habitId: string) => trackingApi.undo(habitId),
-    onSuccess: () => {
+    onMutate: async (habitId) => {
+      await queryClient.cancelQueries({ queryKey: ['today'] });
+      const previous = queryClient.getQueryData<TodayResponse>(['today']);
+      if (previous) {
+        const habit = previous.habits.find((h) => h.id === habitId);
+        const wasCompleted = habit?.isCompleted;
+        queryClient.setQueryData<TodayResponse>(['today'], {
+          ...previous,
+          habits: previous.habits.map((h) =>
+            h.id === habitId
+              ? { ...h, isCompleted: false, logValue: null, logNotes: null, logId: null }
+              : h
+          ),
+          summary: {
+            ...previous.summary,
+            completed: wasCompleted ? previous.summary.completed - 1 : previous.summary.completed,
+            remaining: wasCompleted ? previous.summary.remaining + 1 : previous.summary.remaining,
+          },
+        });
+      }
+      toast.success('Check-in undone');
+      return { previous };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(['today'], context.previous);
+      }
+      toast.error('Failed to undo check-in');
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['today'] });
       queryClient.invalidateQueries({ queryKey: ['overview'] });
-      toast.success('Check-in undone');
-    },
-    onError: () => {
-      toast.error('Failed to undo check-in');
     },
   });
 
