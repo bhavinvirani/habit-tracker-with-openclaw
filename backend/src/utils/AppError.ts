@@ -67,6 +67,9 @@ export class AuthorizationError extends AppError {
   }
 }
 
+/** Alias for AuthorizationError */
+export const ForbiddenError = AuthorizationError;
+
 /**
  * 404 - Not Found
  */

@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { authenticateApiKey } from '../middleware/apiKeyAuth';
+import { authenticateApiKey, requireScopes } from '../middleware/apiKeyAuth';
 import { botRequestLogger } from '../middleware/botRequestLogger';
 import { botLimiter } from '../middleware/rateLimiter';
 import { validateBody } from '../middleware/validate';
@@ -24,13 +24,25 @@ router.use(botRequestLogger);
 router.use(botLimiter as any);
 router.use(authenticateApiKey);
 
-// Habit tracking
-router.get('/habits/today', getTodayHabits);
-router.post('/habits/check-in', validateBody(checkInSchema), checkIn);
-router.post('/habits/check-in-by-name', validateBody(checkInByNameSchema), checkInByName);
-router.get('/habits/summary', getDailySummary);
+// Habit tracking (read)
+router.get('/habits/today', requireScopes('bot:read'), getTodayHabits);
+router.get('/habits/summary', requireScopes('bot:read'), getDailySummary);
+
+// Habit tracking (write)
+router.post('/habits/check-in', requireScopes('bot:write'), validateBody(checkInSchema), checkIn);
+router.post(
+  '/habits/check-in-by-name',
+  requireScopes('bot:write'),
+  validateBody(checkInByNameSchema),
+  checkInByName
+);
 
 // Chat registration for reminders
-router.post('/register-chat', validateBody(registerChatSchema), registerChat);
+router.post(
+  '/register-chat',
+  requireScopes('bot:write'),
+  validateBody(registerChatSchema),
+  registerChat
+);
 
 export default router;

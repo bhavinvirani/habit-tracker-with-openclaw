@@ -8,7 +8,10 @@ import {
   generateApiKey,
   getApiKey,
   revokeApiKey,
+  changePassword,
 } from '../controllers/user.controller';
+import { validateBody } from '../middleware/validate';
+import { changePasswordSchema } from '../validators/user.validator';
 
 const router = Router();
 
@@ -19,6 +22,15 @@ router.use(authenticate);
 router.get('/profile', readLimiter as any, getProfile);
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 router.put('/profile', writeLimiter as any, updateProfile);
+
+// Password change (sensitive)
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+router.put(
+  '/password',
+  sensitiveLimiter as any,
+  validateBody(changePasswordSchema),
+  changePassword
+);
 
 // Data Export (sensitive — heavy operation)
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

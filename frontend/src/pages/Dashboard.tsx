@@ -25,7 +25,13 @@ import { format, subDays } from 'date-fns';
 import clsx from 'clsx';
 import HabitModal from '../components/habits/HabitModal';
 import { Habit } from '../types';
-import { LoadingSpinner, PageHeader, StatCard, CircularProgress, Button } from '../components/ui';
+import {
+  PageHeader,
+  StatCard,
+  CircularProgress,
+  Button,
+  DashboardSkeleton,
+} from '../components/ui';
 
 const Dashboard: React.FC = () => {
   const queryClient = useQueryClient();
@@ -158,7 +164,7 @@ const Dashboard: React.FC = () => {
   const isLoading = loadingToday || loadingStats;
 
   if (isLoading) {
-    return <LoadingSpinner />;
+    return <DashboardSkeleton />;
   }
 
   const habits = todayData?.habits || [];

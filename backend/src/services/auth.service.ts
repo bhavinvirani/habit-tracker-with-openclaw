@@ -28,43 +28,40 @@ export interface AuthResponse {
   refreshToken: string;
 }
 
-// ============ ACCOUNT LOCKOUT ============
+// ============ ACCOUNT LOCKOUT (database-backed) ============
 
 const MAX_FAILED_ATTEMPTS = 5;
 const LOCKOUT_DURATION_MS = 15 * 60 * 1000; // 15 minutes
 
-interface FailedAttempt {
-  count: number;
-  lockedUntil: number | null;
-}
-
-const failedAttempts = new Map<string, FailedAttempt>();
-
-function checkAccountLock(email: string): void {
-  const record = failedAttempts.get(email);
+async function checkAccountLock(email: string): Promise<void> {
+  const record = await db.loginAttempt.findUnique({ where: { email } });
   if (!record || !record.lockedUntil) return;
 
-  if (Date.now() < record.lockedUntil) {
+  if (new Date() < record.lockedUntil) {
     throw new AuthenticationError('Account temporarily locked. Please try again later.');
   }
   // Lock expired, reset
-  failedAttempts.delete(email);
+  await db.loginAttempt.delete({ where: { email } });
 }
 
-function recordFailedAttempt(email: string): void {
-  const record = failedAttempts.get(email) || { count: 0, lockedUntil: null };
-  record.count += 1;
+async function recordFailedAttempt(email: string): Promise<void> {
+  const record = await db.loginAttempt.upsert({
+    where: { email },
+    create: { email, failedCount: 1 },
+    update: { failedCount: { increment: 1 }, lastAttempt: new Date() },
+  });
 
-  if (record.count >= MAX_FAILED_ATTEMPTS) {
-    record.lockedUntil = Date.now() + LOCKOUT_DURATION_MS;
+  if (record.failedCount >= MAX_FAILED_ATTEMPTS) {
+    await db.loginAttempt.update({
+      where: { email },
+      data: { lockedUntil: new Date(Date.now() + LOCKOUT_DURATION_MS) },
+    });
     logger.warn('Account locked due to too many failed attempts', { email });
   }
-
-  failedAttempts.set(email, record);
 }
 
-function clearFailedAttempts(email: string): void {
-  failedAttempts.delete(email);
+async function clearFailedAttempts(email: string): Promise<void> {
+  await db.loginAttempt.deleteMany({ where: { email } });
 }
 
 // ============ HELPERS ============
@@ -141,7 +138,7 @@ export async function register(data: RegisterInput): Promise<AuthResponse> {
  */
 export async function login(data: LoginInput): Promise<AuthResponse> {
   // Check if account is locked
-  checkAccountLock(data.email);
+  await checkAccountLock(data.email);
 
   // Find user
   const user = await prisma.user.findUnique({
@@ -149,7 +146,7 @@ export async function login(data: LoginInput): Promise<AuthResponse> {
   });
 
   if (!user) {
-    recordFailedAttempt(data.email);
+    await recordFailedAttempt(data.email);
     throw new AuthenticationError('Invalid email or password');
   }
 
@@ -157,11 +154,11 @@ export async function login(data: LoginInput): Promise<AuthResponse> {
   const isValidPassword = await bcrypt.compare(data.password, user.password);
 
   if (!isValidPassword) {
-    recordFailedAttempt(data.email);
+    await recordFailedAttempt(data.email);
     throw new AuthenticationError('Invalid email or password');
   }
 
-  clearFailedAttempts(data.email);
+  await clearFailedAttempts(data.email);
   const token = generateAccessToken(user.id);
   const refreshToken = await createRefreshToken(user.id);
 

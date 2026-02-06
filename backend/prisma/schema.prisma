@@ -19,6 +19,7 @@ model User {
   // API Access for future integrations (WhatsApp, automations, etc.)
   apiKey          String?   @unique
   apiKeyCreatedAt DateTime?
+  apiKeyScopes    String[]  @default(["bot:read", "bot:write"])
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -49,6 +50,20 @@ model RefreshToken {
   @@index([userId])
   @@index([expiresAt])
   @@map("refresh_tokens")
+}
+
+model LoginAttempt {
+  id          String    @id @default(uuid())
+  email       String    @unique
+  failedCount Int       @default(0)
+  lockedUntil DateTime?
+  lastAttempt DateTime  @default(now())
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([email])
+  @@index([lockedUntil])
+  @@map("login_attempts")
 }
 
 model Habit {
@@ -261,6 +276,7 @@ model ChallengeHabit {
   habit     Habit     @relation(fields: [habitId], references: [id], onDelete: Cascade)
 
   @@unique([challengeId, habitId])
+  @@index([habitId])
   @@map("challenge_habits")
 }
 
@@ -281,6 +297,8 @@ model ChallengeProgress {
 
   @@unique([challengeId, date])
   @@index([challengeId])
+  @@index([userId])
+  @@index([userId, date])
   @@map("challenge_progress")
 }
 

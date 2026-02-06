@@ -1,0 +1,16 @@
+{
+  "short_name": "Habits",
+  "name": "Habit Tracker",
+  "description": "Track your habits and build better routines",
+  "icons": [
+    {
+      "src": "favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#0f172a",
+  "background_color": "#0a0f1a"
+}

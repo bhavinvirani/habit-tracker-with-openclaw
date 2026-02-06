@@ -156,6 +156,12 @@ app.listen(Number(PORT), '0.0.0.0', () => {
             logger.info(`Cleaned up ${deleted.count} expired refresh tokens`);
           }
         }
+        // Cleanup expired login lockouts
+        if (prismaAny.loginAttempt) {
+          await prismaAny.loginAttempt.deleteMany({
+            where: { lockedUntil: { lt: new Date() } },
+          });
+        }
       } catch (error) {
         logger.error('Failed to cleanup expired tokens', { error });
       }

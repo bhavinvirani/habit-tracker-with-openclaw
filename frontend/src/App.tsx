@@ -1,29 +1,45 @@
-import { useEffect } from 'react';
+import React, { Suspense, useEffect, useRef } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import ErrorBoundary from './components/ErrorBoundary';
 import Layout from './components/layout/Layout';
-import Dashboard from './pages/Dashboard';
-import Habits from './pages/Habits';
-import Calendar from './pages/Calendar';
-import Analytics from './pages/Analytics';
-import Profile from './pages/Profile';
-import Books from './pages/Books';
-import Challenges from './pages/Challenges';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import ApiDocs from './pages/ApiDocs';
-import IntegrationDocs from './pages/IntegrationDocs';
-import Help from './pages/Help';
-import NotFound from './pages/NotFound';
+import { LoadingSpinner } from './components/ui';
 import { useAuthStore } from './store/authStore';
 import { restoreSession } from './services/api';
 
+// Lazy-loaded pages
+const Dashboard = React.lazy(() => import('./pages/Dashboard'));
+const Habits = React.lazy(() => import('./pages/Habits'));
+const Calendar = React.lazy(() => import('./pages/Calendar'));
+const Analytics = React.lazy(() => import('./pages/Analytics'));
+const Profile = React.lazy(() => import('./pages/Profile'));
+const Books = React.lazy(() => import('./pages/Books'));
+const Challenges = React.lazy(() => import('./pages/Challenges'));
+const Login = React.lazy(() => import('./pages/Login'));
+const Register = React.lazy(() => import('./pages/Register'));
+const ApiDocs = React.lazy(() => import('./pages/ApiDocs'));
+const IntegrationDocs = React.lazy(() => import('./pages/IntegrationDocs'));
+const Help = React.lazy(() => import('./pages/Help'));
+const NotFound = React.lazy(() => import('./pages/NotFound'));
+
+const SuspensePage: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <ErrorBoundary>
+    <Suspense fallback={<LoadingSpinner />}>{children}</Suspense>
+  </ErrorBoundary>
+);
+
 function App() {
   const { isAuthenticated, isInitialized } = useAuthStore();
+  const initRef = useRef(false);
 
-  // Restore session from httpOnly refresh token cookie on app startup
+  // Restore session from httpOnly refresh token cookie on app startup.
+  // The ref guard prevents StrictMode double-mount from firing two concurrent
+  // restoreSession() calls — the backend rotates the refresh token on each call,
+  // so a second in-flight request with the same (now-deleted) token would fail.
   useEffect(() => {
+    if (initRef.current) return;
+    initRef.current = true;
+
     const init = async () => {
       await restoreSession();
       useAuthStore.getState().setInitialized();
@@ -49,9 +65,9 @@ function App() {
             isAuthenticated ? (
               <Navigate to="/" />
             ) : (
-              <ErrorBoundary>
+              <SuspensePage>
                 <Login />
-              </ErrorBoundary>
+              </SuspensePage>
             )
           }
         />
@@ -61,26 +77,26 @@ function App() {
             isAuthenticated ? (
               <Navigate to="/" />
             ) : (
-              <ErrorBoundary>
+              <SuspensePage>
                 <Register />
-              </ErrorBoundary>
+              </SuspensePage>
             )
           }
         />
         <Route
           path="/docs/api"
           element={
-            <ErrorBoundary>
+            <SuspensePage>
               <ApiDocs />
-            </ErrorBoundary>
+            </SuspensePage>
           }
         />
         <Route
           path="/docs/integration"
           element={
-            <ErrorBoundary>
+            <SuspensePage>
               <IntegrationDocs />
-            </ErrorBoundary>
+            </SuspensePage>
           }
         />
 
@@ -88,73 +104,73 @@ function App() {
           <Route
             index
             element={
-              <ErrorBoundary>
+              <SuspensePage>
                 <Dashboard />
-              </ErrorBoundary>
+              </SuspensePage>
             }
           />
           <Route
             path="habits"
             element={
-              <ErrorBoundary>
+              <SuspensePage>
                 <Habits />
-              </ErrorBoundary>
+              </SuspensePage>
             }
           />
           <Route
             path="calendar"
             element={
-              <ErrorBoundary>
+              <SuspensePage>
                 <Calendar />
-              </ErrorBoundary>
+              </SuspensePage>
             }
           />
           <Route
             path="analytics"
             element={
-              <ErrorBoundary>
+              <SuspensePage>
                 <Analytics />
-              </ErrorBoundary>
+              </SuspensePage>
             }
           />
           <Route
             path="books"
             element={
-              <ErrorBoundary>
+              <SuspensePage>
                 <Books />
-              </ErrorBoundary>
+              </SuspensePage>
             }
           />
           <Route
             path="challenges"
             element={
-              <ErrorBoundary>
+              <SuspensePage>
                 <Challenges />
-              </ErrorBoundary>
+              </SuspensePage>
             }
           />
           <Route
             path="profile"
             element={
-              <ErrorBoundary>
+              <SuspensePage>
                 <Profile />
-              </ErrorBoundary>
+              </SuspensePage>
             }
           />
           <Route
             path="help"
             element={
-              <ErrorBoundary>
+              <SuspensePage>
                 <Help />
-              </ErrorBoundary>
+              </SuspensePage>
             }
           />
           <Route
             path="*"
             element={
-              <ErrorBoundary>
+              <SuspensePage>
                 <NotFound />
-              </ErrorBoundary>
+              </SuspensePage>
             }
           />
         </Route>

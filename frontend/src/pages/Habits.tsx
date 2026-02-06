@@ -28,7 +28,7 @@ import { habitsApi, analyticsApi } from '../services/habits';
 import { Habit, HabitWithStats } from '../types';
 import HabitModal from '../components/habits/HabitModal';
 import ConfirmDialog from '../components/ui/ConfirmDialog';
-import { LoadingSpinner, Sparkline, CategoryBadge } from '../components/ui';
+import { Sparkline, CategoryBadge, HabitsSkeleton } from '../components/ui';
 
 const Habits: React.FC = () => {
   const queryClient = useQueryClient();
@@ -240,7 +240,7 @@ const Habits: React.FC = () => {
   };
 
   if (isLoading) {
-    return <LoadingSpinner />;
+    return <HabitsSkeleton />;
   }
 
   const renderHabitCard = (habit: HabitWithStats, isGrid = false) => (
