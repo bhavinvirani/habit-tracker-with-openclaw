@@ -196,8 +196,23 @@ export const AnalyticsSkeleton: React.FC = () => (
       <Skeleton className="h-4 w-52 rounded-md" />
     </div>
 
-    {/* Comparison banner */}
-    <Skeleton className="h-20 w-full rounded-xl" />
+    {/* Productivity Score + Comparison */}
+    <div className="grid lg:grid-cols-5 gap-6">
+      <div className="lg:col-span-3 card p-6">
+        <div className="flex items-center gap-6">
+          <Skeleton circle className="w-32 h-32 shrink-0" />
+          <div className="flex-1 space-y-3">
+            <Skeleton className="h-6 w-40 rounded-md" />
+            <Skeleton className="h-2 w-full rounded-full" />
+            <Skeleton className="h-2 w-full rounded-full" />
+            <Skeleton className="h-2 w-full rounded-full" />
+          </div>
+        </div>
+      </div>
+      <div className="lg:col-span-2">
+        <Skeleton className="h-full min-h-[120px] w-full rounded-xl" />
+      </div>
+    </div>
 
     {/* Stats row */}
     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -207,12 +222,23 @@ export const AnalyticsSkeleton: React.FC = () => (
       <StatCardSkeleton />
     </div>
 
+    {/* Heatmap */}
+    <div className="card">
+      <Skeleton className="h-5 w-36 rounded-md mb-4" />
+      <Skeleton className="h-24 w-full rounded-md" />
+    </div>
+
     {/* Trend chart */}
     <ChartSkeleton />
 
-    {/* Weekly + Categories */}
+    {/* Weekly + Day-of-Week */}
     <div className="grid lg:grid-cols-2 gap-6">
       <ChartSkeleton />
+      <ChartSkeleton />
+    </div>
+
+    {/* Categories + Habit Performance */}
+    <div className="grid lg:grid-cols-2 gap-6">
       <div className="card">
         <Skeleton className="h-5 w-28 rounded-md mb-4" />
         <div className="flex items-center gap-6">
@@ -228,9 +254,22 @@ export const AnalyticsSkeleton: React.FC = () => (
           </div>
         </div>
       </div>
+      <ChartSkeleton />
     </div>
 
-    {/* Streak leaders + Insights */}
+    {/* Correlations */}
+    <div className="card space-y-3">
+      <Skeleton className="h-5 w-40 rounded-md" />
+      {Array.from({ length: 3 }).map((_, i) => (
+        <div key={i} className="flex items-center gap-3 p-3 rounded-lg bg-dark-800">
+          <Skeleton className="h-3 flex-1 rounded-md" />
+          <Skeleton className="h-4 w-16 rounded-md" />
+          <Skeleton className="h-3 flex-1 rounded-md" />
+        </div>
+      ))}
+    </div>
+
+    {/* Streak leaders + Predictions */}
     <div className="grid lg:grid-cols-2 gap-6">
       <div className="card space-y-2">
         <Skeleton className="h-5 w-32 rounded-md mb-2" />
@@ -243,13 +282,27 @@ export const AnalyticsSkeleton: React.FC = () => (
         ))}
       </div>
       <div className="card space-y-3">
-        <Skeleton className="h-5 w-24 rounded-md" />
-        <div className="grid grid-cols-2 gap-2">
-          <Skeleton className="h-20 rounded-lg" />
-          <Skeleton className="h-20 rounded-lg" />
-        </div>
-        <Skeleton className="h-16 rounded-lg" />
+        <Skeleton className="h-5 w-40 rounded-md" />
+        {Array.from({ length: 3 }).map((_, i) => (
+          <div key={i} className="p-3 rounded-lg bg-dark-800 space-y-2">
+            <div className="flex items-center justify-between">
+              <Skeleton className="h-3 w-28 rounded-md" />
+              <Skeleton className="h-5 w-16 rounded-full" />
+            </div>
+            <Skeleton className="h-1.5 w-full rounded-full" />
+          </div>
+        ))}
       </div>
+    </div>
+
+    {/* Insights */}
+    <div className="card space-y-3">
+      <Skeleton className="h-5 w-24 rounded-md" />
+      <div className="grid grid-cols-2 gap-2">
+        <Skeleton className="h-20 rounded-lg" />
+        <Skeleton className="h-20 rounded-lg" />
+      </div>
+      <Skeleton className="h-16 rounded-lg" />
     </div>
   </div>
 );
