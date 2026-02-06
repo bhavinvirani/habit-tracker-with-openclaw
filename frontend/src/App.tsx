@@ -149,10 +149,18 @@ function App() {
               </ErrorBoundary>
             }
           />
+          <Route
+            path="*"
+            element={
+              <ErrorBoundary>
+                <NotFound />
+              </ErrorBoundary>
+            }
+          />
         </Route>
 
-        {/* 404 for all unknown paths — outside auth guard so it renders regardless of auth state */}
-        <Route path="*" element={<NotFound />} />
+        {/* Unauthenticated users on unknown paths go to login */}
+        <Route path="*" element={<Navigate to="/login" />} />
       </Routes>
       <Toaster
         position="top-right"
