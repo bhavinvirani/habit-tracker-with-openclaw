@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { authenticate } from '../middleware/auth';
 import { validateBody, validateQuery, validateParams } from '../middleware/validate';
+import { readLimiter, writeLimiter } from '../middleware/rateLimiter';
 import {
   checkInSchema,
   undoCheckInSchema,
@@ -21,21 +22,27 @@ const router = Router();
 router.use(authenticate);
 
 // Today's habits with completion status
-router.get('/today', getTodayHabits);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+router.get('/today', readLimiter as any, getTodayHabits);
 
 // Check-in (log habit completion)
-router.post('/check-in', validateBody(checkInSchema), checkIn);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+router.post('/check-in', writeLimiter as any, validateBody(checkInSchema), checkIn);
 
 // Undo check-in
-router.delete('/check-in', validateBody(undoCheckInSchema), undoCheckIn);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+router.delete('/check-in', writeLimiter as any, validateBody(undoCheckInSchema), undoCheckIn);
 
 // Get habits for a specific date
-router.get('/date/:date', validateParams(dateParamSchema), getHabitsByDate);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+router.get('/date/:date', readLimiter as any, validateParams(dateParamSchema), getHabitsByDate);
 
 // Get history for calendar/heatmap
-router.get('/history', validateQuery(historyQuerySchema), getHistory);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+router.get('/history', readLimiter as any, validateQuery(historyQuerySchema), getHistory);
 
 // Get milestones
-router.get('/milestones', getMilestones);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+router.get('/milestones', readLimiter as any, getMilestones);
 
 export default router;

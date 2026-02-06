@@ -1,8 +1,9 @@
 import { Response } from 'express';
+import bcrypt from 'bcryptjs';
 import { AuthRequest } from '../middleware/auth';
 import { asyncHandler } from '../utils/asyncHandler';
 import { sendSuccess } from '../utils/response';
-import { ValidationError } from '../utils/AppError';
+import { ValidationError, AuthenticationError, NotFoundError } from '../utils/AppError';
 import logger from '../utils/logger';
 import prisma from '../config/database';
 import crypto from 'crypto';
@@ -159,6 +160,7 @@ export const generateApiKey = asyncHandler(async (req: AuthRequest, res: Respons
     data: {
       apiKey,
       apiKeyCreatedAt: new Date(),
+      apiKeyScopes: ['bot:read', 'bot:write'],
     },
   });
 
@@ -209,4 +211,41 @@ export const revokeApiKey = asyncHandler(async (req: AuthRequest, res: Response)
 
   logger.info('API key revoked', { userId: req.userId });
   sendSuccess(res, null, 'API key revoked successfully');
+});
+
+/**
+ * Change password
+ * PUT /api/users/password
+ */
+export const changePassword = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const userId = req.userId!;
+  const { currentPassword, newPassword } = req.body;
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { id: true, password: true },
+  });
+
+  if (!user) {
+    throw new NotFoundError('User');
+  }
+
+  const isValidPassword = await bcrypt.compare(currentPassword, user.password);
+  if (!isValidPassword) {
+    throw new AuthenticationError('Current password is incorrect');
+  }
+
+  const isSamePassword = await bcrypt.compare(newPassword, user.password);
+  if (isSamePassword) {
+    throw new ValidationError('New password must be different from current password');
+  }
+
+  const hashedPassword = await bcrypt.hash(newPassword, 10);
+  await prisma.user.update({
+    where: { id: userId },
+    data: { password: hashedPassword },
+  });
+
+  logger.info('Password changed', { userId });
+  sendSuccess(res, null, 'Password changed successfully');
 });

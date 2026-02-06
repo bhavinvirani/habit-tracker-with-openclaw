@@ -38,8 +38,8 @@ const PROVIDERS = [
     icon: MessageCircle,
     color: 'text-green-400',
     bgColor: 'bg-green-500/20',
-    description: 'Track habits through WhatsApp messages.',
-    comingSoon: true,
+    description: 'Message yourself on WhatsApp to track habits via OpenClaw.',
+    requiresOpenClaw: true,
   },
   {
     id: 'discord',
@@ -90,6 +90,35 @@ const ConnectedApps: React.FC = () => {
   const setupSteps = [
     {
       number: 1,
+      title: 'Create Telegram Bot',
+      icon: Smartphone,
+      description: 'Set up a bot using @BotFather on Telegram',
+      action: (
+        <div className="space-y-3">
+          <ol className="list-decimal list-inside space-y-2 text-sm text-dark-300">
+            <li>
+              Open Telegram and search for <code className="text-primary-400">@BotFather</code>
+            </li>
+            <li>
+              Send <code className="text-primary-400">/newbot</code> and follow the prompts
+            </li>
+            <li>
+              Copy the bot token (format:{' '}
+              <code className="text-xs text-dark-400">123456789:ABCdef...</code>)
+            </li>
+            <li>
+              Add <code className="text-primary-400">TELEGRAM_BOT_TOKEN</code> to your backend
+              environment
+            </li>
+          </ol>
+          <div className="p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
+            <p className="text-xs text-yellow-300">⚠️ Keep your bot token secret!</p>
+          </div>
+        </div>
+      ),
+    },
+    {
+      number: 2,
       title: 'Get your API Key',
       icon: Key,
       description: 'Generate an API key from the "API Access" section above',
@@ -101,7 +130,7 @@ const ConnectedApps: React.FC = () => {
       ),
     },
     {
-      number: 2,
+      number: 3,
       title: 'Install OpenClaw',
       icon: Download,
       description: 'Install the OpenClaw CLI on your computer',
@@ -134,49 +163,26 @@ const ConnectedApps: React.FC = () => {
       ),
     },
     {
-      number: 3,
-      title: 'Add the Habit Tracker skill',
-      icon: Terminal,
-      description: 'Copy the skill files to your OpenClaw directory',
-      action: (
-        <div className="space-y-3">
-          <div className="flex items-center gap-2">
-            <code className="flex-1 px-3 py-2 bg-dark-800 rounded-lg text-sm text-dark-300 font-mono truncate">
-              cp -r openclaw/habit-tracker ~/.openclaw/skills/
-            </code>
-            <button
-              onClick={() =>
-                copyToClipboard('cp -r openclaw/habit-tracker ~/.openclaw/skills/', 'Command')
-              }
-              className="btn btn-sm bg-dark-700 hover:bg-dark-600"
-            >
-              {copiedText === 'cp -r openclaw/habit-tracker ~/.openclaw/skills/' ? (
-                <Check size={14} className="text-accent-green" />
-              ) : (
-                <Copy size={14} />
-              )}
-            </button>
-          </div>
-          <p className="text-xs text-dark-500">
-            Run this from your habit-tracker project root directory
-          </p>
-        </div>
-      ),
-    },
-    {
       number: 4,
       title: 'Configure & Connect',
       icon: Send,
-      description: 'Set up your messaging platform and link your chat',
+      description: 'Set up environment variables and register your chat',
       action: (
         <div className="space-y-3">
           <div className="p-3 rounded-lg bg-dark-800 border border-dark-700">
             <p className="text-sm text-dark-300 mb-2">
-              <strong className="text-white">Set environment variables:</strong>
+              <strong className="text-white">Set environment variables using CLI:</strong>
             </p>
             <div className="space-y-1 text-xs font-mono text-dark-400">
-              <p>HABIT_TRACKER_API_URL=http://localhost:8080/api</p>
-              <p>HABIT_TRACKER_API_KEY=your_api_key_here</p>
+              <p>openclaw config set skills.entries.habit-tracker.enabled true</p>
+              <p>
+                openclaw config set skills.entries.habit-tracker.env.HABIT_TRACKER_API_URL
+                http://localhost:8080
+              </p>
+              <p>
+                openclaw config set skills.entries.habit-tracker.env.HABIT_TRACKER_API_KEY
+                your_api_key
+              </p>
             </div>
           </div>
           <p className="text-sm text-dark-400">
@@ -184,8 +190,14 @@ const ConnectedApps: React.FC = () => {
             <code className="px-2 py-1 bg-primary-500/20 text-primary-400 rounded">
               register this chat
             </code>{' '}
-            to your bot
+            to your Telegram bot
           </p>
+          <a
+            href="/docs/integration"
+            className="inline-flex items-center gap-1 text-sm text-primary-400 hover:text-primary-300"
+          >
+            View full setup guide <ExternalLink size={12} />
+          </a>
         </div>
       ),
     },
@@ -213,24 +225,24 @@ const ConnectedApps: React.FC = () => {
             <div className="w-10 h-10 mx-auto rounded-full bg-blue-500/20 flex items-center justify-center mb-2">
               <Smartphone size={18} className="text-blue-400" />
             </div>
-            <p className="text-xs text-dark-300">Send message</p>
-            <p className="text-[10px] text-dark-500">"Did 30 mins meditation"</p>
+            <p className="text-xs text-dark-300">Send to yourself</p>
+            <p className="text-[10px] text-dark-500">On Telegram or WhatsApp</p>
           </div>
           <ArrowRight size={16} className="text-dark-500 flex-shrink-0" />
           <div className="flex-1">
             <div className="w-10 h-10 mx-auto rounded-full bg-accent-purple/20 flex items-center justify-center mb-2">
               <CheckCircle2 size={18} className="text-accent-purple" />
             </div>
-            <p className="text-xs text-dark-300">Habit updated</p>
-            <p className="text-[10px] text-dark-500">Syncs to this app</p>
+            <p className="text-xs text-dark-300">OpenClaw processes</p>
+            <p className="text-[10px] text-dark-500">Logs to habit tracker</p>
           </div>
           <ArrowRight size={16} className="text-dark-500 flex-shrink-0" />
           <div className="flex-1">
-            <div className="w-10 h-10 mx-auto rounded-full bg-accent-orange/20 flex items-center justify-center mb-2">
-              <Bell size={18} className="text-accent-orange" />
+            <div className="w-10 h-10 mx-auto rounded-full bg-accent-green/20 flex items-center justify-center mb-2">
+              <Bell size={18} className="text-accent-green" />
             </div>
-            <p className="text-xs text-dark-300">Get reminders</p>
-            <p className="text-[10px] text-dark-500">If you miss a habit</p>
+            <p className="text-xs text-dark-300">Get confirmation</p>
+            <p className="text-[10px] text-dark-500">See streak & progress</p>
           </div>
         </div>
       </div>
@@ -269,11 +281,16 @@ const ConnectedApps: React.FC = () => {
                   </div>
 
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <h4 className="font-medium text-white">{provider.name}</h4>
                       {provider.comingSoon && (
                         <span className="px-2 py-0.5 text-xs rounded-full bg-dark-700 text-dark-400">
                           Coming Soon
+                        </span>
+                      )}
+                      {provider.requiresOpenClaw && !isConnected && (
+                        <span className="px-2 py-0.5 text-xs rounded-full bg-accent-purple/20 text-accent-purple">
+                          Requires OpenClaw
                         </span>
                       )}
                       {isConnected && (
@@ -454,6 +471,46 @@ const ConnectedApps: React.FC = () => {
                   </div>
                 </div>
 
+                {/* WhatsApp Specific Instructions */}
+                <div className="p-4 rounded-xl bg-accent-green/10 border border-accent-green/20">
+                  <h4 className="text-sm font-medium text-accent-green mb-3">
+                    📱 WhatsApp Setup (Easy!)
+                  </h4>
+                  <ol className="space-y-2 text-sm text-dark-300">
+                    <li className="flex items-start gap-2">
+                      <span className="text-accent-green font-bold">1.</span>
+                      <span>
+                        Open WhatsApp and start a chat{' '}
+                        <strong className="text-white">with yourself</strong> (Message Yourself
+                        option)
+                      </span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-accent-green font-bold">2.</span>
+                      <span>
+                        Make sure OpenClaw gateway is running:{' '}
+                        <code className="px-2 py-0.5 bg-dark-800 text-primary-400 rounded text-xs">
+                          openclaw gateway start
+                        </code>
+                      </span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-accent-green font-bold">3.</span>
+                      <span>
+                        Send{' '}
+                        <code className="px-2 py-0.5 bg-dark-800 text-primary-400 rounded text-xs">
+                          register this chat
+                        </code>{' '}
+                        to yourself on WhatsApp
+                      </span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-accent-green font-bold">4.</span>
+                      <span>Start tracking! Send "Done with meditation" or "Show my habits"</span>
+                    </li>
+                  </ol>
+                </div>
+
                 {/* Example Messages */}
                 <div className="p-4 rounded-xl bg-dark-900 border border-dark-700">
                   <h4 className="text-sm font-medium text-white mb-3">
@@ -477,7 +534,8 @@ const ConnectedApps: React.FC = () => {
                     ))}
                   </div>
                   <p className="text-xs text-dark-500 mt-3">
-                    The bot understands natural language — just describe what you did!
+                    Send these to <strong>yourself on WhatsApp</strong> — OpenClaw intercepts and
+                    processes them!
                   </p>
                 </div>
               </div>

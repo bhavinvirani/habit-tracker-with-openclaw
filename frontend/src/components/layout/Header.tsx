@@ -53,7 +53,13 @@ const Header: React.FC<HeaderProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      const { api } = await import('../../services/api');
+      await api.post('/auth/logout');
+    } catch {
+      // Continue logout even if API call fails
+    }
     logout();
     navigate('/login');
   };
@@ -69,6 +75,8 @@ const Header: React.FC<HeaderProps> = ({
           {/* Mobile Menu Toggle */}
           <button
             onClick={onMobileMenuToggle}
+            aria-label={isMobileMenuOpen ? 'Close menu' : 'Open menu'}
+            aria-expanded={isMobileMenuOpen}
             className="lg:hidden p-2 rounded-lg text-dark-400 hover:text-white hover:bg-dark-800 transition-colors"
           >
             {isMobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
@@ -122,7 +130,10 @@ const Header: React.FC<HeaderProps> = ({
           </button>
 
           {/* Notifications */}
-          <button className="relative p-2 rounded-lg text-dark-400 hover:text-white hover:bg-dark-800 transition-colors">
+          <button
+            aria-label="Notifications"
+            className="relative p-2 rounded-lg text-dark-400 hover:text-white hover:bg-dark-800 transition-colors"
+          >
             <Bell size={20} />
             {/* Notification dot */}
             <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-accent-red rounded-full" />
@@ -132,6 +143,9 @@ const Header: React.FC<HeaderProps> = ({
           <div className="relative" ref={profileRef}>
             <button
               onClick={() => setIsProfileOpen(!isProfileOpen)}
+              aria-label="Profile menu"
+              aria-expanded={isProfileOpen}
+              aria-haspopup="true"
               className={clsx(
                 'flex items-center gap-2 p-1.5 pr-3 rounded-xl transition-all',
                 isProfileOpen ? 'bg-dark-800' : 'hover:bg-dark-800/50'
@@ -166,7 +180,10 @@ const Header: React.FC<HeaderProps> = ({
 
             {/* Dropdown Menu */}
             {isProfileOpen && (
-              <div className="absolute right-0 top-full mt-2 w-56 bg-dark-800 border border-dark-700 rounded-xl shadow-xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+              <div
+                role="menu"
+                className="absolute right-0 top-full mt-2 w-56 bg-dark-800 border border-dark-700 rounded-xl shadow-xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200"
+              >
                 {/* User Info */}
                 <div className="p-4 border-b border-dark-700">
                   <p className="font-medium text-white">{user?.name}</p>
@@ -194,6 +211,7 @@ const Header: React.FC<HeaderProps> = ({
                 {/* Menu Items */}
                 <div className="p-2">
                   <Link
+                    role="menuitem"
                     to="/profile"
                     onClick={() => setIsProfileOpen(false)}
                     className="flex items-center gap-3 px-3 py-2 rounded-lg text-dark-300 hover:bg-dark-700 hover:text-white transition-colors"
@@ -202,6 +220,7 @@ const Header: React.FC<HeaderProps> = ({
                     <span>Profile</span>
                   </Link>
                   <Link
+                    role="menuitem"
                     to="/profile?tab=settings"
                     onClick={() => setIsProfileOpen(false)}
                     className="flex items-center gap-3 px-3 py-2 rounded-lg text-dark-300 hover:bg-dark-700 hover:text-white transition-colors"
@@ -210,6 +229,7 @@ const Header: React.FC<HeaderProps> = ({
                     <span>Settings</span>
                   </Link>
                   <button
+                    role="menuitem"
                     onClick={handleLogout}
                     className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-accent-red hover:bg-accent-red/10 transition-colors"
                   >

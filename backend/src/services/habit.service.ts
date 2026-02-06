@@ -16,6 +16,8 @@ export interface HabitFilters {
   isArchived?: boolean;
   category?: string;
   frequency?: Frequency;
+  limit?: number;
+  offset?: number;
 }
 
 // ============ SERVICE FUNCTIONS ============
@@ -67,7 +69,9 @@ export async function createHabit(
 /**
  * Get all habits for a user with optional filters
  */
-export async function getHabits(filters: HabitFilters): Promise<HabitWithStats[]> {
+export async function getHabits(
+  filters: HabitFilters
+): Promise<{ habits: HabitWithStats[]; total: number; limit: number; offset: number }> {
   const where: Prisma.HabitWhereInput = {
     userId: filters.userId,
   };
@@ -88,10 +92,18 @@ export async function getHabits(filters: HabitFilters): Promise<HabitWithStats[]
     where.frequency = filters.frequency;
   }
 
-  const habits = await prisma.habit.findMany({
-    where,
-    orderBy: { sortOrder: 'asc' },
-  });
+  const limit = filters.limit ?? 50;
+  const offset = filters.offset ?? 0;
+
+  const [habits, total] = await Promise.all([
+    prisma.habit.findMany({
+      where,
+      orderBy: { sortOrder: 'asc' },
+      take: limit,
+      skip: offset,
+    }),
+    prisma.habit.count({ where }),
+  ]);
 
   // Calculate completionRate for each habit based on last 30 days
   const now = new Date();
@@ -138,7 +150,7 @@ export async function getHabits(filters: HabitFilters): Promise<HabitWithStats[]
     })
   );
 
-  return habitsWithStats;
+  return { habits: habitsWithStats, total, limit, offset };
 }
 
 /**

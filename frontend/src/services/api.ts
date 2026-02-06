@@ -1,6 +1,7 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
+import { useAuthStore } from '../store/authStore';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080/api';
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080/api/v1';
 
 export const api = axios.create({
   baseURL: API_URL,
@@ -29,19 +30,12 @@ const processQueue = (error: Error | null) => {
   failedQueue = [];
 };
 
-// Request interceptor to add auth token
+// Request interceptor — read token from in-memory Zustand store (never localStorage)
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('auth-storage');
+    const token = useAuthStore.getState().token;
     if (token) {
-      try {
-        const authData = JSON.parse(token);
-        if (authData.state?.token) {
-          config.headers.Authorization = `Bearer ${authData.state.token}`;
-        }
-      } catch {
-        // Invalid JSON in storage, ignore
-      }
+      config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },
@@ -88,18 +82,12 @@ api.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        // Attempt to refresh the token
+        // Attempt to refresh the token using httpOnly cookie
         const response = await api.post('/auth/refresh');
         const { token, user } = response.data.data;
 
-        // Update stored token
-        const authStorage = localStorage.getItem('auth-storage');
-        if (authStorage) {
-          const authData = JSON.parse(authStorage);
-          authData.state.token = token;
-          authData.state.user = user;
-          localStorage.setItem('auth-storage', JSON.stringify(authData));
-        }
+        // Update in-memory store only
+        useAuthStore.getState().login(user, token);
 
         // Process queued requests
         processQueue(null);
@@ -108,10 +96,9 @@ api.interceptors.response.use(
         originalRequest.headers.Authorization = `Bearer ${token}`;
         return api(originalRequest);
       } catch (refreshError) {
-        // Refresh failed, clear auth and redirect to login
+        // Refresh failed — clear auth state and let React Router redirect to login
         processQueue(refreshError as Error);
-        localStorage.removeItem('auth-storage');
-        window.location.href = '/login';
+        useAuthStore.getState().logout();
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;
@@ -127,5 +114,20 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+/**
+ * Attempt to restore session from httpOnly refresh token cookie.
+ * Called once on app startup — if the cookie is valid, we get a new access token.
+ */
+export async function restoreSession(): Promise<boolean> {
+  try {
+    const response = await api.post('/auth/refresh');
+    const { token, user } = response.data.data;
+    useAuthStore.getState().login(user, token);
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 export default api;

@@ -30,7 +30,7 @@ import { format, subWeeks, addWeeks } from 'date-fns';
 import { analyticsApi } from '../services/habits';
 import clsx from 'clsx';
 import { WeeklyDay, StreakInfo, ChartTooltipProps } from '../types';
-import { LoadingSpinner, PageHeader } from '../components/ui';
+import { PageHeader, AnalyticsSkeleton } from '../components/ui';
 
 const Analytics: React.FC = () => {
   const [weekOffset, setWeekOffset] = useState(0);
@@ -52,7 +52,7 @@ const Analytics: React.FC = () => {
 
   const { data: weekly, isLoading: loadingWeekly } = useQuery({
     queryKey: ['weekly', weekDate],
-    queryFn: () => analyticsApi.getWeekly(weekDate),
+    queryFn: () => analyticsApi.getWeekly(weekDate ? { startDate: weekDate } : undefined),
   });
 
   const { data: streaks, isLoading: loadingStreaks } = useQuery({
@@ -90,7 +90,7 @@ const Analytics: React.FC = () => {
     loadingTrend;
 
   if (isLoading) {
-    return <LoadingSpinner />;
+    return <AnalyticsSkeleton />;
   }
 
   // Prepare chart data

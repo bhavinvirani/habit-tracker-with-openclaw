@@ -305,9 +305,9 @@ export const analyticsApi = {
     return response.data.data.stats;
   },
 
-  getWeekly: async (date?: string): Promise<WeeklyStats> => {
+  getWeekly: async (params?: { startDate?: string; endDate?: string }): Promise<WeeklyStats> => {
     const response = await api.get<ApiResponse<WeeklyStats>>('/analytics/weekly', {
-      params: { date },
+      params,
     });
     return response.data.data;
   },

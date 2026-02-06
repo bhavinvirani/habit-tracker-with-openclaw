@@ -1,41 +1,182 @@
+import React, { Suspense, useEffect, useRef } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
+import ErrorBoundary from './components/ErrorBoundary';
 import Layout from './components/layout/Layout';
-import Dashboard from './pages/Dashboard';
-import Habits from './pages/Habits';
-import Calendar from './pages/Calendar';
-import Analytics from './pages/Analytics';
-import Profile from './pages/Profile';
-import Books from './pages/Books';
-import Challenges from './pages/Challenges';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import ApiDocs from './pages/ApiDocs';
-import IntegrationDocs from './pages/IntegrationDocs';
-import Help from './pages/Help';
+import { LoadingSpinner } from './components/ui';
 import { useAuthStore } from './store/authStore';
+import { restoreSession } from './services/api';
+
+// Lazy-loaded pages
+const Dashboard = React.lazy(() => import('./pages/Dashboard'));
+const Habits = React.lazy(() => import('./pages/Habits'));
+const Calendar = React.lazy(() => import('./pages/Calendar'));
+const Analytics = React.lazy(() => import('./pages/Analytics'));
+const Profile = React.lazy(() => import('./pages/Profile'));
+const Books = React.lazy(() => import('./pages/Books'));
+const Challenges = React.lazy(() => import('./pages/Challenges'));
+const Login = React.lazy(() => import('./pages/Login'));
+const Register = React.lazy(() => import('./pages/Register'));
+const ApiDocs = React.lazy(() => import('./pages/ApiDocs'));
+const IntegrationDocs = React.lazy(() => import('./pages/IntegrationDocs'));
+const Help = React.lazy(() => import('./pages/Help'));
+const NotFound = React.lazy(() => import('./pages/NotFound'));
+
+const SuspensePage: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <ErrorBoundary>
+    <Suspense fallback={<LoadingSpinner />}>{children}</Suspense>
+  </ErrorBoundary>
+);
 
 function App() {
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, isInitialized } = useAuthStore();
+  const initRef = useRef(false);
+
+  // Restore session from httpOnly refresh token cookie on app startup.
+  // The ref guard prevents StrictMode double-mount from firing two concurrent
+  // restoreSession() calls — the backend rotates the refresh token on each call,
+  // so a second in-flight request with the same (now-deleted) token would fail.
+  useEffect(() => {
+    if (initRef.current) return;
+    initRef.current = true;
+
+    const init = async () => {
+      await restoreSession();
+      useAuthStore.getState().setInitialized();
+    };
+    init();
+  }, []);
+
+  // Show loading screen while restoring session
+  if (!isInitialized) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-slate-900">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-indigo-500 border-t-transparent" />
+      </div>
+    );
+  }
 
   return (
-    <>
+    <ErrorBoundary>
       <Routes>
-        <Route path="/login" element={isAuthenticated ? <Navigate to="/" /> : <Login />} />
-        <Route path="/register" element={isAuthenticated ? <Navigate to="/" /> : <Register />} />
-        <Route path="/docs/api" element={<ApiDocs />} />
-        <Route path="/docs/integration" element={<IntegrationDocs />} />
+        <Route
+          path="/login"
+          element={
+            isAuthenticated ? (
+              <Navigate to="/" />
+            ) : (
+              <SuspensePage>
+                <Login />
+              </SuspensePage>
+            )
+          }
+        />
+        <Route
+          path="/register"
+          element={
+            isAuthenticated ? (
+              <Navigate to="/" />
+            ) : (
+              <SuspensePage>
+                <Register />
+              </SuspensePage>
+            )
+          }
+        />
+        <Route
+          path="/docs/api"
+          element={
+            <SuspensePage>
+              <ApiDocs />
+            </SuspensePage>
+          }
+        />
+        <Route
+          path="/docs/integration"
+          element={
+            <SuspensePage>
+              <IntegrationDocs />
+            </SuspensePage>
+          }
+        />
 
-        <Route path="/" element={isAuthenticated ? <Layout /> : <Navigate to="/login" />}>
-          <Route index element={<Dashboard />} />
-          <Route path="habits" element={<Habits />} />
-          <Route path="calendar" element={<Calendar />} />
-          <Route path="analytics" element={<Analytics />} />
-          <Route path="books" element={<Books />} />
-          <Route path="challenges" element={<Challenges />} />
-          <Route path="profile" element={<Profile />} />
-          <Route path="help" element={<Help />} />
+        <Route element={isAuthenticated ? <Layout /> : <Navigate to="/login" />}>
+          <Route
+            index
+            element={
+              <SuspensePage>
+                <Dashboard />
+              </SuspensePage>
+            }
+          />
+          <Route
+            path="habits"
+            element={
+              <SuspensePage>
+                <Habits />
+              </SuspensePage>
+            }
+          />
+          <Route
+            path="calendar"
+            element={
+              <SuspensePage>
+                <Calendar />
+              </SuspensePage>
+            }
+          />
+          <Route
+            path="analytics"
+            element={
+              <SuspensePage>
+                <Analytics />
+              </SuspensePage>
+            }
+          />
+          <Route
+            path="books"
+            element={
+              <SuspensePage>
+                <Books />
+              </SuspensePage>
+            }
+          />
+          <Route
+            path="challenges"
+            element={
+              <SuspensePage>
+                <Challenges />
+              </SuspensePage>
+            }
+          />
+          <Route
+            path="profile"
+            element={
+              <SuspensePage>
+                <Profile />
+              </SuspensePage>
+            }
+          />
+          <Route
+            path="help"
+            element={
+              <SuspensePage>
+                <Help />
+              </SuspensePage>
+            }
+          />
+          <Route
+            path="*"
+            element={
+              <SuspensePage>
+                <NotFound />
+              </SuspensePage>
+            }
+          />
         </Route>
+
+        {/* Unauthenticated users on unknown paths go to login */}
+        <Route path="*" element={<Navigate to="/login" />} />
       </Routes>
       <Toaster
         position="top-right"
@@ -60,7 +201,7 @@ function App() {
           },
         }}
       />
-    </>
+    </ErrorBoundary>
   );
 }
 

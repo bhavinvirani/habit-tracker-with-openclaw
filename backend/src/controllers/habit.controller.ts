@@ -22,15 +22,21 @@ export const createHabit = asyncHandler(async (req: AuthRequest, res: Response) 
 export const getHabits = asyncHandler(async (req: AuthRequest, res: Response) => {
   const query = req.query as unknown as GetHabitsQuery;
 
-  const habits = await habitService.getHabits({
+  const result = await habitService.getHabits({
     userId: req.userId!,
     isActive: query.isActive,
     isArchived: query.isArchived,
     category: query.category,
     frequency: query.frequency,
+    limit: query.limit,
+    offset: query.offset,
   });
 
-  sendSuccess(res, { habits }, 'Habits retrieved successfully');
+  sendSuccess(
+    res,
+    { habits: result.habits, total: result.total, limit: result.limit, offset: result.offset },
+    'Habits retrieved successfully'
+  );
 });
 
 /**

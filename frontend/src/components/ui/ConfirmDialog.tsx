@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { X, AlertTriangle } from 'lucide-react';
 import Button from './Button';
 
@@ -34,18 +34,38 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   danger = false,
   loading = false,
 }) => {
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center">
       {/* Backdrop */}
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
 
       {/* Dialog */}
-      <div className="relative bg-dark-800 border border-dark-600 rounded-xl shadow-2xl w-full max-w-md mx-4 p-6">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="confirm-dialog-title"
+        className="relative bg-dark-800 border border-dark-600 rounded-xl shadow-2xl w-full max-w-md mx-4 p-6"
+      >
         {/* Close button */}
         <button
           onClick={onClose}
+          aria-label="Close dialog"
           className="absolute top-4 right-4 text-dark-400 hover:text-white transition-colors"
         >
           <X size={20} />
@@ -59,7 +79,9 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
         )}
 
         {/* Content */}
-        <h3 className="text-lg font-semibold text-white mb-2">{title}</h3>
+        <h3 id="confirm-dialog-title" className="text-lg font-semibold text-white mb-2">
+          {title}
+        </h3>
         <p className="text-dark-400 mb-6">{message}</p>
 
         {/* Actions */}

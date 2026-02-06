@@ -29,6 +29,17 @@ interface Section {
   icon: React.ElementType;
 }
 
+interface IntegrationType {
+  id: string;
+  title: string;
+  description: string;
+}
+
+const INTEGRATION_TYPES: IntegrationType[] = [
+  { id: 'telegram', title: 'Telegram Notifications', description: 'Simple one-way reminders' },
+  { id: 'openclaw', title: 'OpenClaw Integration', description: 'Full conversational tracking' },
+];
+
 const SECTIONS: Section[] = [
   { id: 'overview', title: 'Overview', icon: BookOpen },
   { id: 'architecture', title: 'How It Works', icon: Workflow },
@@ -39,6 +50,7 @@ const SECTIONS: Section[] = [
 ];
 
 const IntegrationDocs: React.FC = () => {
+  const [integrationType, setIntegrationType] = useState<'telegram' | 'openclaw'>('telegram');
   const [activeSection, setActiveSection] = useState('overview');
   const [copiedText, setCopiedText] = useState<string | null>(null);
   const [expandedSteps, setExpandedSteps] = useState<number[]>([1]);
@@ -88,25 +100,60 @@ const IntegrationDocs: React.FC = () => {
               <MessageCircle size={24} className="text-primary-400" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold">OpenClaw Integration</h1>
+              <h1 className="text-2xl font-bold">Messaging Integration</h1>
               <p className="text-dark-400">
-                Track habits from Telegram, WhatsApp, and other messaging apps
+                Get reminders and track habits via Telegram and other messaging apps
               </p>
             </div>
+          </div>
+
+          {/* Integration Type Tabs */}
+          <div className="flex gap-3 mt-6">
+            {INTEGRATION_TYPES.map((type) => (
+              <button
+                key={type.id}
+                onClick={() => {
+                  setIntegrationType(type.id as 'telegram' | 'openclaw');
+                  setActiveSection('overview');
+                }}
+                className={clsx(
+                  'flex-1 p-4 rounded-xl border transition-all text-left',
+                  integrationType === type.id
+                    ? 'bg-primary-500/20 border-primary-500/50'
+                    : 'bg-dark-800 border-dark-700 hover:border-dark-600'
+                )}
+              >
+                <h3
+                  className={clsx(
+                    'font-medium mb-1',
+                    integrationType === type.id ? 'text-primary-400' : 'text-white'
+                  )}
+                >
+                  {type.title}
+                </h3>
+                <p className="text-sm text-dark-400">{type.description}</p>
+              </button>
+            ))}
           </div>
 
           <div className="flex flex-wrap items-center gap-3 mt-6">
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-dark-800">
               <span className="text-xs text-dark-400">Platform:</span>
-              <span className="text-sm text-white font-mono">OpenClaw</span>
+              <span className="text-sm text-white font-mono">
+                {integrationType === 'telegram' ? 'Telegram Bot' : 'OpenClaw'}
+              </span>
             </div>
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-dark-800">
               <span className="text-xs text-dark-400">Auth:</span>
-              <code className="text-sm text-primary-400 font-mono">X-API-Key</code>
+              <code className="text-sm text-primary-400 font-mono">
+                {integrationType === 'telegram' ? 'TELEGRAM_BOT_TOKEN' : 'X-API-Key'}
+              </code>
             </div>
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-dark-800">
-              <span className="text-xs text-dark-400">Endpoint:</span>
-              <code className="text-sm text-primary-400 font-mono">/api/bot/*</code>
+              <span className="text-xs text-dark-400">Setup Time:</span>
+              <span className="text-sm text-white">
+                {integrationType === 'telegram' ? '10 min' : '30 min'}
+              </span>
             </div>
           </div>
         </div>
@@ -946,13 +993,33 @@ const IntegrationDocs: React.FC = () => {
                     </button>
                     {expandedSteps.includes(4) && (
                       <div className="mt-2 p-4 rounded-xl bg-dark-900 border border-dark-700 ml-14 space-y-4">
-                        <p className="text-sm text-dark-300">
-                          Add to <code className="text-primary-400">~/.openclaw/openclaw.json</code>
-                          :
-                        </p>
-                        <CodeBlock
-                          language="json"
-                          code={`{
+                        <div className="space-y-3">
+                          <div>
+                            <p className="text-sm font-medium text-white mb-2">
+                              Option A: Using CLI (Recommended)
+                            </p>
+                            <p className="text-xs text-dark-400 mb-3">
+                              Set environment variables using OpenClaw commands:
+                            </p>
+                            <CodeBlock
+                              code={`openclaw config set skills.entries.habit-tracker.enabled true
+openclaw config set skills.entries.habit-tracker.env.HABIT_TRACKER_API_URL http://localhost:8080
+openclaw config set skills.entries.habit-tracker.env.HABIT_TRACKER_API_KEY your_api_key_here`}
+                              copyLabel="CLI commands"
+                            />
+                          </div>
+                          <div className="pt-3 border-t border-dark-700">
+                            <p className="text-sm font-medium text-white mb-2">
+                              Option B: Manual Configuration
+                            </p>
+                            <p className="text-xs text-dark-400 mb-3">
+                              Or edit{' '}
+                              <code className="text-primary-400">~/.openclaw/openclaw.json</code>{' '}
+                              directly:
+                            </p>
+                            <CodeBlock
+                              language="json"
+                              code={`{
   "skills": {
     "entries": {
       "habit-tracker": {
@@ -965,8 +1032,10 @@ const IntegrationDocs: React.FC = () => {
     }
   }
 }`}
-                          copyLabel="Config"
-                        />
+                              copyLabel="JSON config"
+                            />
+                          </div>
+                        </div>
                       </div>
                     )}
                   </div>

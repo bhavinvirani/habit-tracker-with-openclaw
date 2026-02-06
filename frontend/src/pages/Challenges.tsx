@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Plus,
@@ -15,7 +16,6 @@ import {
   Award,
   ChevronRight,
   BarChart3,
-  Loader2,
 } from 'lucide-react';
 import { format, parseISO, addDays } from 'date-fns';
 import toast from 'react-hot-toast';
@@ -26,7 +26,8 @@ import {
   DURATION_PRESETS,
   type ChallengeStatus,
 } from '../constants/status';
-import { CircularProgress } from '../components/ui';
+import { CircularProgress, ChallengesSkeleton } from '../components/ui';
+import ConfirmDialog from '../components/ui/ConfirmDialog';
 
 interface ChallengeHabit {
   id: string;
@@ -102,6 +103,7 @@ const Challenges: React.FC = () => {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [editingChallenge, setEditingChallenge] = useState<Challenge | null>(null);
   const [filterStatus, setFilterStatus] = useState<ChallengeStatus | 'ALL'>('ALL');
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -225,9 +227,7 @@ const Challenges: React.FC = () => {
   };
 
   const handleDelete = (id: string) => {
-    if (window.confirm('Delete this challenge?')) {
-      deleteMutation.mutate(id);
-    }
+    setConfirmDeleteId(id);
   };
 
   const toggleHabitSelection = (habitId: string) => {
@@ -280,11 +280,7 @@ const Challenges: React.FC = () => {
   };
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-96">
-        <Loader2 className="w-8 h-8 animate-spin text-primary-500" />
-      </div>
-    );
+    return <ChallengesSkeleton />;
   }
 
   return (
@@ -568,354 +564,359 @@ const Challenges: React.FC = () => {
       )}
 
       {/* Challenge Detail Slide-over */}
-      {isDetailOpen && selectedChallenge && (
-        <div className="fixed inset-0 z-50 flex">
-          <div
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm"
-            onClick={() => setIsDetailOpen(false)}
-          />
-          <div className="ml-auto w-full max-w-lg bg-dark-800 border-l border-dark-700 h-full overflow-y-auto relative animate-slide-in-right">
-            {/* Close Button */}
-            <button
+      {isDetailOpen &&
+        selectedChallenge &&
+        createPortal(
+          <div className="fixed inset-0 z-[100] flex">
+            <div
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm"
               onClick={() => setIsDetailOpen(false)}
-              className="absolute top-4 right-4 p-2 rounded-lg bg-dark-700 text-dark-400 hover:text-white z-10"
-            >
-              <X size={20} />
-            </button>
-
-            {/* Header */}
-            <div className="p-6 border-b border-dark-700">
-              <div className="flex items-center gap-3 mb-4">
-                <div
-                  className={clsx(
-                    'p-3 rounded-xl',
-                    CHALLENGE_STATUS_CONFIG[selectedChallenge.status].bgColor
-                  )}
-                >
-                  {React.createElement(CHALLENGE_STATUS_CONFIG[selectedChallenge.status].icon, {
-                    size: 24,
-                    className: CHALLENGE_STATUS_CONFIG[selectedChallenge.status].color,
-                  })}
-                </div>
-                <div>
-                  <span
-                    className={clsx(
-                      'badge mb-1',
-                      CHALLENGE_STATUS_CONFIG[selectedChallenge.status].bgColor,
-                      CHALLENGE_STATUS_CONFIG[selectedChallenge.status].color
-                    )}
-                  >
-                    {CHALLENGE_STATUS_CONFIG[selectedChallenge.status].label}
-                  </span>
-                  <h2 className="text-xl font-bold text-white">{selectedChallenge.name}</h2>
-                </div>
-              </div>
-              {selectedChallenge.description && (
-                <p className="text-dark-400">{selectedChallenge.description}</p>
-              )}
-            </div>
-
-            <div className="p-6 space-y-6">
-              {/* Progress for Active */}
-              {selectedChallenge.status === 'ACTIVE' && (
-                <div className="card bg-dark-900/50">
-                  <h3 className="font-medium text-white mb-4">Progress</h3>
-                  <div className="grid grid-cols-3 gap-4 mb-4">
-                    <div className="text-center">
-                      <p className="text-3xl font-bold text-white">
-                        {selectedChallenge.daysElapsed}
-                      </p>
-                      <p className="text-xs text-dark-500">Days In</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-3xl font-bold text-primary-400">
-                        {selectedChallenge.daysRemaining}
-                      </p>
-                      <p className="text-xs text-dark-500">Days Left</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-3xl font-bold text-accent-yellow">
-                        {selectedChallenge.progressPercentage}%
-                      </p>
-                      <p className="text-xs text-dark-500">Complete</p>
-                    </div>
-                  </div>
-                  <div className="h-4 bg-dark-700 rounded-full overflow-hidden">
-                    <div
-                      className={clsx(
-                        'h-full bg-gradient-to-r transition-all',
-                        getProgressColor(selectedChallenge.progressPercentage)
-                      )}
-                      style={{ width: `${selectedChallenge.progressPercentage}%` }}
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* Completion Rate for Finished */}
-              {selectedChallenge.completionRate !== null && (
-                <div className="card bg-dark-900/50">
-                  <h3 className="font-medium text-white mb-3">Final Results</h3>
-                  <div className="flex items-center gap-4">
-                    <CircularProgress
-                      percent={selectedChallenge.completionRate}
-                      size={80}
-                      gradientColors={
-                        selectedChallenge.completionRate >= 80
-                          ? ['#22c55e', '#22c55e']
-                          : selectedChallenge.completionRate >= 50
-                            ? ['#6366f1', '#8b5cf6']
-                            : ['#ef4444', '#ef4444']
-                      }
-                      gradientId={`final-results-${selectedChallenge.id}`}
-                    />
-                    <div>
-                      <p className="text-white font-medium">
-                        {selectedChallenge.completionRate >= 80
-                          ? 'Excellent! 🎉'
-                          : selectedChallenge.completionRate >= 50
-                            ? 'Good effort! 💪'
-                            : 'Keep trying! 🌱'}
-                      </p>
-                      <p className="text-sm text-dark-400">
-                        Completed {selectedChallenge.duration} day challenge
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Timeline */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="card bg-dark-900/50">
-                  <Calendar size={18} className="text-dark-400 mb-1" />
-                  <p className="text-lg font-semibold text-white">
-                    {format(parseISO(selectedChallenge.startDate), 'MMM d, yyyy')}
-                  </p>
-                  <p className="text-xs text-dark-500">Started</p>
-                </div>
-                <div className="card bg-dark-900/50">
-                  <Target size={18} className="text-dark-400 mb-1" />
-                  <p className="text-lg font-semibold text-white">
-                    {format(parseISO(selectedChallenge.endDate), 'MMM d, yyyy')}
-                  </p>
-                  <p className="text-xs text-dark-500">End Date</p>
-                </div>
-              </div>
-
-              {/* Linked Habits */}
-              <div>
-                <h3 className="font-medium text-white mb-3">Linked Habits</h3>
-                <div className="space-y-2">
-                  {selectedChallenge.habits.map((habit) => (
-                    <div
-                      key={habit.id}
-                      className="flex items-center gap-3 p-3 rounded-lg bg-dark-900/50"
-                    >
-                      <div
-                        className="w-10 h-10 rounded-lg flex items-center justify-center text-lg"
-                        style={{ backgroundColor: `${habit.color}20` }}
-                      >
-                        {habit.icon || '📌'}
-                      </div>
-                      <span className="text-white">{habit.name}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Actions */}
-              <div className="flex gap-3 pt-4 border-t border-dark-700">
-                {selectedChallenge.status === 'ACTIVE' && (
-                  <button
-                    onClick={() => {
-                      syncMutation.mutate(selectedChallenge.id);
-                    }}
-                    className="btn btn-secondary flex-1"
-                  >
-                    <CheckCircle2 size={16} />
-                    Sync Progress
-                  </button>
-                )}
-                <button
-                  onClick={() => {
-                    handleOpenModal(selectedChallenge);
-                    setIsDetailOpen(false);
-                  }}
-                  className="btn btn-secondary flex-1"
-                >
-                  <Pencil size={16} />
-                  Edit
-                </button>
-                <button
-                  onClick={() => handleDelete(selectedChallenge.id)}
-                  className="btn bg-accent-red/20 text-accent-red hover:bg-accent-red/30"
-                >
-                  <Trash2 size={16} />
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Create/Edit Modal */}
-      {isModalOpen && (
-        <div className="modal-overlay" onClick={() => setIsModalOpen(false)}>
-          <div className="modal-content max-w-xl" onClick={(e) => e.stopPropagation()}>
-            <div className="p-6 border-b border-dark-700 flex items-center justify-between">
-              <div>
-                <h2 className="text-xl font-semibold text-white">
-                  {editingChallenge ? 'Edit Challenge' : 'New Challenge'}
-                </h2>
-                <p className="text-sm text-dark-400 mt-1">Set a goal and commit to it</p>
-              </div>
+            />
+            <div className="ml-auto w-full max-w-lg bg-dark-800 border-l border-dark-700 h-full overflow-y-auto relative animate-slide-in-right">
+              {/* Close Button */}
               <button
-                onClick={() => setIsModalOpen(false)}
-                className="p-2 text-dark-400 hover:text-white rounded-lg hover:bg-dark-700"
+                onClick={() => setIsDetailOpen(false)}
+                className="absolute top-4 right-4 p-2 rounded-lg bg-dark-700 text-dark-400 hover:text-white z-10"
               >
                 <X size={20} />
               </button>
-            </div>
 
-            <form onSubmit={handleSubmit} className="p-6 space-y-6 max-h-[70vh] overflow-y-auto">
-              {/* Name */}
-              <div>
-                <label className="label">Challenge Name *</label>
-                <input
-                  type="text"
-                  className="input"
-                  placeholder="e.g., 30-Day Morning Routine"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  required
-                />
+              {/* Header */}
+              <div className="p-6 border-b border-dark-700">
+                <div className="flex items-center gap-3 mb-4">
+                  <div
+                    className={clsx(
+                      'p-3 rounded-xl',
+                      CHALLENGE_STATUS_CONFIG[selectedChallenge.status].bgColor
+                    )}
+                  >
+                    {React.createElement(CHALLENGE_STATUS_CONFIG[selectedChallenge.status].icon, {
+                      size: 24,
+                      className: CHALLENGE_STATUS_CONFIG[selectedChallenge.status].color,
+                    })}
+                  </div>
+                  <div>
+                    <span
+                      className={clsx(
+                        'badge mb-1',
+                        CHALLENGE_STATUS_CONFIG[selectedChallenge.status].bgColor,
+                        CHALLENGE_STATUS_CONFIG[selectedChallenge.status].color
+                      )}
+                    >
+                      {CHALLENGE_STATUS_CONFIG[selectedChallenge.status].label}
+                    </span>
+                    <h2 className="text-xl font-bold text-white">{selectedChallenge.name}</h2>
+                  </div>
+                </div>
+                {selectedChallenge.description && (
+                  <p className="text-dark-400">{selectedChallenge.description}</p>
+                )}
               </div>
 
-              {/* Description */}
-              <div>
-                <label className="label">Description</label>
-                <textarea
-                  className="input min-h-[80px] resize-none"
-                  placeholder="What's this challenge about?"
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                />
-              </div>
-
-              {/* Duration */}
-              {!editingChallenge && (
-                <div>
-                  <label className="label">Duration</label>
-                  <div className="grid grid-cols-3 gap-2">
-                    {DURATION_PRESETS.map((preset) => (
-                      <button
-                        key={preset.value}
-                        type="button"
-                        onClick={() => setFormData({ ...formData, duration: preset.value })}
+              <div className="p-6 space-y-6">
+                {/* Progress for Active */}
+                {selectedChallenge.status === 'ACTIVE' && (
+                  <div className="card bg-dark-900/50">
+                    <h3 className="font-medium text-white mb-4">Progress</h3>
+                    <div className="grid grid-cols-3 gap-4 mb-4">
+                      <div className="text-center">
+                        <p className="text-3xl font-bold text-white">
+                          {selectedChallenge.daysElapsed}
+                        </p>
+                        <p className="text-xs text-dark-500">Days In</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-3xl font-bold text-primary-400">
+                          {selectedChallenge.daysRemaining}
+                        </p>
+                        <p className="text-xs text-dark-500">Days Left</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-3xl font-bold text-accent-yellow">
+                          {selectedChallenge.progressPercentage}%
+                        </p>
+                        <p className="text-xs text-dark-500">Complete</p>
+                      </div>
+                    </div>
+                    <div className="h-4 bg-dark-700 rounded-full overflow-hidden">
+                      <div
                         className={clsx(
-                          'p-3 rounded-lg border-2 transition-all text-left',
-                          formData.duration === preset.value
-                            ? 'border-primary-500 bg-primary-500/10'
-                            : 'border-dark-600 hover:border-dark-500'
+                          'h-full bg-gradient-to-r transition-all',
+                          getProgressColor(selectedChallenge.progressPercentage)
                         )}
+                        style={{ width: `${selectedChallenge.progressPercentage}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Completion Rate for Finished */}
+                {selectedChallenge.completionRate !== null && (
+                  <div className="card bg-dark-900/50">
+                    <h3 className="font-medium text-white mb-3">Final Results</h3>
+                    <div className="flex items-center gap-4">
+                      <CircularProgress
+                        percent={selectedChallenge.completionRate}
+                        size={80}
+                        gradientColors={
+                          selectedChallenge.completionRate >= 80
+                            ? ['#22c55e', '#22c55e']
+                            : selectedChallenge.completionRate >= 50
+                              ? ['#6366f1', '#8b5cf6']
+                              : ['#ef4444', '#ef4444']
+                        }
+                        gradientId={`final-results-${selectedChallenge.id}`}
+                      />
+                      <div>
+                        <p className="text-white font-medium">
+                          {selectedChallenge.completionRate >= 80
+                            ? 'Excellent! 🎉'
+                            : selectedChallenge.completionRate >= 50
+                              ? 'Good effort! 💪'
+                              : 'Keep trying! 🌱'}
+                        </p>
+                        <p className="text-sm text-dark-400">
+                          Completed {selectedChallenge.duration} day challenge
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Timeline */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="card bg-dark-900/50">
+                    <Calendar size={18} className="text-dark-400 mb-1" />
+                    <p className="text-lg font-semibold text-white">
+                      {format(parseISO(selectedChallenge.startDate), 'MMM d, yyyy')}
+                    </p>
+                    <p className="text-xs text-dark-500">Started</p>
+                  </div>
+                  <div className="card bg-dark-900/50">
+                    <Target size={18} className="text-dark-400 mb-1" />
+                    <p className="text-lg font-semibold text-white">
+                      {format(parseISO(selectedChallenge.endDate), 'MMM d, yyyy')}
+                    </p>
+                    <p className="text-xs text-dark-500">End Date</p>
+                  </div>
+                </div>
+
+                {/* Linked Habits */}
+                <div>
+                  <h3 className="font-medium text-white mb-3">Linked Habits</h3>
+                  <div className="space-y-2">
+                    {selectedChallenge.habits.map((habit) => (
+                      <div
+                        key={habit.id}
+                        className="flex items-center gap-3 p-3 rounded-lg bg-dark-900/50"
                       >
-                        <p className="font-medium text-white">{preset.label}</p>
-                        <p className="text-xs text-dark-400 mt-0.5">{preset.description}</p>
-                      </button>
+                        <div
+                          className="w-10 h-10 rounded-lg flex items-center justify-center text-lg"
+                          style={{ backgroundColor: `${habit.color}20` }}
+                        >
+                          {habit.icon || '📌'}
+                        </div>
+                        <span className="text-white">{habit.name}</span>
+                      </div>
                     ))}
                   </div>
                 </div>
-              )}
 
-              {/* Start Date */}
-              {!editingChallenge && (
+                {/* Actions */}
+                <div className="flex gap-3 pt-4 border-t border-dark-700">
+                  {selectedChallenge.status === 'ACTIVE' && (
+                    <button
+                      onClick={() => {
+                        syncMutation.mutate(selectedChallenge.id);
+                      }}
+                      className="btn btn-secondary flex-1"
+                    >
+                      <CheckCircle2 size={16} />
+                      Sync Progress
+                    </button>
+                  )}
+                  <button
+                    onClick={() => {
+                      handleOpenModal(selectedChallenge);
+                      setIsDetailOpen(false);
+                    }}
+                    className="btn btn-secondary flex-1"
+                  >
+                    <Pencil size={16} />
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => handleDelete(selectedChallenge.id)}
+                    className="btn bg-accent-red/20 text-accent-red hover:bg-accent-red/30"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
+
+      {/* Create/Edit Modal */}
+      {isModalOpen &&
+        createPortal(
+          <div className="modal-overlay" onClick={() => setIsModalOpen(false)}>
+            <div className="modal-content max-w-xl" onClick={(e) => e.stopPropagation()}>
+              <div className="p-6 border-b border-dark-700 flex items-center justify-between">
                 <div>
-                  <label className="label">Start Date</label>
+                  <h2 className="text-xl font-semibold text-white">
+                    {editingChallenge ? 'Edit Challenge' : 'New Challenge'}
+                  </h2>
+                  <p className="text-sm text-dark-400 mt-1">Set a goal and commit to it</p>
+                </div>
+                <button
+                  onClick={() => setIsModalOpen(false)}
+                  className="p-2 text-dark-400 hover:text-white rounded-lg hover:bg-dark-700"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <form onSubmit={handleSubmit} className="p-6 space-y-6 max-h-[70vh] overflow-y-auto">
+                {/* Name */}
+                <div>
+                  <label className="label">Challenge Name *</label>
                   <input
-                    type="date"
+                    type="text"
                     className="input"
-                    value={formData.startDate}
-                    onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                    min={format(new Date(), 'yyyy-MM-dd')}
+                    placeholder="e.g., 30-Day Morning Routine"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     required
                   />
-                  <p className="text-xs text-dark-500 mt-1">
-                    Ends:{' '}
-                    {format(
-                      addDays(parseISO(formData.startDate), formData.duration),
-                      'MMMM d, yyyy'
-                    )}
-                  </p>
                 </div>
-              )}
 
-              {/* Habits Selection */}
-              {!editingChallenge && (
+                {/* Description */}
                 <div>
-                  <label className="label">Select Habits *</label>
-                  <p className="text-xs text-dark-400 mb-3">
-                    Choose the habits to include in this challenge
-                  </p>
-                  <div className="space-y-2 max-h-48 overflow-y-auto">
-                    {habits.length === 0 ? (
-                      <p className="text-center text-dark-400 py-4">
-                        No habits found. Create some habits first!
-                      </p>
-                    ) : (
-                      habits.map((habit) => (
+                  <label className="label">Description</label>
+                  <textarea
+                    className="input min-h-[80px] resize-none"
+                    placeholder="What's this challenge about?"
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  />
+                </div>
+
+                {/* Duration */}
+                {!editingChallenge && (
+                  <div>
+                    <label className="label">Duration</label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {DURATION_PRESETS.map((preset) => (
                         <button
-                          key={habit.id}
+                          key={preset.value}
                           type="button"
-                          onClick={() => toggleHabitSelection(habit.id)}
+                          onClick={() => setFormData({ ...formData, duration: preset.value })}
                           className={clsx(
-                            'w-full flex items-center gap-3 p-3 rounded-lg border-2 transition-all',
-                            formData.habitIds.includes(habit.id)
+                            'p-3 rounded-lg border-2 transition-all text-left',
+                            formData.duration === preset.value
                               ? 'border-primary-500 bg-primary-500/10'
                               : 'border-dark-600 hover:border-dark-500'
                           )}
                         >
-                          <div
-                            className="w-8 h-8 rounded-lg flex items-center justify-center"
-                            style={{ backgroundColor: `${habit.color}20` }}
-                          >
-                            {habit.icon || '📌'}
-                          </div>
-                          <span className="text-white flex-1 text-left">{habit.name}</span>
-                          {formData.habitIds.includes(habit.id) && (
-                            <CheckCircle2 size={18} className="text-primary-400" />
-                          )}
+                          <p className="font-medium text-white">{preset.label}</p>
+                          <p className="text-xs text-dark-400 mt-0.5">{preset.description}</p>
                         </button>
-                      ))
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Start Date */}
+                {!editingChallenge && (
+                  <div>
+                    <label className="label">Start Date</label>
+                    <input
+                      type="date"
+                      className="input"
+                      value={formData.startDate}
+                      onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                      min={format(new Date(), 'yyyy-MM-dd')}
+                      required
+                    />
+                    <p className="text-xs text-dark-500 mt-1">
+                      Ends:{' '}
+                      {format(
+                        addDays(parseISO(formData.startDate), formData.duration),
+                        'MMMM d, yyyy'
+                      )}
+                    </p>
+                  </div>
+                )}
+
+                {/* Habits Selection */}
+                {!editingChallenge && (
+                  <div>
+                    <label className="label">Select Habits *</label>
+                    <p className="text-xs text-dark-400 mb-3">
+                      Choose the habits to include in this challenge
+                    </p>
+                    <div className="space-y-2 max-h-48 overflow-y-auto">
+                      {habits.length === 0 ? (
+                        <p className="text-center text-dark-400 py-4">
+                          No habits found. Create some habits first!
+                        </p>
+                      ) : (
+                        habits.map((habit) => (
+                          <button
+                            key={habit.id}
+                            type="button"
+                            onClick={() => toggleHabitSelection(habit.id)}
+                            className={clsx(
+                              'w-full flex items-center gap-3 p-3 rounded-lg border-2 transition-all',
+                              formData.habitIds.includes(habit.id)
+                                ? 'border-primary-500 bg-primary-500/10'
+                                : 'border-dark-600 hover:border-dark-500'
+                            )}
+                          >
+                            <div
+                              className="w-8 h-8 rounded-lg flex items-center justify-center"
+                              style={{ backgroundColor: `${habit.color}20` }}
+                            >
+                              {habit.icon || '📌'}
+                            </div>
+                            <span className="text-white flex-1 text-left">{habit.name}</span>
+                            {formData.habitIds.includes(habit.id) && (
+                              <CheckCircle2 size={18} className="text-primary-400" />
+                            )}
+                          </button>
+                        ))
+                      )}
+                    </div>
+                    {formData.habitIds.length > 0 && (
+                      <p className="text-xs text-primary-400 mt-2">
+                        {formData.habitIds.length} habit{formData.habitIds.length !== 1 ? 's' : ''}{' '}
+                        selected
+                      </p>
                     )}
                   </div>
-                  {formData.habitIds.length > 0 && (
-                    <p className="text-xs text-primary-400 mt-2">
-                      {formData.habitIds.length} habit{formData.habitIds.length !== 1 ? 's' : ''}{' '}
-                      selected
-                    </p>
-                  )}
-                </div>
-              )}
+                )}
 
-              {/* Submit */}
-              <div className="flex gap-3 pt-4">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="btn btn-secondary flex-1"
-                >
-                  Cancel
-                </button>
-                <button type="submit" className="btn btn-primary flex-1">
-                  <Zap size={18} />
-                  {editingChallenge ? 'Save Changes' : 'Start Challenge'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+                {/* Submit */}
+                <div className="flex gap-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => setIsModalOpen(false)}
+                    className="btn btn-secondary flex-1"
+                  >
+                    Cancel
+                  </button>
+                  <button type="submit" className="btn btn-primary flex-1">
+                    <Zap size={18} />
+                    {editingChallenge ? 'Save Changes' : 'Start Challenge'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>,
+          document.body
+        )}
 
       <style>{`
         @keyframes slide-in-right {
@@ -926,6 +927,22 @@ const Challenges: React.FC = () => {
           animation: slide-in-right 0.3s ease-out;
         }
       `}</style>
+
+      <ConfirmDialog
+        isOpen={!!confirmDeleteId}
+        onClose={() => setConfirmDeleteId(null)}
+        onConfirm={() => {
+          if (confirmDeleteId) {
+            deleteMutation.mutate(confirmDeleteId);
+            setConfirmDeleteId(null);
+          }
+        }}
+        title="Delete Challenge"
+        message="Delete this challenge? This cannot be undone."
+        confirmText="Delete"
+        danger
+        loading={deleteMutation.isPending}
+      />
     </div>
   );
 };

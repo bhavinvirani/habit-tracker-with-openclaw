@@ -52,6 +52,8 @@ That's it! No Node.js, PostgreSQL, or other dependencies needed locally.
 - **📅 Calendar View**: Visualize habit completion over time
 - **👤 User Profile**: Manage account settings and preferences
 - **📱 Responsive Design**: Works on desktop and mobile
+- **📲 Telegram Integration**: Get reminders and notifications in Telegram
+- **🤖 OpenClaw Integration**: Track habits via natural language in any messaging app
 
 ## 🛠 Tech Stack
 
@@ -244,13 +246,14 @@ docker-compose up -d
 
 ### Environment Variables
 
-| Variable            | Description                   |
-| ------------------- | ----------------------------- |
-| `DATABASE_URL`      | PostgreSQL connection string  |
-| `JWT_SECRET`        | Secret for JWT signing        |
-| `JWT_EXPIRES_IN`    | Token expiration (e.g., "7d") |
-| `CORS_ORIGIN`       | Frontend URL for CORS         |
-| `REACT_APP_API_URL` | Backend API URL               |
+| Variable             | Description                   |
+| -------------------- | ----------------------------- |
+| `DATABASE_URL`       | PostgreSQL connection string  |
+| `JWT_SECRET`         | Secret for JWT signing        |
+| `JWT_EXPIRES_IN`     | Token expiration (e.g., "7d") |
+| `CORS_ORIGIN`        | Frontend URL for CORS         |
+| `REACT_APP_API_URL`  | Backend API URL               |
+| `TELEGRAM_BOT_TOKEN` | Telegram bot token (optional) |
 
 ### Deployment Platforms
 
@@ -258,6 +261,35 @@ docker-compose up -d
 - **DigitalOcean App Platform** - Container support
 - **AWS ECS, GCP Cloud Run** - Container orchestration
 - **VPS** - Self-hosted with Docker
+
+## 🔗 Integrations
+
+### Telegram Notifications
+
+Get habit reminders and notifications directly in Telegram.
+
+**Quick Setup**:
+
+1. Create a bot via [@BotFather](https://t.me/botfather)
+2. Add `TELEGRAM_BOT_TOKEN` to your environment variables
+3. Register your chat ID via the Settings page
+
+📖 **[Full Setup Guide](docs/TELEGRAM_INTEGRATION.md)**
+
+### OpenClaw Integration
+
+Track habits using natural language in any messaging app (Telegram, WhatsApp, Discord).
+
+**Example Commands**:
+
+- "Done with meditation"
+- "Drank 3 glasses of water"
+- "Show my habits for today"
+
+📖 **Setup Guides**:
+
+- [OpenClaw + Telegram](docs/OPENCLAW_INTEGRATION.md)
+- [OpenClaw + WhatsApp](docs/WHATSAPP_INTEGRATION.md)
 
 ## 🤖 AI Integration (Planned)
 

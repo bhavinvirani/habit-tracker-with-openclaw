@@ -66,6 +66,8 @@ function FilterDropdown<T extends string | number>({
     <div ref={ref} className={clsx('relative', className)}>
       <button
         onClick={() => setIsOpen(!isOpen)}
+        aria-expanded={isOpen}
+        aria-haspopup="listbox"
         className={clsx(
           'flex items-center rounded-lg transition-colors',
           'bg-dark-800 border border-dark-600 text-white',
@@ -83,9 +85,14 @@ function FilterDropdown<T extends string | number>({
       </button>
 
       {isOpen && (
-        <div className="absolute z-20 mt-1 min-w-full w-max bg-dark-800 border border-dark-600 rounded-lg shadow-xl overflow-hidden">
+        <div
+          role="listbox"
+          className="absolute z-20 mt-1 min-w-full w-max bg-dark-800 border border-dark-600 rounded-lg shadow-xl overflow-hidden"
+        >
           {showAllOption && (
             <button
+              role="option"
+              aria-selected={value === null}
               onClick={() => {
                 onChange(null);
                 setIsOpen(false);
@@ -103,6 +110,8 @@ function FilterDropdown<T extends string | number>({
           )}
           {options.map((option) => (
             <button
+              role="option"
+              aria-selected={value === option.value}
               key={String(option.value)}
               onClick={() => {
                 onChange(option.value);

@@ -23,14 +23,14 @@ import {
   subMonths,
   isSameMonth,
   isSameDay,
-  isToday,
+  startOfToday,
   startOfYear,
   eachMonthOfInterval,
   getDay,
 } from 'date-fns';
 import { analyticsApi } from '../services/habits';
 import clsx from 'clsx';
-import { ViewToggle, type ViewOption } from '../components/ui';
+import { ViewToggle, type ViewOption, Skeleton } from '../components/ui';
 
 type ViewMode = 'calendar' | 'heatmap' | 'stats';
 
@@ -143,6 +143,7 @@ const Calendar: React.FC = () => {
     const monthEnd = endOfMonth(currentDate);
     const startDate = startOfWeek(monthStart);
     const endDate = endOfWeek(monthEnd);
+    const today = startOfToday();
 
     const rows = [];
     let days = [];
@@ -164,7 +165,7 @@ const Calendar: React.FC = () => {
         const percentage = dayData?.percentage || 0;
         const isCurrentMonth = isSameMonth(day, monthStart);
         const isSelected = selectedDate && isSameDay(day, selectedDate);
-        const isTodayDate = isToday(day);
+        const isTodayDate = isSameDay(day, today);
 
         const getBgColor = () => {
           if (!isCurrentMonth) return 'bg-transparent';
@@ -416,8 +417,31 @@ const Calendar: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-96">
-        <Loader2 className="w-8 h-8 animate-spin text-primary-500" />
+      <div className="space-y-6" aria-busy="true" aria-label="Loading calendar">
+        <div className="flex items-center justify-between">
+          <div className="space-y-2">
+            <Skeleton className="h-8 w-32 rounded-md" />
+            <Skeleton className="h-4 w-48 rounded-md" />
+          </div>
+          <Skeleton className="h-10 w-40 rounded-lg" />
+        </div>
+        <div className="card p-6">
+          <div className="flex items-center justify-between mb-6">
+            <Skeleton className="h-6 w-36 rounded-md" />
+            <div className="flex gap-2">
+              <Skeleton className="h-8 w-8 rounded-lg" />
+              <Skeleton className="h-8 w-8 rounded-lg" />
+            </div>
+          </div>
+          <div className="grid grid-cols-7 gap-2">
+            {Array.from({ length: 7 }).map((_, i) => (
+              <Skeleton key={`h-${i}`} className="h-4 rounded-md" />
+            ))}
+            {Array.from({ length: 35 }).map((_, i) => (
+              <Skeleton key={i} className="aspect-square rounded-lg" />
+            ))}
+          </div>
+        </div>
       </div>
     );
   }

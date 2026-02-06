@@ -54,10 +54,12 @@ const SearchInput: React.FC<SearchInputProps> = ({
         )}
       />
       <input
-        type="text"
+        type="search"
+        role="searchbox"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
+        aria-label={placeholder}
         autoFocus={autoFocus}
         className={clsx(
           'w-full bg-dark-800 border border-dark-600 rounded-lg text-white placeholder-dark-500',
@@ -70,6 +72,7 @@ const SearchInput: React.FC<SearchInputProps> = ({
       {showClear && value && (
         <button
           onClick={handleClear}
+          aria-label="Clear search"
           className="absolute right-3 top-1/2 -translate-y-1/2 text-dark-400 hover:text-white transition-colors"
         >
           <X size={iconSizes[size]} />

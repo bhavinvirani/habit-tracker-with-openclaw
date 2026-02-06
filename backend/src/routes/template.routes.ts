@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { authenticate } from '../middleware/auth';
+import { readLimiter, writeLimiter } from '../middleware/rateLimiter';
 import { validateBody, validateQuery } from '../middleware/validate';
 import { useTemplateSchema, getTemplatesQuerySchema } from '../validators/template.validator';
 import { getTemplates, getTemplateById, useTemplate } from '../controllers/template.controller';
@@ -10,12 +11,15 @@ const router = Router();
 router.use(authenticate);
 
 // Get all templates
-router.get('/', validateQuery(getTemplatesQuerySchema), getTemplates);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+router.get('/', readLimiter as any, validateQuery(getTemplatesQuerySchema), getTemplates);
 
 // Get single template
-router.get('/:id', getTemplateById);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+router.get('/:id', readLimiter as any, getTemplateById);
 
 // Create habit from template
-router.post('/:id/use', validateBody(useTemplateSchema), useTemplate);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+router.post('/:id/use', writeLimiter as any, validateBody(useTemplateSchema), useTemplate);
 
 export default router;

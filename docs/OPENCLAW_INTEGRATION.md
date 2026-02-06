@@ -182,7 +182,30 @@ cp -r openclaw/habit-tracker ~/.openclaw/skills/
 
 ### Step 4: Configure Environment Variables
 
-Add your API credentials to OpenClaw's config file (`~/.openclaw/openclaw.json`):
+**Option A: Using OpenClaw CLI (Recommended)**
+
+Set environment variables using the OpenClaw CLI:
+
+```bash
+# Set your API URL (local development)
+openclaw config set skills.entries.habit-tracker.env.HABIT_TRACKER_API_URL http://localhost:8080
+
+# Set your API key (replace with your actual key)
+openclaw config set skills.entries.habit-tracker.env.HABIT_TRACKER_API_KEY your_api_key_here
+
+# Enable the skill
+openclaw config set skills.entries.habit-tracker.enabled true
+```
+
+**For deployed backends**, use your production URL:
+
+```bash
+openclaw config set skills.entries.habit-tracker.env.HABIT_TRACKER_API_URL https://api.yourhabits.com
+```
+
+**Option B: Manual Configuration**
+
+Alternatively, edit `~/.openclaw/openclaw.json` directly:
 
 ```json
 {
@@ -198,12 +221,6 @@ Add your API credentials to OpenClaw's config file (`~/.openclaw/openclaw.json`)
     }
   }
 }
-```
-
-**For deployed backends**, use your production URL:
-
-```json
-"HABIT_TRACKER_API_URL": "https://api.yourhabits.com"
 ```
 
 ### Step 5: Verify the Skill
@@ -380,7 +397,14 @@ cp -r openclaw/habit-tracker ~/.openclaw/skills/
 
 **Symptom**: Skill shows ✗ for env vars
 
-**Solution**: Add to `~/.openclaw/openclaw.json`:
+**Solution (CLI method)**:
+
+```bash
+openclaw config set skills.entries.habit-tracker.env.HABIT_TRACKER_API_URL http://localhost:8080
+openclaw config set skills.entries.habit-tracker.env.HABIT_TRACKER_API_KEY your_key_here
+```
+
+**Alternative (Manual method)**: Edit `~/.openclaw/openclaw.json`:
 
 ```json
 {

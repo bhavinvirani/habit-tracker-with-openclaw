@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Plus,
@@ -18,14 +19,14 @@ import {
   Play,
   Minus,
   RotateCcw,
-  Loader2,
   Search,
 } from 'lucide-react';
 import { format, parseISO, differenceInDays, addDays } from 'date-fns';
 import toast from 'react-hot-toast';
 import api from '../services/api';
 import clsx from 'clsx';
-import { CircularProgress } from '../components/ui';
+import { CircularProgress, BooksSkeleton } from '../components/ui';
+import ConfirmDialog from '../components/ui/ConfirmDialog';
 import { BOOK_STATUS_CONFIG, type BookStatus } from '../constants/status';
 
 interface Book {
@@ -95,6 +96,7 @@ const Books: React.FC = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [inlineEditingBook, setInlineEditingBook] = useState<string | null>(null);
   const [inlinePageValue, setInlinePageValue] = useState('');
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const pageInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
@@ -240,9 +242,7 @@ const Books: React.FC = () => {
   };
 
   const handleDelete = (id: string) => {
-    if (window.confirm('Remove this book from your library?')) {
-      deleteMutation.mutate(id);
-    }
+    setConfirmDeleteId(id);
   };
 
   const handleUpdateProgress = (book: Book, newPage: number) => {
@@ -409,11 +409,7 @@ const Books: React.FC = () => {
   };
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-96">
-        <Loader2 className="w-8 h-8 animate-spin text-primary-500" />
-      </div>
-    );
+    return <BooksSkeleton />;
   }
 
   return (
@@ -691,59 +687,61 @@ const Books: React.FC = () => {
       )}
 
       {/* Inline Page Edit Modal */}
-      {inlineEditingBook && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm"
-            onClick={() => {
-              setInlineEditingBook(null);
-              setInlinePageValue('');
-            }}
-          />
-          <div className="relative bg-dark-800 rounded-xl p-6 border border-dark-700 shadow-2xl w-80">
-            <h3 className="text-lg font-semibold text-white mb-4">Update Page</h3>
-            <input
-              ref={pageInputRef}
-              type="number"
-              value={inlinePageValue}
-              onChange={(e) => setInlinePageValue(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  const book = books.find((b) => b.id === inlineEditingBook);
-                  if (book) handleInlinePageSubmit(book);
-                }
-                if (e.key === 'Escape') {
-                  setInlineEditingBook(null);
-                  setInlinePageValue('');
-                }
+      {inlineEditingBook &&
+        createPortal(
+          <div className="fixed inset-0 z-[100] flex items-center justify-center">
+            <div
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm"
+              onClick={() => {
+                setInlineEditingBook(null);
+                setInlinePageValue('');
               }}
-              className="input w-full text-center text-2xl py-3"
-              min={0}
-              autoFocus
             />
-            <div className="flex gap-2 mt-4">
-              <button
-                onClick={() => {
-                  setInlineEditingBook(null);
-                  setInlinePageValue('');
+            <div className="relative bg-dark-800 rounded-xl p-6 border border-dark-700 shadow-2xl w-80">
+              <h3 className="text-lg font-semibold text-white mb-4">Update Page</h3>
+              <input
+                ref={pageInputRef}
+                type="number"
+                value={inlinePageValue}
+                onChange={(e) => setInlinePageValue(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    const book = books.find((b) => b.id === inlineEditingBook);
+                    if (book) handleInlinePageSubmit(book);
+                  }
+                  if (e.key === 'Escape') {
+                    setInlineEditingBook(null);
+                    setInlinePageValue('');
+                  }
                 }}
-                className="btn btn-secondary flex-1"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => {
-                  const book = books.find((b) => b.id === inlineEditingBook);
-                  if (book) handleInlinePageSubmit(book);
-                }}
-                className="btn btn-primary flex-1"
-              >
-                Save
-              </button>
+                className="input w-full text-center text-2xl py-3"
+                min={0}
+                autoFocus
+              />
+              <div className="flex gap-2 mt-4">
+                <button
+                  onClick={() => {
+                    setInlineEditingBook(null);
+                    setInlinePageValue('');
+                  }}
+                  className="btn btn-secondary flex-1"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    const book = books.find((b) => b.id === inlineEditingBook);
+                    if (book) handleInlinePageSubmit(book);
+                  }}
+                  className="btn btn-primary flex-1"
+                >
+                  Save
+                </button>
+              </div>
             </div>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body
+        )}
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -1019,471 +1017,478 @@ const Books: React.FC = () => {
       )}
 
       {/* Book Detail Slide-over */}
-      {isDetailOpen && selectedBook && (
-        <div className="fixed inset-0 z-50 flex">
-          <div
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm"
-            onClick={() => setIsDetailOpen(false)}
-          />
-          <div className="ml-auto w-full max-w-lg bg-dark-800 border-l border-dark-700 h-full overflow-y-auto relative animate-slide-in-right">
-            {/* Close Button */}
-            <button
+      {isDetailOpen &&
+        selectedBook &&
+        createPortal(
+          <div className="fixed inset-0 z-[100] flex">
+            <div
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm"
               onClick={() => setIsDetailOpen(false)}
-              className="absolute top-4 right-4 p-2 rounded-lg bg-dark-700 text-dark-400 hover:text-white z-10"
-            >
-              <X size={20} />
-            </button>
-
-            {/* Cover Header */}
-            <div className="relative h-64 bg-gradient-to-b from-primary-900/30 to-dark-800">
-              {selectedBook.coverUrl && (
-                <img
-                  src={selectedBook.coverUrl}
-                  alt={selectedBook.title}
-                  className="w-full h-full object-cover opacity-30"
-                />
-              )}
-              <div className="absolute inset-0 bg-gradient-to-t from-dark-800 to-transparent" />
-              <div className="absolute bottom-0 left-0 right-0 p-6 flex gap-4">
-                <div className="w-28 h-40 rounded-lg overflow-hidden flex-shrink-0 shadow-2xl bg-dark-700">
-                  {selectedBook.coverUrl ? (
-                    <img
-                      src={selectedBook.coverUrl}
-                      alt={selectedBook.title}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <BookOpen size={32} className="text-dark-500" />
-                    </div>
-                  )}
-                </div>
-                <div className="flex-1 min-w-0 pt-8">
-                  <span
-                    className={clsx(
-                      'badge mb-2',
-                      BOOK_STATUS_CONFIG[selectedBook.status].bgColor,
-                      BOOK_STATUS_CONFIG[selectedBook.status].color
-                    )}
-                  >
-                    {BOOK_STATUS_CONFIG[selectedBook.status].label}
-                  </span>
-                  <h2 className="text-xl font-bold text-white line-clamp-2">
-                    {selectedBook.title}
-                  </h2>
-                  <p className="text-dark-400">{selectedBook.author || 'Unknown Author'}</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="p-6 space-y-6">
-              {/* Rating */}
-              <div>
-                <label className="text-sm text-dark-400 block mb-2">Your Rating</label>
-                {renderStars(selectedBook.rating, 'lg', true, (rating) => {
-                  updateMutation.mutate({ id: selectedBook.id, data: { rating } });
-                  setSelectedBook({ ...selectedBook, rating });
-                })}
-              </div>
-
-              {/* Progress Section - Enhanced */}
-              {selectedBook.status === 'READING' && (
-                <div className="card bg-dark-900/50">
-                  <h3 className="font-medium text-white mb-4">Reading Progress</h3>
-
-                  <div className="flex items-center gap-4 mb-4">
-                    <CircularProgress percent={getProgressPercent(selectedBook)} />
-                    <div className="flex-1">
-                      {/* Click to edit page number */}
-                      <div className="flex items-center gap-2">
-                        {inlineEditingBook === selectedBook.id ? (
-                          <div className="flex items-center gap-2">
-                            <input
-                              ref={pageInputRef}
-                              type="number"
-                              value={inlinePageValue}
-                              onChange={(e) => setInlinePageValue(e.target.value)}
-                              onBlur={() => handleInlinePageSubmit(selectedBook)}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter') handleInlinePageSubmit(selectedBook);
-                                if (e.key === 'Escape') {
-                                  setInlineEditingBook(null);
-                                  setInlinePageValue('');
-                                }
-                              }}
-                              className="w-20 input text-center py-1"
-                              min={0}
-                              max={selectedBook.totalPages || undefined}
-                            />
-                            <span className="text-dark-400">
-                              / {selectedBook.totalPages || '?'}
-                            </span>
-                          </div>
-                        ) : (
-                          <button
-                            onClick={() => startInlineEdit(selectedBook)}
-                            className="text-2xl font-bold text-white hover:text-primary-400 transition-colors"
-                            title="Click to edit page number"
-                          >
-                            {selectedBook.currentPage}
-                            <span className="text-lg text-dark-400 font-normal ml-1">
-                              / {selectedBook.totalPages || '?'}
-                            </span>
-                          </button>
-                        )}
-                      </div>
-                      <p className="text-sm text-dark-400 mt-1">
-                        {selectedBook.totalPages
-                          ? `${selectedBook.totalPages - selectedBook.currentPage} pages left`
-                          : 'Click to set page'}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Progress Slider */}
-                  {selectedBook.totalPages && (
-                    <div className="mb-4">
-                      <input
-                        type="range"
-                        min={0}
-                        max={selectedBook.totalPages}
-                        value={selectedBook.currentPage}
-                        onChange={(e) => {
-                          const newPage = parseInt(e.target.value);
-                          setSelectedBook({ ...selectedBook, currentPage: newPage });
-                        }}
-                        onMouseUp={(e) => {
-                          const newPage = parseInt((e.target as HTMLInputElement).value);
-                          handleUpdateProgress(selectedBook, newPage);
-                        }}
-                        onTouchEnd={(e) => {
-                          const newPage = parseInt((e.target as HTMLInputElement).value);
-                          handleUpdateProgress(selectedBook, newPage);
-                        }}
-                        className="w-full h-2 bg-dark-700 rounded-full appearance-none cursor-pointer accent-primary-500"
-                        style={{
-                          background: `linear-gradient(to right, #6366f1 ${getProgressPercent(selectedBook)}%, #374151 ${getProgressPercent(selectedBook)}%)`,
-                        }}
-                      />
-                    </div>
-                  )}
-
-                  {/* Quick Progress Buttons */}
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      onClick={() =>
-                        handleUpdateProgress(
-                          selectedBook,
-                          Math.max(0, selectedBook.currentPage - 10)
-                        )
-                      }
-                      className="px-3 py-2 rounded-lg bg-dark-700 text-dark-400 hover:bg-dark-600 hover:text-white transition-colors text-sm flex items-center gap-1"
-                    >
-                      <Minus size={14} />
-                      10
-                    </button>
-                    {[5, 10, 25, 50, 100].map((pages) => (
-                      <button
-                        key={pages}
-                        onClick={() =>
-                          handleUpdateProgress(selectedBook, selectedBook.currentPage + pages)
-                        }
-                        className="flex-1 py-2 rounded-lg bg-dark-700 text-dark-300 hover:bg-primary-600 hover:text-white transition-colors text-sm"
-                      >
-                        +{pages}
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* Finish Button */}
-                  {selectedBook.totalPages &&
-                    selectedBook.currentPage < selectedBook.totalPages && (
-                      <button
-                        onClick={() => handleFinishBook(selectedBook)}
-                        className="w-full mt-3 py-2 rounded-lg bg-accent-green/20 text-accent-green hover:bg-accent-green hover:text-white transition-colors text-sm font-medium flex items-center justify-center gap-2"
-                      >
-                        <CheckCircle size={16} />
-                        Mark as Finished
-                      </button>
-                    )}
-
-                  {/* Estimated Finish */}
-                  {getEstimatedFinishDate(selectedBook) && (
-                    <div className="mt-4 pt-4 border-t border-dark-700 flex items-center gap-2 text-sm text-dark-400">
-                      <Target size={14} />
-                      <span>
-                        At your current pace, you'll finish by{' '}
-                        <span className="text-white">
-                          {format(getEstimatedFinishDate(selectedBook)!, 'MMM d, yyyy')}
-                        </span>
-                      </span>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Want to Read - Start Reading Button */}
-              {selectedBook.status === 'WANT_TO_READ' && (
-                <button
-                  onClick={() => handleStartReading(selectedBook)}
-                  className="w-full py-3 rounded-xl bg-primary-600 text-white hover:bg-primary-500 transition-colors font-medium flex items-center justify-center gap-2"
-                >
-                  <Play size={18} />
-                  Start Reading
-                </button>
-              )}
-
-              {/* Finished/Abandoned - Read Again Button */}
-              {(selectedBook.status === 'FINISHED' || selectedBook.status === 'ABANDONED') && (
-                <button
-                  onClick={() => handleReadAgain(selectedBook)}
-                  className="w-full py-3 rounded-xl bg-primary-600 text-white hover:bg-primary-500 transition-colors font-medium flex items-center justify-center gap-2"
-                >
-                  <RotateCcw size={18} />
-                  Read Again
-                </button>
-              )}
-
-              {/* Details */}
-              <div className="grid grid-cols-2 gap-4">
-                {selectedBook.totalPages && (
-                  <div className="card bg-dark-900/50">
-                    <FileText size={18} className="text-dark-400 mb-1" />
-                    <p className="text-lg font-semibold text-white">{selectedBook.totalPages}</p>
-                    <p className="text-xs text-dark-500">Pages</p>
-                  </div>
-                )}
-                {selectedBook.startedAt && (
-                  <div className="card bg-dark-900/50">
-                    <Calendar size={18} className="text-dark-400 mb-1" />
-                    <p className="text-lg font-semibold text-white">
-                      {format(parseISO(selectedBook.startedAt), 'MMM d')}
-                    </p>
-                    <p className="text-xs text-dark-500">Started</p>
-                  </div>
-                )}
-                {selectedBook.finishedAt && (
-                  <div className="card bg-dark-900/50">
-                    <CheckCircle size={18} className="text-accent-green mb-1" />
-                    <p className="text-lg font-semibold text-white">
-                      {format(parseISO(selectedBook.finishedAt), 'MMM d')}
-                    </p>
-                    <p className="text-xs text-dark-500">Finished</p>
-                  </div>
-                )}
-                {selectedBook.startedAt && selectedBook.finishedAt && (
-                  <div className="card bg-dark-900/50">
-                    <Clock size={18} className="text-dark-400 mb-1" />
-                    <p className="text-lg font-semibold text-white">
-                      {differenceInDays(
-                        parseISO(selectedBook.finishedAt),
-                        parseISO(selectedBook.startedAt)
-                      )}
-                    </p>
-                    <p className="text-xs text-dark-500">Days to Read</p>
-                  </div>
-                )}
-              </div>
-
-              {/* Notes */}
-              {selectedBook.notes && (
-                <div>
-                  <h3 className="font-medium text-white mb-2">Notes</h3>
-                  <p className="text-dark-400 text-sm whitespace-pre-wrap">{selectedBook.notes}</p>
-                </div>
-              )}
-
-              {/* Reading Logs */}
-              {bookDetails?.readingLogs && bookDetails.readingLogs.length > 0 && (
-                <div>
-                  <h3 className="font-medium text-white mb-3">Recent Reading Sessions</h3>
-                  <div className="space-y-2">
-                    {bookDetails.readingLogs.slice(0, 5).map((log) => (
-                      <div
-                        key={log.id}
-                        className="flex items-center justify-between py-2 px-3 rounded-lg bg-dark-900/50"
-                      >
-                        <span className="text-sm text-dark-400">
-                          {format(parseISO(log.date), 'MMM d, yyyy')}
-                        </span>
-                        <span className="text-sm text-white font-medium">
-                          {log.pagesRead} pages
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Actions */}
-              <div className="flex gap-3 pt-4 border-t border-dark-700">
-                <button
-                  onClick={() => {
-                    handleOpenModal(selectedBook);
-                    setIsDetailOpen(false);
-                  }}
-                  className="btn btn-secondary flex-1"
-                >
-                  <Pencil size={16} />
-                  Edit
-                </button>
-                <button
-                  onClick={() => handleDelete(selectedBook.id)}
-                  className="btn bg-accent-red/20 text-accent-red hover:bg-accent-red/30"
-                >
-                  <Trash2 size={16} />
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Add/Edit Modal */}
-      {isModalOpen && (
-        <div className="modal-overlay" onClick={() => setIsModalOpen(false)}>
-          <div className="modal-content max-w-lg" onClick={(e) => e.stopPropagation()}>
-            <div className="p-6 border-b border-dark-700 flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-white">
-                {editingBook ? 'Edit Book' : 'Add Book'}
-              </h2>
+            />
+            <div className="ml-auto w-full max-w-lg bg-dark-800 border-l border-dark-700 h-full overflow-y-auto relative animate-slide-in-right">
+              {/* Close Button */}
               <button
-                onClick={() => setIsModalOpen(false)}
-                className="p-2 text-dark-400 hover:text-white rounded-lg hover:bg-dark-700"
+                onClick={() => setIsDetailOpen(false)}
+                className="absolute top-4 right-4 p-2 rounded-lg bg-dark-700 text-dark-400 hover:text-white z-10"
               >
                 <X size={20} />
               </button>
-            </div>
 
-            <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
-              <div>
-                <label className="label">Title *</label>
-                <input
-                  type="text"
-                  className="input"
-                  placeholder="Book title"
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="label">Author</label>
-                <input
-                  type="text"
-                  className="input"
-                  placeholder="Author name"
-                  value={formData.author}
-                  onChange={(e) => setFormData({ ...formData, author: e.target.value })}
-                />
-              </div>
-
-              <div>
-                <label className="label">Cover URL</label>
-                <input
-                  type="url"
-                  className="input"
-                  placeholder="https://..."
-                  value={formData.coverUrl}
-                  onChange={(e) => setFormData({ ...formData, coverUrl: e.target.value })}
-                />
-                {formData.coverUrl && (
-                  <div className="mt-2 w-20 h-28 rounded-lg overflow-hidden">
-                    <img
-                      src={formData.coverUrl}
-                      alt="Cover preview"
-                      className="w-full h-full object-cover"
-                      onError={(e) => (e.currentTarget.style.display = 'none')}
-                    />
-                  </div>
+              {/* Cover Header */}
+              <div className="relative h-64 bg-gradient-to-b from-primary-900/30 to-dark-800">
+                {selectedBook.coverUrl && (
+                  <img
+                    src={selectedBook.coverUrl}
+                    alt={selectedBook.title}
+                    className="w-full h-full object-cover opacity-30"
+                  />
                 )}
+                <div className="absolute inset-0 bg-gradient-to-t from-dark-800 to-transparent" />
+                <div className="absolute bottom-0 left-0 right-0 p-6 flex gap-4">
+                  <div className="w-28 h-40 rounded-lg overflow-hidden flex-shrink-0 shadow-2xl bg-dark-700">
+                    {selectedBook.coverUrl ? (
+                      <img
+                        src={selectedBook.coverUrl}
+                        alt={selectedBook.title}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <BookOpen size={32} className="text-dark-500" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0 pt-8">
+                    <span
+                      className={clsx(
+                        'badge mb-2',
+                        BOOK_STATUS_CONFIG[selectedBook.status].bgColor,
+                        BOOK_STATUS_CONFIG[selectedBook.status].color
+                      )}
+                    >
+                      {BOOK_STATUS_CONFIG[selectedBook.status].label}
+                    </span>
+                    <h2 className="text-xl font-bold text-white line-clamp-2">
+                      {selectedBook.title}
+                    </h2>
+                    <p className="text-dark-400">{selectedBook.author || 'Unknown Author'}</p>
+                  </div>
+                </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="p-6 space-y-6">
+                {/* Rating */}
                 <div>
-                  <label className="label">Total Pages</label>
-                  <input
-                    type="number"
-                    className="input"
-                    placeholder="0"
-                    value={formData.totalPages}
-                    onChange={(e) => setFormData({ ...formData, totalPages: e.target.value })}
-                    min={1}
-                  />
-                </div>
-                <div>
-                  <label className="label">Current Page</label>
-                  <input
-                    type="number"
-                    className="input"
-                    value={formData.currentPage}
-                    onChange={(e) => setFormData({ ...formData, currentPage: e.target.value })}
-                    min={0}
-                    max={formData.totalPages ? parseInt(formData.totalPages) : undefined}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="label">Status</label>
-                <div className="grid grid-cols-2 gap-2">
-                  {(Object.keys(BOOK_STATUS_CONFIG) as BookStatus[]).map((status) => {
-                    const config = BOOK_STATUS_CONFIG[status];
-                    const StatusIcon = config.icon;
-                    return (
-                      <button
-                        key={status}
-                        type="button"
-                        onClick={() => setFormData({ ...formData, status })}
-                        className={clsx(
-                          'flex items-center gap-2 p-3 rounded-lg border-2 transition-all',
-                          formData.status === status
-                            ? 'border-primary-500 bg-primary-500/10'
-                            : 'border-dark-600 hover:border-dark-500'
-                        )}
-                      >
-                        <StatusIcon size={16} className={config.color} />
-                        <span className="text-sm text-white">{config.label}</span>
-                      </button>
-                    );
+                  <label className="text-sm text-dark-400 block mb-2">Your Rating</label>
+                  {renderStars(selectedBook.rating, 'lg', true, (rating) => {
+                    updateMutation.mutate({ id: selectedBook.id, data: { rating } });
+                    setSelectedBook({ ...selectedBook, rating });
                   })}
                 </div>
-              </div>
 
-              <div>
-                <label className="label">Rating</label>
-                {renderStars(formData.rating, 'lg', true, (rating) =>
-                  setFormData({ ...formData, rating })
+                {/* Progress Section - Enhanced */}
+                {selectedBook.status === 'READING' && (
+                  <div className="card bg-dark-900/50">
+                    <h3 className="font-medium text-white mb-4">Reading Progress</h3>
+
+                    <div className="flex items-center gap-4 mb-4">
+                      <CircularProgress percent={getProgressPercent(selectedBook)} />
+                      <div className="flex-1">
+                        {/* Click to edit page number */}
+                        <div className="flex items-center gap-2">
+                          {inlineEditingBook === selectedBook.id ? (
+                            <div className="flex items-center gap-2">
+                              <input
+                                ref={pageInputRef}
+                                type="number"
+                                value={inlinePageValue}
+                                onChange={(e) => setInlinePageValue(e.target.value)}
+                                onBlur={() => handleInlinePageSubmit(selectedBook)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') handleInlinePageSubmit(selectedBook);
+                                  if (e.key === 'Escape') {
+                                    setInlineEditingBook(null);
+                                    setInlinePageValue('');
+                                  }
+                                }}
+                                className="w-20 input text-center py-1"
+                                min={0}
+                                max={selectedBook.totalPages || undefined}
+                              />
+                              <span className="text-dark-400">
+                                / {selectedBook.totalPages || '?'}
+                              </span>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => startInlineEdit(selectedBook)}
+                              className="text-2xl font-bold text-white hover:text-primary-400 transition-colors"
+                              title="Click to edit page number"
+                            >
+                              {selectedBook.currentPage}
+                              <span className="text-lg text-dark-400 font-normal ml-1">
+                                / {selectedBook.totalPages || '?'}
+                              </span>
+                            </button>
+                          )}
+                        </div>
+                        <p className="text-sm text-dark-400 mt-1">
+                          {selectedBook.totalPages
+                            ? `${selectedBook.totalPages - selectedBook.currentPage} pages left`
+                            : 'Click to set page'}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Progress Slider */}
+                    {selectedBook.totalPages && (
+                      <div className="mb-4">
+                        <input
+                          type="range"
+                          min={0}
+                          max={selectedBook.totalPages}
+                          value={selectedBook.currentPage}
+                          onChange={(e) => {
+                            const newPage = parseInt(e.target.value);
+                            setSelectedBook({ ...selectedBook, currentPage: newPage });
+                          }}
+                          onMouseUp={(e) => {
+                            const newPage = parseInt((e.target as HTMLInputElement).value);
+                            handleUpdateProgress(selectedBook, newPage);
+                          }}
+                          onTouchEnd={(e) => {
+                            const newPage = parseInt((e.target as HTMLInputElement).value);
+                            handleUpdateProgress(selectedBook, newPage);
+                          }}
+                          className="w-full h-2 bg-dark-700 rounded-full appearance-none cursor-pointer accent-primary-500"
+                          style={{
+                            background: `linear-gradient(to right, #6366f1 ${getProgressPercent(selectedBook)}%, #374151 ${getProgressPercent(selectedBook)}%)`,
+                          }}
+                        />
+                      </div>
+                    )}
+
+                    {/* Quick Progress Buttons */}
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        onClick={() =>
+                          handleUpdateProgress(
+                            selectedBook,
+                            Math.max(0, selectedBook.currentPage - 10)
+                          )
+                        }
+                        className="px-3 py-2 rounded-lg bg-dark-700 text-dark-400 hover:bg-dark-600 hover:text-white transition-colors text-sm flex items-center gap-1"
+                      >
+                        <Minus size={14} />
+                        10
+                      </button>
+                      {[5, 10, 25, 50, 100].map((pages) => (
+                        <button
+                          key={pages}
+                          onClick={() =>
+                            handleUpdateProgress(selectedBook, selectedBook.currentPage + pages)
+                          }
+                          className="flex-1 py-2 rounded-lg bg-dark-700 text-dark-300 hover:bg-primary-600 hover:text-white transition-colors text-sm"
+                        >
+                          +{pages}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Finish Button */}
+                    {selectedBook.totalPages &&
+                      selectedBook.currentPage < selectedBook.totalPages && (
+                        <button
+                          onClick={() => handleFinishBook(selectedBook)}
+                          className="w-full mt-3 py-2 rounded-lg bg-accent-green/20 text-accent-green hover:bg-accent-green hover:text-white transition-colors text-sm font-medium flex items-center justify-center gap-2"
+                        >
+                          <CheckCircle size={16} />
+                          Mark as Finished
+                        </button>
+                      )}
+
+                    {/* Estimated Finish */}
+                    {getEstimatedFinishDate(selectedBook) && (
+                      <div className="mt-4 pt-4 border-t border-dark-700 flex items-center gap-2 text-sm text-dark-400">
+                        <Target size={14} />
+                        <span>
+                          At your current pace, you'll finish by{' '}
+                          <span className="text-white">
+                            {format(getEstimatedFinishDate(selectedBook)!, 'MMM d, yyyy')}
+                          </span>
+                        </span>
+                      </div>
+                    )}
+                  </div>
                 )}
-              </div>
 
-              <div>
-                <label className="label">Notes</label>
-                <textarea
-                  className="input min-h-[100px] resize-none"
-                  placeholder="Your thoughts about this book..."
-                  value={formData.notes}
-                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                />
-              </div>
+                {/* Want to Read - Start Reading Button */}
+                {selectedBook.status === 'WANT_TO_READ' && (
+                  <button
+                    onClick={() => handleStartReading(selectedBook)}
+                    className="w-full py-3 rounded-xl bg-primary-600 text-white hover:bg-primary-500 transition-colors font-medium flex items-center justify-center gap-2"
+                  >
+                    <Play size={18} />
+                    Start Reading
+                  </button>
+                )}
 
-              <div className="flex gap-3 pt-4">
+                {/* Finished/Abandoned - Read Again Button */}
+                {(selectedBook.status === 'FINISHED' || selectedBook.status === 'ABANDONED') && (
+                  <button
+                    onClick={() => handleReadAgain(selectedBook)}
+                    className="w-full py-3 rounded-xl bg-primary-600 text-white hover:bg-primary-500 transition-colors font-medium flex items-center justify-center gap-2"
+                  >
+                    <RotateCcw size={18} />
+                    Read Again
+                  </button>
+                )}
+
+                {/* Details */}
+                <div className="grid grid-cols-2 gap-4">
+                  {selectedBook.totalPages && (
+                    <div className="card bg-dark-900/50">
+                      <FileText size={18} className="text-dark-400 mb-1" />
+                      <p className="text-lg font-semibold text-white">{selectedBook.totalPages}</p>
+                      <p className="text-xs text-dark-500">Pages</p>
+                    </div>
+                  )}
+                  {selectedBook.startedAt && (
+                    <div className="card bg-dark-900/50">
+                      <Calendar size={18} className="text-dark-400 mb-1" />
+                      <p className="text-lg font-semibold text-white">
+                        {format(parseISO(selectedBook.startedAt), 'MMM d')}
+                      </p>
+                      <p className="text-xs text-dark-500">Started</p>
+                    </div>
+                  )}
+                  {selectedBook.finishedAt && (
+                    <div className="card bg-dark-900/50">
+                      <CheckCircle size={18} className="text-accent-green mb-1" />
+                      <p className="text-lg font-semibold text-white">
+                        {format(parseISO(selectedBook.finishedAt), 'MMM d')}
+                      </p>
+                      <p className="text-xs text-dark-500">Finished</p>
+                    </div>
+                  )}
+                  {selectedBook.startedAt && selectedBook.finishedAt && (
+                    <div className="card bg-dark-900/50">
+                      <Clock size={18} className="text-dark-400 mb-1" />
+                      <p className="text-lg font-semibold text-white">
+                        {differenceInDays(
+                          parseISO(selectedBook.finishedAt),
+                          parseISO(selectedBook.startedAt)
+                        )}
+                      </p>
+                      <p className="text-xs text-dark-500">Days to Read</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Notes */}
+                {selectedBook.notes && (
+                  <div>
+                    <h3 className="font-medium text-white mb-2">Notes</h3>
+                    <p className="text-dark-400 text-sm whitespace-pre-wrap">
+                      {selectedBook.notes}
+                    </p>
+                  </div>
+                )}
+
+                {/* Reading Logs */}
+                {bookDetails?.readingLogs && bookDetails.readingLogs.length > 0 && (
+                  <div>
+                    <h3 className="font-medium text-white mb-3">Recent Reading Sessions</h3>
+                    <div className="space-y-2">
+                      {bookDetails.readingLogs.slice(0, 5).map((log) => (
+                        <div
+                          key={log.id}
+                          className="flex items-center justify-between py-2 px-3 rounded-lg bg-dark-900/50"
+                        >
+                          <span className="text-sm text-dark-400">
+                            {format(parseISO(log.date), 'MMM d, yyyy')}
+                          </span>
+                          <span className="text-sm text-white font-medium">
+                            {log.pagesRead} pages
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Actions */}
+                <div className="flex gap-3 pt-4 border-t border-dark-700">
+                  <button
+                    onClick={() => {
+                      handleOpenModal(selectedBook);
+                      setIsDetailOpen(false);
+                    }}
+                    className="btn btn-secondary flex-1"
+                  >
+                    <Pencil size={16} />
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => handleDelete(selectedBook.id)}
+                    className="btn bg-accent-red/20 text-accent-red hover:bg-accent-red/30"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
+
+      {/* Add/Edit Modal */}
+      {isModalOpen &&
+        createPortal(
+          <div className="modal-overlay" onClick={() => setIsModalOpen(false)}>
+            <div className="modal-content max-w-lg" onClick={(e) => e.stopPropagation()}>
+              <div className="p-6 border-b border-dark-700 flex items-center justify-between">
+                <h2 className="text-xl font-semibold text-white">
+                  {editingBook ? 'Edit Book' : 'Add Book'}
+                </h2>
                 <button
-                  type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="btn btn-secondary flex-1"
+                  className="p-2 text-dark-400 hover:text-white rounded-lg hover:bg-dark-700"
                 >
-                  Cancel
-                </button>
-                <button type="submit" className="btn btn-primary flex-1">
-                  {editingBook ? 'Save Changes' : 'Add Book'}
+                  <X size={20} />
                 </button>
               </div>
-            </form>
-          </div>
-        </div>
-      )}
+
+              <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+                <div>
+                  <label className="label">Title *</label>
+                  <input
+                    type="text"
+                    className="input"
+                    placeholder="Book title"
+                    value={formData.title}
+                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="label">Author</label>
+                  <input
+                    type="text"
+                    className="input"
+                    placeholder="Author name"
+                    value={formData.author}
+                    onChange={(e) => setFormData({ ...formData, author: e.target.value })}
+                  />
+                </div>
+
+                <div>
+                  <label className="label">Cover URL</label>
+                  <input
+                    type="url"
+                    className="input"
+                    placeholder="https://..."
+                    value={formData.coverUrl}
+                    onChange={(e) => setFormData({ ...formData, coverUrl: e.target.value })}
+                  />
+                  {formData.coverUrl && (
+                    <div className="mt-2 w-20 h-28 rounded-lg overflow-hidden">
+                      <img
+                        src={formData.coverUrl}
+                        alt="Cover preview"
+                        className="w-full h-full object-cover"
+                        onError={(e) => (e.currentTarget.style.display = 'none')}
+                      />
+                    </div>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="label">Total Pages</label>
+                    <input
+                      type="number"
+                      className="input"
+                      placeholder="0"
+                      value={formData.totalPages}
+                      onChange={(e) => setFormData({ ...formData, totalPages: e.target.value })}
+                      min={1}
+                    />
+                  </div>
+                  <div>
+                    <label className="label">Current Page</label>
+                    <input
+                      type="number"
+                      className="input"
+                      value={formData.currentPage}
+                      onChange={(e) => setFormData({ ...formData, currentPage: e.target.value })}
+                      min={0}
+                      max={formData.totalPages ? parseInt(formData.totalPages) : undefined}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="label">Status</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {(Object.keys(BOOK_STATUS_CONFIG) as BookStatus[]).map((status) => {
+                      const config = BOOK_STATUS_CONFIG[status];
+                      const StatusIcon = config.icon;
+                      return (
+                        <button
+                          key={status}
+                          type="button"
+                          onClick={() => setFormData({ ...formData, status })}
+                          className={clsx(
+                            'flex items-center gap-2 p-3 rounded-lg border-2 transition-all',
+                            formData.status === status
+                              ? 'border-primary-500 bg-primary-500/10'
+                              : 'border-dark-600 hover:border-dark-500'
+                          )}
+                        >
+                          <StatusIcon size={16} className={config.color} />
+                          <span className="text-sm text-white">{config.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="label">Rating</label>
+                  {renderStars(formData.rating, 'lg', true, (rating) =>
+                    setFormData({ ...formData, rating })
+                  )}
+                </div>
+
+                <div>
+                  <label className="label">Notes</label>
+                  <textarea
+                    className="input min-h-[100px] resize-none"
+                    placeholder="Your thoughts about this book..."
+                    value={formData.notes}
+                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                  />
+                </div>
+
+                <div className="flex gap-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => setIsModalOpen(false)}
+                    className="btn btn-secondary flex-1"
+                  >
+                    Cancel
+                  </button>
+                  <button type="submit" className="btn btn-primary flex-1">
+                    {editingBook ? 'Save Changes' : 'Add Book'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>,
+          document.body
+        )}
 
       <style>{`
         @keyframes slide-in-right {
@@ -1514,6 +1519,22 @@ const Books: React.FC = () => {
           box-shadow: 0 2px 6px rgba(0,0,0,0.3);
         }
       `}</style>
+
+      <ConfirmDialog
+        isOpen={!!confirmDeleteId}
+        onClose={() => setConfirmDeleteId(null)}
+        onConfirm={() => {
+          if (confirmDeleteId) {
+            deleteMutation.mutate(confirmDeleteId);
+            setConfirmDeleteId(null);
+          }
+        }}
+        title="Remove Book"
+        message="Remove this book from your library?"
+        confirmText="Remove"
+        danger
+        loading={deleteMutation.isPending}
+      />
     </div>
   );
 };

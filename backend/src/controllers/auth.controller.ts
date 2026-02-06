@@ -10,7 +10,7 @@ const REFRESH_COOKIE_OPTIONS = {
   secure: process.env.NODE_ENV === 'production',
   sameSite: 'strict' as const,
   maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-  path: '/api/auth',
+  path: '/api', // Covers both /api/auth and /api/v1/auth
 };
 
 /**
@@ -63,7 +63,7 @@ export const logout = asyncHandler(async (req: AuthRequest, res: Response) => {
     await authService.revokeRefreshTokens(req.userId);
   }
 
-  res.clearCookie('refreshToken', { path: '/api/auth' });
+  res.clearCookie('refreshToken', { path: '/api' });
   sendSuccess(res, null, 'Logged out successfully');
 });
 

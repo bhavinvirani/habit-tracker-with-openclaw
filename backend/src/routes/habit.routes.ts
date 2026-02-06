@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { authenticate } from '../middleware/auth';
 import { validateBody, validateQuery } from '../middleware/validate';
+import { readLimiter, writeLimiter } from '../middleware/rateLimiter';
 import {
   createHabitSchema,
   updateHabitSchema,
@@ -29,30 +30,43 @@ const router = Router();
 router.use(authenticate);
 
 // Categories
-router.get('/categories', getCategories);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+router.get('/categories', readLimiter as any, getCategories);
 
 // Archived habits (must come before :id route)
-router.get('/archived', getArchivedHabits);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+router.get('/archived', readLimiter as any, getArchivedHabits);
 
 // Reorder habits
-router.patch('/reorder', validateBody(reorderHabitsSchema), reorderHabits);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+router.patch('/reorder', writeLimiter as any, validateBody(reorderHabitsSchema), reorderHabits);
 
 // CRUD operations
-router.post('/', validateBody(createHabitSchema), createHabit);
-router.get('/', validateQuery(getHabitsQuerySchema), getHabits);
-router.get('/:id', getHabitById);
-router.patch('/:id', validateBody(updateHabitSchema), updateHabit);
-router.delete('/:id', deleteHabit);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+router.post('/', writeLimiter as any, validateBody(createHabitSchema), createHabit);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+router.get('/', readLimiter as any, validateQuery(getHabitsQuerySchema), getHabits);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+router.get('/:id', readLimiter as any, getHabitById);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+router.patch('/:id', writeLimiter as any, validateBody(updateHabitSchema), updateHabit);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+router.delete('/:id', writeLimiter as any, deleteHabit);
 
 // Archive/Unarchive
-router.post('/:id/archive', archiveHabit);
-router.post('/:id/unarchive', unarchiveHabit);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+router.post('/:id/archive', writeLimiter as any, archiveHabit);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+router.post('/:id/unarchive', writeLimiter as any, unarchiveHabit);
 
 // Pause/Resume (Vacation Mode)
-router.post('/:id/pause', pauseHabit);
-router.post('/:id/resume', resumeHabit);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+router.post('/:id/pause', writeLimiter as any, pauseHabit);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+router.post('/:id/resume', writeLimiter as any, resumeHabit);
 
 // Habit Stacking
-router.post('/:id/stack', stackHabit);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+router.post('/:id/stack', writeLimiter as any, stackHabit);
 
 export default router;

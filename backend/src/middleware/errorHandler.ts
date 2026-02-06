@@ -6,6 +6,28 @@ import {
 import logger from '../utils/logger';
 import { AppError } from '../utils/AppError';
 
+// Safe keys that can be exposed in production error details
+const SAFE_DETAIL_KEYS = new Set(['field', 'fields', 'code', 'type', 'limit', 'value']);
+
+/**
+ * Strip sensitive data (Prisma meta, stack traces, etc.) from error details in production
+ */
+function sanitizeDetails(
+  details: Record<string, unknown> | unknown[]
+): Record<string, unknown> | unknown[] | null {
+  if (Array.isArray(details)) return details;
+
+  const safe: Record<string, unknown> = {};
+  let hasKeys = false;
+  for (const key of Object.keys(details)) {
+    if (SAFE_DETAIL_KEYS.has(key)) {
+      safe[key] = details[key];
+      hasKeys = true;
+    }
+  }
+  return hasKeys ? safe : null;
+}
+
 /**
  * Convert Prisma errors to AppError
  */
@@ -73,8 +95,12 @@ const sendErrorResponse = (err: AppError, req: Request, res: Response) => {
       errorResponse.error.details = details;
     }
   } else if (err.isOperational && details) {
-    // Only send details for operational errors in production
-    errorResponse.error.details = details;
+    // Only send safe details for operational errors in production
+    // Strip Prisma meta and internal details that could leak schema info
+    const safeDetails = sanitizeDetails(details);
+    if (safeDetails) {
+      errorResponse.error.details = safeDetails;
+    }
   }
 
   // Add request info to logs
@@ -128,23 +154,26 @@ export const errorHandler = (
   } else if (err.name === 'TokenExpiredError') {
     error = new AppError('Token expired', 401, true, 'TOKEN_EXPIRED');
   }
+  // Handle body-parser errors (payload too large, malformed JSON, etc.)
+  else if ('type' in err && (err as { type?: string }).type === 'entity.too.large') {
+    error = new AppError('Request body too large', 413, true, 'PAYLOAD_TOO_LARGE');
+  }
   // Handle validation errors (from express-validator)
   else if (err.name === 'ValidationError') {
     error = new AppError(err.message, 400, true, 'VALIDATION_ERROR');
   }
-  // Generic error
+  // Generic error — hide internal message in production
   else {
-    error = new AppError(
-      err.message || 'An unexpected error occurred',
-      500,
-      false,
-      'INTERNAL_ERROR'
-    );
+    const safeMessage =
+      process.env.NODE_ENV === 'production'
+        ? 'An unexpected error occurred'
+        : err.message || 'An unexpected error occurred';
+    error = new AppError(safeMessage, 500, false, 'INTERNAL_ERROR');
   }
 
   // Log programming or system errors
   if (!error.isOperational) {
-    logger.error('💥 CRITICAL ERROR - Non-operational error occurred', {
+    logger.error('CRITICAL ERROR - Non-operational error occurred', {
       error: {
         name: err.name,
         message: err.message,
@@ -153,7 +182,6 @@ export const errorHandler = (
       request: {
         method: req.method,
         url: req.originalUrl,
-        body: req.body,
         params: req.params,
         query: req.query,
       },

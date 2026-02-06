@@ -27,7 +27,8 @@ import clsx from 'clsx';
 import { habitsApi, analyticsApi } from '../services/habits';
 import { Habit, HabitWithStats } from '../types';
 import HabitModal from '../components/habits/HabitModal';
-import { LoadingSpinner, Sparkline, CategoryBadge } from '../components/ui';
+import ConfirmDialog from '../components/ui/ConfirmDialog';
+import { Sparkline, CategoryBadge, HabitsSkeleton } from '../components/ui';
 
 const Habits: React.FC = () => {
   const queryClient = useQueryClient();
@@ -35,6 +36,7 @@ const Habits: React.FC = () => {
   const [editingHabit, setEditingHabit] = useState<HabitWithStats | null>(null);
   const [showArchived, setShowArchived] = useState(false);
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   // New state for filters and view
   const [searchQuery, setSearchQuery] = useState('');
@@ -223,9 +225,7 @@ const Habits: React.FC = () => {
   };
 
   const handleDelete = (id: string) => {
-    if (window.confirm('Are you sure you want to delete this habit? This cannot be undone.')) {
-      deleteMutation.mutate(id);
-    }
+    setConfirmDeleteId(id);
     setActiveMenu(null);
   };
 
@@ -240,7 +240,7 @@ const Habits: React.FC = () => {
   };
 
   if (isLoading) {
-    return <LoadingSpinner />;
+    return <HabitsSkeleton />;
   }
 
   const renderHabitCard = (habit: HabitWithStats, isGrid = false) => (
@@ -680,6 +680,22 @@ const Habits: React.FC = () => {
         onSubmit={handleSubmit}
         habit={editingHabit}
         isLoading={createMutation.isPending || updateMutation.isPending}
+      />
+
+      <ConfirmDialog
+        isOpen={!!confirmDeleteId}
+        onClose={() => setConfirmDeleteId(null)}
+        onConfirm={() => {
+          if (confirmDeleteId) {
+            deleteMutation.mutate(confirmDeleteId);
+            setConfirmDeleteId(null);
+          }
+        }}
+        title="Delete Habit"
+        message="Are you sure you want to delete this habit? This cannot be undone."
+        confirmText="Delete"
+        danger
+        loading={deleteMutation.isPending}
       />
     </div>
   );

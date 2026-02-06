@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { authenticate } from '../middleware/auth';
 import { validateQuery, validateParams } from '../middleware/validate';
+import { analyticsLimiter } from '../middleware/rateLimiter';
 import {
   overviewQuerySchema,
   periodQuerySchema,
@@ -29,6 +30,8 @@ import {
 const router = Router();
 
 router.use(authenticate);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+router.use(analyticsLimiter as any);
 
 // Dashboard overview
 router.get('/overview', validateQuery(overviewQuerySchema), getOverview);

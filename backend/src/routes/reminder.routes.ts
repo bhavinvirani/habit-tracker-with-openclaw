@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { authenticate } from '../middleware/auth';
+import { readLimiter, writeLimiter } from '../middleware/rateLimiter';
 import { validateBody } from '../middleware/validate';
 import {
   createReminderSchema,
@@ -17,11 +18,21 @@ const router = Router();
 
 router.use(authenticate);
 
-router.get('/', getReminders);
-router.post('/', validateBody(createReminderSchema), createReminder);
-router.delete('/:habitId', deleteReminder);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+router.get('/', readLimiter as any, getReminders);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+router.post('/', writeLimiter as any, validateBody(createReminderSchema), createReminder);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+router.delete('/:habitId', writeLimiter as any, deleteReminder);
 
-router.get('/settings', getNotificationSettings);
-router.put('/settings', validateBody(updateNotificationSettingsSchema), updateNotificationSettings);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+router.get('/settings', readLimiter as any, getNotificationSettings);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+router.put(
+  '/settings',
+  writeLimiter as any,
+  validateBody(updateNotificationSettingsSchema),
+  updateNotificationSettings
+);
 
 export default router;

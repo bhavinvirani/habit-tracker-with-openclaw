@@ -61,6 +61,7 @@ const Button: React.FC<ButtonProps> = ({
     <button
       {...props}
       disabled={isDisabled}
+      aria-busy={loading}
       className={clsx(
         'inline-flex items-center justify-center font-medium rounded-lg border transition-all',
         variantClasses[variant],

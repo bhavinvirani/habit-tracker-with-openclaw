@@ -25,7 +25,13 @@ import { format, subDays } from 'date-fns';
 import clsx from 'clsx';
 import HabitModal from '../components/habits/HabitModal';
 import { Habit } from '../types';
-import { LoadingSpinner, PageHeader, StatCard, CircularProgress, Button } from '../components/ui';
+import {
+  PageHeader,
+  StatCard,
+  CircularProgress,
+  Button,
+  DashboardSkeleton,
+} from '../components/ui';
 
 const Dashboard: React.FC = () => {
   const queryClient = useQueryClient();
@@ -43,10 +49,11 @@ const Dashboard: React.FC = () => {
     queryFn: analyticsApi.getOverview,
   });
 
-  // Fetch weekly analytics for mini heatmap
+  // Fetch 14-day analytics for mini heatmap
+  const heatmapStartDate = format(subDays(new Date(), 13), 'yyyy-MM-dd');
   const { data: weeklyData } = useQuery({
-    queryKey: ['weekly'],
-    queryFn: () => analyticsApi.getWeekly(),
+    queryKey: ['weekly-heatmap', heatmapStartDate],
+    queryFn: () => analyticsApi.getWeekly({ startDate: heatmapStartDate }),
   });
 
   // Fetch currently reading book
@@ -157,7 +164,7 @@ const Dashboard: React.FC = () => {
   const isLoading = loadingToday || loadingStats;
 
   if (isLoading) {
-    return <LoadingSpinner />;
+    return <DashboardSkeleton />;
   }
 
   const habits = todayData?.habits || [];
