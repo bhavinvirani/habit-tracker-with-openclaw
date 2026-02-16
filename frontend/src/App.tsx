@@ -1,5 +1,6 @@
 import React, { Suspense, useEffect, useRef } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
+import { Analytics as VercelAnalytics } from '@vercel/analytics/react';
 import { Toaster } from 'react-hot-toast';
 import ErrorBoundary from './components/ErrorBoundary';
 import Layout from './components/layout/Layout';
@@ -178,6 +179,7 @@ function App() {
         {/* Unauthenticated users on unknown paths go to login */}
         <Route path="*" element={<Navigate to="/login" />} />
       </Routes>
+      <VercelAnalytics />
       <Toaster
         position="top-right"
         toastOptions={{

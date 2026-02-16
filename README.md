@@ -4,73 +4,75 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node.js](https://img.shields.io/badge/Node.js-%3E%3D18-green?logo=node.js)](https://nodejs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue?logo=typescript)](https://www.typescriptlang.org/)
+[![React](https://img.shields.io/badge/React-18-61DAFB?logo=react)](https://react.dev/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![Prisma](https://img.shields.io/badge/Prisma-ORM-2D3748?logo=prisma)](https://www.prisma.io/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.x-06B6D4?logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
+[![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 [![GitHub Stars](https://img.shields.io/github/stars/bhavinvirani/habit-tracker?style=social)](https://github.com/bhavinvirani/habit-tracker)
 
-A comprehensive full-stack habit tracking application with analytics, insights, and visualization. **Fully containerized with Docker for easy development and deployment.**
+A full-stack habit tracking application with analytics, insights, and visualization. Fully containerized with Docker for easy development and deployment.
 
-## 🚀 Quick Start
+## Quick Start
 
 ```bash
 # Clone the repository
 git clone https://github.com/bhavinvirani/habit-tracker.git
 cd habit-tracker
 
-# Start the entire application with one command
-docker-compose -f docker-compose.dev.yml up
+# Start with Docker (recommended)
+make up
 
-# Or use the helper script
-./start.sh
+# Or without Docker
+npm install
+npm run dev
 ```
-
-That's it! No Node.js, PostgreSQL, or other dependencies needed locally.
 
 **Access the application:**
 
-| Service     | URL                          |
-| ----------- | ---------------------------- |
-| Frontend    | http://localhost:3000        |
-| Backend API | http://localhost:8080        |
-| API Health  | http://localhost:8080/health |
-| PostgreSQL  | localhost:5432               |
+| Service  | URL                            |
+| -------- | ------------------------------ |
+| Frontend | http://localhost:3000          |
+| Backend  | http://localhost:8080          |
+| API Docs | http://localhost:8080/api-docs |
+| Health   | http://localhost:8080/health   |
 
-**Test Credentials:**
+> For detailed development instructions, see [DEVELOPMENT.md](DEVELOPMENT.md)
 
-- Email: `test@example.com`
-- Password: `password123`
+## Features
 
-> 📖 **For detailed development instructions, see [DEVELOPMENT.md](DEVELOPMENT.md)**
+### Core
 
-## ✨ Features
+- **Habit Management** - Create, edit, delete, archive, pause/resume, reorder, and stack habits
+- **Daily Tracking** - Check-in and undo with date-specific tracking
+- **Streaks & Milestones** - Track consecutive days and achievement milestones
+- **Categories** - Organize habits by custom categories
 
-### Core Features
+### Analytics
 
-- **Habit Management**: Create, edit, delete, and organize personal habits
-- **Daily Tracking**: Check-in and track habit completion
-- **Analytics Dashboard**: Insights and statistics about habit performance
-- **Visualizations**: Charts and graphs showing trends and patterns
-- **Streaks**: Track consecutive days of habit completion
-- **Categories**: Organize habits by custom categories
+- **Dashboard** - Overview, weekly/monthly breakdowns, productivity scores
+- **Visualizations** - Heatmaps, charts, calendar view, trends
+- **Insights** - Correlations, predictions, best performing analysis, category breakdown
 
-### Additional Features
+### Additional
 
-- **📚 Book Tracking**: Track books you're reading, completed, or want to read
-- **🏆 Challenges**: Create and participate in habit challenges
-- **📅 Calendar View**: Visualize habit completion over time
-- **👤 User Profile**: Manage account settings and preferences
-- **📱 Responsive Design**: Works on desktop and mobile
-- **📲 Telegram Integration**: Get reminders and notifications in Telegram
-- **🤖 OpenClaw Integration**: Track habits via natural language in any messaging app
+- **Book Tracking** - Track reading progress with session logging and stats
+- **Challenges** - Time-bound habit challenges with progress syncing
+- **Reminders** - Per-habit reminders with notification settings
+- **Telegram Bot** - Track habits and get reminders via Telegram
+- **OpenClaw Integration** - Natural language habit tracking across messaging apps
+- **Responsive Design** - Works on desktop and mobile
 
-## 🛠 Tech Stack
+## Tech Stack
 
 ### Backend
 
-- **Runtime**: Node.js 20 with Express
+- **Runtime**: Node.js 20 + Express
 - **Language**: TypeScript
-- **Database**: PostgreSQL 16 with Prisma ORM
-- **Auth**: JWT-based authentication
-- **Validation**: Zod + Express Validator
+- **Database**: PostgreSQL 16 + Prisma ORM
+- **Auth**: JWT with refresh token rotation
+- **Validation**: Zod schemas
 - **Logging**: Winston with daily rotate
 
 ### Frontend
@@ -86,246 +88,119 @@ That's it! No Node.js, PostgreSQL, or other dependencies needed locally.
 ### Infrastructure
 
 - **Containerization**: Docker & Docker Compose
-- **Web Server**: Nginx (production)
 - **Monorepo**: npm Workspaces
+- **CI/CD**: GitHub Actions
+- **Deployment**: Vercel (frontend) + Render (backend) + Neon (database)
 
-### Development Tools
-
-- **Linting**: ESLint
-- **Formatting**: Prettier
-- **Git Hooks**: Husky + lint-staged
-- **Testing**: Jest + Supertest
-
-## 📁 Project Structure
+## Project Structure
 
 ```
 habit-tracker/
 ├── backend/                 # Express API server
 │   ├── src/
-│   │   ├── controllers/    # Route handlers
-│   │   ├── services/       # Business logic
-│   │   ├── routes/         # API routes
-│   │   ├── middleware/     # Auth, validation, error handling
-│   │   ├── validators/     # Request validation schemas
-│   │   └── utils/          # Helpers and utilities
-│   ├── prisma/             # Database schema & migrations
-│   ├── Dockerfile          # Production image
-│   └── Dockerfile.dev      # Development image
-├── frontend/               # React application
-│   ├── src/
-│   │   ├── components/     # Reusable UI components
-│   │   ├── pages/          # Page components
-│   │   ├── services/       # API client
-│   │   ├── store/          # Zustand state management
-│   │   └── types/          # TypeScript types
-│   ├── Dockerfile          # Production image (Nginx)
-│   └── Dockerfile.dev      # Development image
-├── shared/                 # Shared TypeScript types
-├── docs/                   # API documentation
-├── .husky/                 # Git hooks
-├── docker-compose.yml      # Production setup
-└── docker-compose.dev.yml  # Development setup
+│   │   ├── controllers/     # Route handlers
+│   │   ├── services/        # Business logic
+│   │   ├── routes/          # API routes
+│   │   ├── middleware/      # Auth, validation, error handling
+│   │   ├── validators/      # Zod request schemas
+│   │   ├── docs/            # Swagger YAML specs
+│   │   └── utils/           # Helpers and utilities
+│   └── prisma/              # Database schema & migrations
+├── frontend/                # React application
+│   └── src/
+│       ├── components/      # Reusable UI components
+│       ├── pages/           # Page components
+│       ├── services/        # API client
+│       ├── store/           # Zustand state management
+│       └── hooks/           # Custom React hooks
+├── shared/                  # Shared TypeScript types & constants
+├── docs/                    # Integration guides
+└── docker-compose.dev.yml   # Development setup
 ```
 
-## 📋 Development
-
-### Prerequisites
-
-- Docker Desktop (macOS/Windows) or Docker Engine + Docker Compose (Linux)
+## Development
 
 ### Quick Commands
 
 ```bash
-# Start development environment
-docker-compose -f docker-compose.dev.yml up
+# Docker
+make up                # Start all services
+make down              # Stop all services
+make build             # Rebuild containers
+make migrate           # Run Prisma migrations
+make studio            # Open Prisma Studio
 
-# View logs
-docker-compose -f docker-compose.dev.yml logs -f backend frontend
+# Without Docker
+npm run dev            # Start backend + frontend
+npm run backend        # Backend only
+npm run frontend       # Frontend only
 
-# Stop all services
-docker-compose -f docker-compose.dev.yml down
-
-# Rebuild after dependency changes
-docker-compose -f docker-compose.dev.yml up --build
+# Quality
+npm run lint           # Lint all workspaces
+npm run format         # Format all files
+npm run test --workspace=backend   # Run tests
 ```
 
-### Database Commands
-
-```bash
-# Run migrations
-docker-compose -f docker-compose.dev.yml exec backend npx prisma migrate dev
-
-# Open Prisma Studio (database GUI)
-docker-compose -f docker-compose.dev.yml exec backend npx prisma studio
-
-# Seed database
-docker-compose -f docker-compose.dev.yml exec backend npx ts-node prisma/seed.ts
-
-# Reset database
-docker-compose -f docker-compose.dev.yml exec backend npm run db:reset
-```
-
-### Git Hooks (Husky)
-
-This project uses Husky for Git hooks:
+### Git Hooks
 
 | Hook           | Action                                 |
 | -------------- | -------------------------------------- |
 | **pre-commit** | Runs ESLint + Prettier on staged files |
-| **pre-push**   | Runs full lint across all workspaces   |
+| **commit-msg** | Enforces conventional commit format    |
 
-### Linting & Formatting
+## API
 
-```bash
-# Run linting across all workspaces
-npm run lint
+Interactive API documentation is available at `/api-docs` (Swagger UI) when the server is running.
 
-# Format all files
-npm run format
-```
+Base URL: `http://localhost:8080/api/v1`
 
-## 📚 API Endpoints
+Key endpoint groups: Auth, Habits, Tracking, Analytics, Books, Challenges, Templates, Reminders, Users, Bot, Integrations.
 
-Base URL: `http://localhost:8080/api`
+> See the [full API reference](.claude/docs/API_REFERENCE.md) or run the server and visit `/api-docs`.
 
-### Authentication
+## Deployment
 
-| Method | Endpoint         | Description       |
-| ------ | ---------------- | ----------------- |
-| POST   | `/auth/register` | Register new user |
-| POST   | `/auth/login`    | Login and get JWT |
-| GET    | `/auth/me`       | Get current user  |
-
-### Habits
-
-| Method | Endpoint      | Description       |
-| ------ | ------------- | ----------------- |
-| GET    | `/habits`     | List all habits   |
-| POST   | `/habits`     | Create habit      |
-| GET    | `/habits/:id` | Get habit details |
-| PUT    | `/habits/:id` | Update habit      |
-| DELETE | `/habits/:id` | Delete habit      |
-
-### Tracking
-
-| Method | Endpoint            | Description           |
-| ------ | ------------------- | --------------------- |
-| POST   | `/tracking/log`     | Log habit completion  |
-| GET    | `/tracking/history` | View tracking history |
-
-### Analytics
-
-| Method | Endpoint              | Description     |
-| ------ | --------------------- | --------------- |
-| GET    | `/analytics/overview` | Dashboard stats |
-
-### Books
-
-| Method | Endpoint     | Description    |
-| ------ | ------------ | -------------- |
-| GET    | `/books`     | List all books |
-| POST   | `/books`     | Add a book     |
-| PUT    | `/books/:id` | Update book    |
-| DELETE | `/books/:id` | Remove book    |
-
-### Challenges
-
-| Method | Endpoint          | Description      |
-| ------ | ----------------- | ---------------- |
-| GET    | `/challenges`     | List challenges  |
-| POST   | `/challenges`     | Create challenge |
-| PUT    | `/challenges/:id` | Update challenge |
-| DELETE | `/challenges/:id` | Delete challenge |
-
-> Full API examples in [docs/API_EXAMPLES.json](docs/API_EXAMPLES.json)
-
-## 🚀 Deployment
-
-### Production Build
-
-```bash
-# Build optimized images
-docker-compose build
-
-# Start production stack
-docker-compose up -d
-```
+- **Frontend**: Vercel (config in `vercel.json`, Root Directory = `/`)
+- **Backend**: Render (Dockerfile in `backend/`)
+- **Database**: Neon.tech (managed PostgreSQL)
 
 ### Environment Variables
 
-| Variable             | Description                   |
-| -------------------- | ----------------------------- |
-| `DATABASE_URL`       | PostgreSQL connection string  |
-| `JWT_SECRET`         | Secret for JWT signing        |
-| `JWT_EXPIRES_IN`     | Token expiration (e.g., "7d") |
-| `CORS_ORIGIN`        | Frontend URL for CORS         |
-| `REACT_APP_API_URL`  | Backend API URL               |
-| `TELEGRAM_BOT_TOKEN` | Telegram bot token (optional) |
+See `backend/.env.example` for the full list. Key vars:
 
-### Deployment Platforms
+| Variable             | Description                        |
+| -------------------- | ---------------------------------- |
+| `DATABASE_URL`       | PostgreSQL connection string       |
+| `JWT_SECRET`         | Secret for JWT signing (32+ chars) |
+| `CORS_ORIGIN`        | Frontend URL(s) for CORS           |
+| `REACT_APP_API_URL`  | Backend API URL for frontend       |
+| `TELEGRAM_BOT_TOKEN` | Telegram bot token (optional)      |
 
-- **Railway, Render, Fly.io** - Direct Docker deployment
-- **DigitalOcean App Platform** - Container support
-- **AWS ECS, GCP Cloud Run** - Container orchestration
-- **VPS** - Self-hosted with Docker
-
-## 🔗 Integrations
+## Integrations
 
 ### Telegram Notifications
-
-Get habit reminders and notifications directly in Telegram.
-
-**Quick Setup**:
 
 1. Create a bot via [@BotFather](https://t.me/botfather)
 2. Add `TELEGRAM_BOT_TOKEN` to your environment variables
 3. Register your chat ID via the Settings page
 
-📖 **[Full Setup Guide](docs/TELEGRAM_INTEGRATION.md)**
+[Full Setup Guide](docs/TELEGRAM_INTEGRATION.md)
 
 ### OpenClaw Integration
 
 Track habits using natural language in any messaging app (Telegram, WhatsApp, Discord).
 
-**Example Commands**:
-
-- "Done with meditation"
-- "Drank 3 glasses of water"
-- "Show my habits for today"
-
-📖 **Setup Guides**:
-
 - [OpenClaw + Telegram](docs/OPENCLAW_INTEGRATION.md)
 - [OpenClaw + WhatsApp](docs/WHATSAPP_INTEGRATION.md)
 
-## 🤖 AI Integration (Planned)
+## Contributing
 
-This project is architected for future AI capabilities:
+See our [Contributing Guide](CONTRIBUTING.md) for setup instructions, commit conventions, and PR process.
 
-- Habit recommendations based on patterns
-- Smart insights and summaries
-- Predictive analytics for success probability
-- Context-aware reminders
+## Security
 
-## 📝 Contributing
+See our [Security Policy](SECURITY.md) for responsible disclosure guidelines.
 
-We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details on:
+## License
 
-- Setting up the development environment
-- Branch naming and commit conventions
-- Pull request process
-- Code style guidelines
-
-Looking for something to work on? Check out our [good first issues](https://github.com/bhavinvirani/habit-tracker/labels/good%20first%20issue).
-
-## 🔒 Security
-
-If you discover a security vulnerability, please see our [Security Policy](SECURITY.md) for responsible disclosure guidelines.
-
-## 📄 License
-
-MIT License - See [LICENSE](LICENSE) file for details.
-
----
-
-Built with modern web technologies and containerized for easy deployment.
+MIT - See [LICENSE](LICENSE)
