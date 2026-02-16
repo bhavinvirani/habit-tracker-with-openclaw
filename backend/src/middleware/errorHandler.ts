@@ -158,7 +158,7 @@ export const errorHandler = (
   else if ('type' in err && (err as { type?: string }).type === 'entity.too.large') {
     error = new AppError('Request body too large', 413, true, 'PAYLOAD_TOO_LARGE');
   }
-  // Handle validation errors (from express-validator)
+  // Handle validation errors (from zod)
   else if (err.name === 'ValidationError') {
     error = new AppError(err.message, 400, true, 'VALIDATION_ERROR');
   }

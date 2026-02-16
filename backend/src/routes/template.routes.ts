@@ -11,15 +11,12 @@ const router = Router();
 router.use(authenticate);
 
 // Get all templates
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-router.get('/', readLimiter as any, validateQuery(getTemplatesQuerySchema), getTemplates);
+router.get('/', readLimiter, validateQuery(getTemplatesQuerySchema), getTemplates);
 
 // Get single template
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-router.get('/:id', readLimiter as any, getTemplateById);
+router.get('/:id', readLimiter, getTemplateById);
 
 // Create habit from template
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-router.post('/:id/use', writeLimiter as any, validateBody(useTemplateSchema), useTemplate);
+router.post('/:id/use', writeLimiter, validateBody(useTemplateSchema), useTemplate);
 
 export default router;

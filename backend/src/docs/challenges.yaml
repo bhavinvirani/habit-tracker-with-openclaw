@@ -1,0 +1,305 @@
+paths:
+  /challenges:
+    get:
+      tags: [Challenges]
+      summary: Get all challenges
+      description: Returns a paginated list of challenges for the authenticated user.
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [ACTIVE, COMPLETED, FAILED, CANCELLED]
+          description: Filter by challenge status
+        - in: query
+          name: includeCompleted
+          schema:
+            type: boolean
+            default: false
+          description: Include completed challenges in results
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 10
+            maximum: 50
+          description: Number of challenges to return
+        - in: query
+          name: offset
+          schema:
+            type: integer
+            default: 0
+          description: Number of challenges to skip
+      responses:
+        200:
+          description: List of challenges
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Challenge'
+                  meta:
+                    $ref: '#/components/schemas/PaginationMeta'
+        401:
+          description: Unauthorized
+        429:
+          description: Too many requests
+    post:
+      tags: [Challenges]
+      summary: Create a new challenge
+      description: Creates a new challenge linked to one or more habits for the authenticated user.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - duration
+                - startDate
+                - habitIds
+              properties:
+                name:
+                  type: string
+                  maxLength: 100
+                description:
+                  type: string
+                  maxLength: 500
+                duration:
+                  type: integer
+                  minimum: 1
+                  maximum: 365
+                  description: Duration in days
+                startDate:
+                  type: string
+                  pattern: '^\d{4}-\d{2}-\d{2}$'
+                  description: Start date in YYYY-MM-DD format
+                habitIds:
+                  type: array
+                  items:
+                    type: string
+                  minItems: 1
+                  description: Array of habit IDs to include in the challenge
+      responses:
+        201:
+          description: Challenge created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/Challenge'
+        400:
+          description: Validation error
+        401:
+          description: Unauthorized
+        429:
+          description: Too many requests
+
+  /challenges/{id}:
+    get:
+      tags: [Challenges]
+      summary: Get challenge by ID
+      description: Returns a single challenge by its ID for the authenticated user.
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: Challenge ID
+      responses:
+        200:
+          description: Challenge details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/Challenge'
+        401:
+          description: Unauthorized
+        404:
+          description: Challenge not found
+        429:
+          description: Too many requests
+    put:
+      tags: [Challenges]
+      summary: Update a challenge
+      description: Updates an existing challenge for the authenticated user.
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: Challenge ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  maxLength: 100
+                description:
+                  type: string
+                  maxLength: 500
+                  nullable: true
+                status:
+                  type: string
+                  enum: [ACTIVE, COMPLETED, FAILED, CANCELLED]
+      responses:
+        200:
+          description: Challenge updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/Challenge'
+        400:
+          description: Validation error
+        401:
+          description: Unauthorized
+        404:
+          description: Challenge not found
+        429:
+          description: Too many requests
+    delete:
+      tags: [Challenges]
+      summary: Delete a challenge
+      description: Deletes a challenge by its ID for the authenticated user.
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: Challenge ID
+      responses:
+        200:
+          description: Challenge deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      message:
+                        type: string
+        401:
+          description: Unauthorized
+        404:
+          description: Challenge not found
+        429:
+          description: Too many requests
+
+  /challenges/{id}/sync:
+    post:
+      tags: [Challenges]
+      summary: Sync challenge progress
+      description: Syncs challenge progress for a specific date based on linked habit completions.
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: Challenge ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                date:
+                  type: string
+                  pattern: '^\d{4}-\d{2}-\d{2}$'
+                  description: Date to sync in YYYY-MM-DD format (defaults to today)
+      responses:
+        200:
+          description: Progress synced successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+        401:
+          description: Unauthorized
+        404:
+          description: Challenge not found
+        429:
+          description: Too many requests
+
+  /challenges/{id}/progress:
+    get:
+      tags: [Challenges]
+      summary: Get detailed challenge progress
+      description: Returns detailed progress information for a specific challenge.
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: Challenge ID
+      responses:
+        200:
+          description: Challenge progress details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+        401:
+          description: Unauthorized
+        404:
+          description: Challenge not found
+        429:
+          description: Too many requests

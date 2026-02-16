@@ -1,0 +1,424 @@
+paths:
+  /analytics/overview:
+    get:
+      tags: [Analytics]
+      summary: Get dashboard overview with summary statistics
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: startDate
+          schema:
+            type: string
+            format: date
+          description: Start date in YYYY-MM-DD format
+        - in: query
+          name: endDate
+          schema:
+            type: string
+            format: date
+          description: End date in YYYY-MM-DD format
+      responses:
+        200:
+          description: Dashboard overview data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+        401:
+          description: Unauthorized - missing or invalid token
+        429:
+          description: Too many requests - rate limit exceeded
+
+  /analytics/weekly:
+    get:
+      tags: [Analytics]
+      summary: Get weekly analytics breakdown
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: startDate
+          schema:
+            type: string
+            format: date
+          description: Start date in YYYY-MM-DD format
+        - in: query
+          name: endDate
+          schema:
+            type: string
+            format: date
+          description: End date in YYYY-MM-DD format
+        - in: query
+          name: period
+          schema:
+            type: string
+            enum: [week, month, year]
+          description: Period granularity
+      responses:
+        200:
+          description: Weekly analytics data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+        401:
+          description: Unauthorized - missing or invalid token
+        429:
+          description: Too many requests - rate limit exceeded
+
+  /analytics/monthly:
+    get:
+      tags: [Analytics]
+      summary: Get monthly analytics breakdown
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: startDate
+          schema:
+            type: string
+            format: date
+          description: Start date in YYYY-MM-DD format
+        - in: query
+          name: endDate
+          schema:
+            type: string
+            format: date
+          description: End date in YYYY-MM-DD format
+        - in: query
+          name: period
+          schema:
+            type: string
+            enum: [week, month, year]
+          description: Period granularity
+      responses:
+        200:
+          description: Monthly analytics data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+        401:
+          description: Unauthorized - missing or invalid token
+        429:
+          description: Too many requests - rate limit exceeded
+
+  /analytics/heatmap:
+    get:
+      tags: [Analytics]
+      summary: Get year heatmap data
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: year
+          schema:
+            type: integer
+          description: Year (4 digits, e.g. 2024)
+        - in: query
+          name: habitId
+          schema:
+            type: string
+          description: Filter by specific habit ID
+      responses:
+        200:
+          description: Heatmap data with daily completion levels
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+        401:
+          description: Unauthorized - missing or invalid token
+        429:
+          description: Too many requests - rate limit exceeded
+
+  /analytics/habits/{id}:
+    get:
+      tags: [Analytics]
+      summary: Get statistics for a specific habit
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: Habit ID
+      responses:
+        200:
+          description: Detailed statistics for the habit
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+        401:
+          description: Unauthorized - missing or invalid token
+        429:
+          description: Too many requests - rate limit exceeded
+
+  /analytics/streaks:
+    get:
+      tags: [Analytics]
+      summary: Get streak leaderboard
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+          description: Maximum number of streaks to return
+      responses:
+        200:
+          description: Streak leaderboard data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      type: object
+        401:
+          description: Unauthorized - missing or invalid token
+        429:
+          description: Too many requests - rate limit exceeded
+
+  /analytics/insights:
+    get:
+      tags: [Analytics]
+      summary: Get personalized insights and suggestions
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Insights and actionable suggestions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+        401:
+          description: Unauthorized - missing or invalid token
+        429:
+          description: Too many requests - rate limit exceeded
+
+  /analytics/calendar:
+    get:
+      tags: [Analytics]
+      summary: Get calendar data with day-by-day habit details
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Calendar data with daily habit completion details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+        401:
+          description: Unauthorized - missing or invalid token
+        429:
+          description: Too many requests - rate limit exceeded
+
+  /analytics/categories:
+    get:
+      tags: [Analytics]
+      summary: Get category breakdown and habit completion rates
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Category-level analytics with completion rates
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+        401:
+          description: Unauthorized - missing or invalid token
+        429:
+          description: Too many requests - rate limit exceeded
+
+  /analytics/comparison:
+    get:
+      tags: [Analytics]
+      summary: Get week-over-week comparison
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Comparison data between current and previous week
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+        401:
+          description: Unauthorized - missing or invalid token
+        429:
+          description: Too many requests - rate limit exceeded
+
+  /analytics/trend:
+    get:
+      tags: [Analytics]
+      summary: Get monthly trend data (last 30 days)
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Daily trend data for the last 30 days
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+        401:
+          description: Unauthorized - missing or invalid token
+        429:
+          description: Too many requests - rate limit exceeded
+
+  /analytics/productivity:
+    get:
+      tags: [Analytics]
+      summary: Get productivity score with breakdown
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Productivity score and component breakdown
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+        401:
+          description: Unauthorized - missing or invalid token
+        429:
+          description: Too many requests - rate limit exceeded
+
+  /analytics/performance:
+    get:
+      tags: [Analytics]
+      summary: Get best performing days and habits
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Best performing habits and days of the week
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+        401:
+          description: Unauthorized - missing or invalid token
+        429:
+          description: Too many requests - rate limit exceeded
+
+  /analytics/correlations:
+    get:
+      tags: [Analytics]
+      summary: Get habit correlations
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Correlation data between habits
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+        401:
+          description: Unauthorized - missing or invalid token
+        429:
+          description: Too many requests - rate limit exceeded
+
+  /analytics/predictions:
+    get:
+      tags: [Analytics]
+      summary: Get streak predictions and risk assessment
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Streak predictions and at-risk habits
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+        401:
+          description: Unauthorized - missing or invalid token
+        429:
+          description: Too many requests - rate limit exceeded

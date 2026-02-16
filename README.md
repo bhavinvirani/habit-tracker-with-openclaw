@@ -1,5 +1,12 @@
 # Habit Tracker
 
+[![CI](https://github.com/bhavinvirani/habit-tracker/actions/workflows/ci.yml/badge.svg)](https://github.com/bhavinvirani/habit-tracker/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Node.js](https://img.shields.io/badge/Node.js-%3E%3D18-green?logo=node.js)](https://nodejs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue?logo=typescript)](https://www.typescriptlang.org/)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
+[![GitHub Stars](https://img.shields.io/github/stars/bhavinvirani/habit-tracker?style=social)](https://github.com/bhavinvirani/habit-tracker)
+
 A comprehensive full-stack habit tracking application with analytics, insights, and visualization. **Fully containerized with Docker for easy development and deployment.**
 
 ## 🚀 Quick Start
@@ -302,12 +309,18 @@ This project is architected for future AI capabilities:
 
 ## 📝 Contributing
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Make your changes
-4. Commit with conventional commits (`git commit -m 'feat: add amazing feature'`)
-5. Push to the branch (`git push origin feature/amazing-feature`)
-6. Open a Pull Request
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details on:
+
+- Setting up the development environment
+- Branch naming and commit conventions
+- Pull request process
+- Code style guidelines
+
+Looking for something to work on? Check out our [good first issues](https://github.com/bhavinvirani/habit-tracker/labels/good%20first%20issue).
+
+## 🔒 Security
+
+If you discover a security vulnerability, please see our [Security Policy](SECURITY.md) for responsible disclosure guidelines.
 
 ## 📄 License
 
@@ -315,4 +328,4 @@ MIT License - See [LICENSE](LICENSE) file for details.
 
 ---
 
-Built with ❤️ using modern web technologies and containerized for easy deployment.
+Built with modern web technologies and containerized for easy deployment.

@@ -1,0 +1,172 @@
+paths:
+  /templates:
+    get:
+      tags: [Templates]
+      summary: Get all habit templates
+      description: Returns a list of available habit templates, optionally filtered by category.
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: category
+          schema:
+            type: string
+          required: false
+          description: Filter templates by category
+          example: health
+      responses:
+        200:
+          description: Templates retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      templates:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: string
+                              format: uuid
+                            name:
+                              type: string
+                            description:
+                              type: string
+                            category:
+                              type: string
+                            frequency:
+                              type: string
+                            color:
+                              type: string
+                            icon:
+                              type: string
+        401:
+          description: Not authenticated
+        429:
+          description: Too many requests - rate limit exceeded
+
+  /templates/{id}:
+    get:
+      tags: [Templates]
+      summary: Get a template by ID
+      description: Returns a single habit template by its unique identifier.
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Template ID
+      responses:
+        200:
+          description: Template retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      template:
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                            format: uuid
+                          name:
+                            type: string
+                          description:
+                            type: string
+                          category:
+                            type: string
+                          frequency:
+                            type: string
+                          color:
+                            type: string
+                          icon:
+                            type: string
+        401:
+          description: Not authenticated
+        404:
+          description: Template not found
+        429:
+          description: Too many requests - rate limit exceeded
+
+  /templates/{id}/use:
+    post:
+      tags: [Templates]
+      summary: Create a habit from a template
+      description: Creates a new habit for the authenticated user based on the specified template. Optional overrides can be provided for name, color, icon, and category.
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Template ID to create habit from
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  maxLength: 100
+                  description: Override the template's default name
+                color:
+                  type: string
+                  pattern: '^#[0-9A-Fa-f]{6}$'
+                  example: '#4F46E5'
+                  description: Override the template's default color
+                icon:
+                  type: string
+                  maxLength: 10
+                  description: Override the template's default icon
+                category:
+                  type: string
+                  maxLength: 50
+                  description: Override the template's default category
+      responses:
+        201:
+          description: Habit created from template successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      habit:
+                        $ref: '#/components/schemas/Habit'
+        400:
+          description: Validation error
+        401:
+          description: Not authenticated
+        404:
+          description: Template not found
+        429:
+          description: Too many requests - rate limit exceeded

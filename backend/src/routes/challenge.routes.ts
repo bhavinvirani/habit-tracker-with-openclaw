@@ -18,69 +18,55 @@ router.use(authenticate);
 
 // ============ CHALLENGE CRUD ============
 
-// GET /challenges - Get all challenges
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 router.get(
   '/',
-  readLimiter as any,
+  readLimiter,
   validateQuery(challengeQuerySchema),
   challengeController.getChallenges
 );
 
-// GET /challenges/:id - Get challenge by ID
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 router.get(
   '/:id',
-  readLimiter as any,
+  readLimiter,
   validateParams(challengeIdParamSchema),
   challengeController.getChallengeById
 );
 
-// POST /challenges - Create new challenge
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 router.post(
   '/',
-  writeLimiter as any,
+  writeLimiter,
   validate(createChallengeSchema),
   challengeController.createChallenge
 );
 
-// PUT /challenges/:id - Update challenge
 router.put(
   '/:id',
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  writeLimiter as any,
+  writeLimiter,
   validateParams(challengeIdParamSchema),
   validate(updateChallengeSchema),
   challengeController.updateChallenge
 );
 
-// DELETE /challenges/:id - Delete challenge
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 router.delete(
   '/:id',
-  writeLimiter as any,
+  writeLimiter,
   validateParams(challengeIdParamSchema),
   challengeController.deleteChallenge
 );
 
 // ============ CHALLENGE PROGRESS ============
 
-// POST /challenges/:id/sync - Sync challenge progress for a date
 router.post(
   '/:id/sync',
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  writeLimiter as any,
+  writeLimiter,
   validateParams(challengeIdParamSchema),
   validate(syncProgressSchema),
   challengeController.syncProgress
 );
 
-// GET /challenges/:id/progress - Get detailed challenge progress
 router.get(
   '/:id/progress',
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  readLimiter as any,
+  readLimiter,
   validateParams(challengeIdParamSchema),
   challengeController.getChallengeProgress
 );

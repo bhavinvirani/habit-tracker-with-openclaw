@@ -1,0 +1,79 @@
+paths:
+  /integrations:
+    get:
+      tags: [Integrations]
+      summary: Get connected apps
+      description: Returns a list of third-party apps and services connected to the authenticated user's account.
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Connected apps retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      integrations:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            provider:
+                              type: string
+                              example: telegram
+                            connectedAt:
+                              type: string
+                              format: date-time
+                            status:
+                              type: string
+                              example: active
+        401:
+          description: Not authenticated
+        429:
+          description: Too many requests - rate limit exceeded
+
+  /integrations/{provider}:
+    delete:
+      tags: [Integrations]
+      summary: Disconnect a provider
+      description: Disconnects a specific third-party integration from the authenticated user's account.
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: provider
+          required: true
+          schema:
+            type: string
+          description: The provider to disconnect
+          example: telegram
+      responses:
+        200:
+          description: Provider disconnected successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      message:
+                        type: string
+                        example: Provider disconnected successfully
+        401:
+          description: Not authenticated
+        404:
+          description: Provider not found or not connected
+        429:
+          description: Too many requests - rate limit exceeded

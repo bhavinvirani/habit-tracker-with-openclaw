@@ -56,25 +56,6 @@ services:
       - ./backend/prisma:/app/prisma
     command: sh -c "npx prisma migrate deploy && npx prisma generate && npm run dev"
 
-  # Frontend React App
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-      args:
-        REACT_APP_API_URL: http://localhost:8080/api/v1
-    container_name: habit-tracker-frontend
-    restart: unless-stopped
-    ports:
-      - '3000:80'
-    depends_on:
-      - backend
-    # For development with hot reload
-    volumes:
-      - ./frontend/src:/app/src
-      - ./frontend/public:/app/public
-    environment:
-      - REACT_APP_API_URL=http://localhost:8080/api/v1
 
 volumes:
   postgres_data:

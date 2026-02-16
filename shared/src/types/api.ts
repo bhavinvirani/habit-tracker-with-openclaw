@@ -38,12 +38,3 @@ export interface PaginationParams {
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';
 }
-
-/**
- * Paginated response (deprecated - use ApiResponse with meta.pagination)
- * @deprecated Use ApiResponse<T[]> with meta.pagination instead
- */
-export interface PaginatedResponse<T> {
-  data: T[];
-  pagination: PaginationMeta;
-}

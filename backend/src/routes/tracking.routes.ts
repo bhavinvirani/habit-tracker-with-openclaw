@@ -21,28 +21,16 @@ const router = Router();
 
 router.use(authenticate);
 
-// Today's habits with completion status
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-router.get('/today', readLimiter as any, getTodayHabits);
+router.get('/today', readLimiter, getTodayHabits);
 
-// Check-in (log habit completion)
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-router.post('/check-in', writeLimiter as any, validateBody(checkInSchema), checkIn);
+router.post('/check-in', writeLimiter, validateBody(checkInSchema), checkIn);
 
-// Undo check-in
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-router.delete('/check-in', writeLimiter as any, validateBody(undoCheckInSchema), undoCheckIn);
+router.delete('/check-in', writeLimiter, validateBody(undoCheckInSchema), undoCheckIn);
 
-// Get habits for a specific date
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-router.get('/date/:date', readLimiter as any, validateParams(dateParamSchema), getHabitsByDate);
+router.get('/date/:date', readLimiter, validateParams(dateParamSchema), getHabitsByDate);
 
-// Get history for calendar/heatmap
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-router.get('/history', readLimiter as any, validateQuery(historyQuerySchema), getHistory);
+router.get('/history', readLimiter, validateQuery(historyQuerySchema), getHistory);
 
-// Get milestones
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-router.get('/milestones', readLimiter as any, getMilestones);
+router.get('/milestones', readLimiter, getMilestones);
 
 export default router;

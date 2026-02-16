@@ -1,16 +1,18 @@
 import rateLimit, { Options } from 'express-rate-limit';
-import { Request, Response, NextFunction } from 'express';
+import { Request, RequestHandler } from 'express';
 import { AuthRequest } from './auth';
 
 const isTest = process.env.NODE_ENV === 'test';
 
 // No-op middleware for test environment
-const noopLimiter = (_req: Request, _res: Response, next: NextFunction) => next();
+const noopLimiter: RequestHandler = (_req, _res, next) => {
+  next();
+};
 
 /**
  * Helper to create a rate limiter (disabled in test)
  */
-function createLimiter(opts: Partial<Options>) {
+function createLimiter(opts: Partial<Options>): RequestHandler {
   if (isTest) return noopLimiter;
   return rateLimit({
     standardHeaders: 'draft-7',

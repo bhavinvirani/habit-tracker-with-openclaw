@@ -1,0 +1,255 @@
+paths:
+  /users/profile:
+    get:
+      tags: [Users]
+      summary: Get current user profile
+      description: Returns the profile information of the authenticated user including email, name, and account details.
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: User profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      user:
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                            format: uuid
+                          email:
+                            type: string
+                            format: email
+                          name:
+                            type: string
+                          createdAt:
+                            type: string
+                            format: date-time
+        401:
+          description: Not authenticated
+        429:
+          description: Too many requests - rate limit exceeded
+    put:
+      tags: [Users]
+      summary: Update current user profile
+      description: Updates the authenticated user's profile information such as name.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: Jane Doe
+      responses:
+        200:
+          description: Profile updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      user:
+                        type: object
+        400:
+          description: Validation error
+        401:
+          description: Not authenticated
+        429:
+          description: Too many requests - rate limit exceeded
+
+  /users/password:
+    put:
+      tags: [Users]
+      summary: Change user password
+      description: Changes the authenticated user's password. Requires the current password for verification and a new password meeting complexity requirements.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - currentPassword
+                - newPassword
+              properties:
+                currentPassword:
+                  type: string
+                  minLength: 1
+                  example: oldPassword123
+                newPassword:
+                  type: string
+                  minLength: 8
+                  maxLength: 100
+                  description: Must contain at least one uppercase letter, one lowercase letter, and one number
+                  example: newSecurePass456
+      responses:
+        200:
+          description: Password changed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      message:
+                        type: string
+                        example: Password changed successfully
+        400:
+          description: Validation error or current password incorrect
+        401:
+          description: Not authenticated
+        429:
+          description: Too many requests - rate limit exceeded
+
+  /users/export:
+    get:
+      tags: [Users]
+      summary: Export user data
+      description: Exports all of the authenticated user's data including habits, tracking history, and settings. This is a heavy operation with stricter rate limiting.
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: User data exported successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    description: Complete user data export
+        401:
+          description: Not authenticated
+        429:
+          description: Too many requests - rate limit exceeded
+
+  /users/api-key:
+    get:
+      tags: [Users]
+      summary: Get API key status
+      description: Returns the current API key details for the authenticated user, if one exists. The full key is not returned for security.
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: API key status retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      apiKey:
+                        type: object
+                        nullable: true
+                        properties:
+                          id:
+                            type: string
+                            format: uuid
+                          prefix:
+                            type: string
+                            example: "hbt_abc..."
+                          scopes:
+                            type: array
+                            items:
+                              type: string
+                          createdAt:
+                            type: string
+                            format: date-time
+        401:
+          description: Not authenticated
+        429:
+          description: Too many requests - rate limit exceeded
+    post:
+      tags: [Users]
+      summary: Generate a new API key
+      description: Generates a new API key for the authenticated user. Any existing API key is revoked and replaced. The full key is only shown once in the response.
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: API key generated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      apiKey:
+                        type: string
+                        description: The full API key (only shown once)
+                        example: "hbt_abc123def456..."
+        401:
+          description: Not authenticated
+        429:
+          description: Too many requests - rate limit exceeded
+    delete:
+      tags: [Users]
+      summary: Revoke API key
+      description: Revokes the authenticated user's existing API key. Any bot integrations using this key will stop working immediately.
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: API key revoked successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      message:
+                        type: string
+                        example: API key revoked successfully
+        401:
+          description: Not authenticated
+        404:
+          description: No API key found to revoke
+        429:
+          description: Too many requests - rate limit exceeded

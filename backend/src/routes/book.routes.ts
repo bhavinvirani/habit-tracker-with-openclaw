@@ -20,82 +20,52 @@ router.use(authenticate);
 
 // ============ BOOK CRUD ============
 
-// GET /books - Get all books
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-router.get('/', readLimiter as any, validateQuery(bookQuerySchema), bookController.getBooks);
+router.get('/', readLimiter, validateQuery(bookQuerySchema), bookController.getBooks);
 
-// GET /books/stats - Get reading statistics
 router.get(
   '/stats',
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  readLimiter as any,
+  readLimiter,
   validateQuery(readingStatsQuerySchema),
   bookController.getReadingStats
 );
 
-// GET /books/current - Get currently reading book (for dashboard widget)
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-router.get('/current', readLimiter as any, bookController.getCurrentlyReading);
+router.get('/current', readLimiter, bookController.getCurrentlyReading);
 
-// GET /books/:id - Get book by ID
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-router.get(
-  '/:id',
-  readLimiter as any,
-  validateParams(bookIdParamSchema),
-  bookController.getBookById
-);
+router.get('/:id', readLimiter, validateParams(bookIdParamSchema), bookController.getBookById);
 
-// POST /books - Create new book
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-router.post('/', writeLimiter as any, validate(createBookSchema), bookController.createBook);
+router.post('/', writeLimiter, validate(createBookSchema), bookController.createBook);
 
-// PUT /books/:id - Update book
 router.put(
   '/:id',
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  writeLimiter as any,
+  writeLimiter,
   validateParams(bookIdParamSchema),
   validate(updateBookSchema),
   bookController.updateBook
 );
 
-// DELETE /books/:id - Delete book
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-router.delete(
-  '/:id',
-  writeLimiter as any,
-  validateParams(bookIdParamSchema),
-  bookController.deleteBook
-);
+router.delete('/:id', writeLimiter, validateParams(bookIdParamSchema), bookController.deleteBook);
 
 // ============ READING PROGRESS ============
 
-// PUT /books/:id/progress - Update reading progress (set current page)
 router.put(
   '/:id/progress',
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  writeLimiter as any,
+  writeLimiter,
   validateParams(bookIdParamSchema),
   validate(updateProgressSchema),
   bookController.updateProgress
 );
 
-// POST /books/:id/log - Log reading session (add pages read)
 router.post(
   '/:id/log',
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  writeLimiter as any,
+  writeLimiter,
   validateParams(bookIdParamSchema),
   validate(logReadingSchema),
   bookController.logReading
 );
 
-// GET /books/:id/logs - Get reading logs for a book
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 router.get(
   '/:id/logs',
-  readLimiter as any,
+  readLimiter,
   validateParams(bookIdParamSchema),
   bookController.getReadingLogs
 );

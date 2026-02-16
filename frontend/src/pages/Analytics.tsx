@@ -290,8 +290,15 @@ const Analytics: React.FC = () => {
         {/* Week Comparison */}
         <div className="lg:col-span-2">
           {loadingComparison ? (
-            <div className="card h-full flex items-center justify-center min-h-[120px]">
-              <div className="animate-pulse text-dark-500 text-sm">Loading...</div>
+            <div className="card h-full flex flex-col justify-center p-4 min-h-[120px]">
+              <div className="flex items-center gap-4 mb-3">
+                <div className="w-10 h-10 rounded-full bg-dark-700/50 animate-pulse" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-4 w-32 bg-dark-700/50 rounded-md animate-pulse" />
+                  <div className="h-3 w-24 bg-dark-700/50 rounded-md animate-pulse" />
+                </div>
+              </div>
+              <div className="h-8 w-20 bg-dark-700/50 rounded-md animate-pulse" />
             </div>
           ) : comparison ? (
             <div
@@ -417,7 +424,7 @@ const Analytics: React.FC = () => {
                 <p className="text-xs text-dark-500">average</p>
               </div>
             </div>
-            <div className="h-40">
+            <div className="h-48 sm:h-56">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={trendChartData}>
                   <defs>
@@ -429,14 +436,14 @@ const Analytics: React.FC = () => {
                   <XAxis
                     dataKey="date"
                     stroke="#64748b"
-                    fontSize={10}
+                    fontSize={11}
                     tickLine={false}
                     axisLine={false}
                     interval={6}
                   />
                   <YAxis
                     stroke="#64748b"
-                    fontSize={10}
+                    fontSize={11}
                     tickLine={false}
                     axisLine={false}
                     domain={[0, 100]}
@@ -493,17 +500,17 @@ const Analytics: React.FC = () => {
             </div>
           </div>
 
-          <div className="h-40">
+          <div className="h-48 sm:h-52">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={weeklyChartData}>
                 <XAxis
                   dataKey="name"
                   stroke="#64748b"
-                  fontSize={11}
+                  fontSize={12}
                   tickLine={false}
                   axisLine={false}
                 />
-                <YAxis stroke="#64748b" fontSize={11} tickLine={false} axisLine={false} hide />
+                <YAxis stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} hide />
                 <Tooltip content={<CustomTooltip />} />
                 <Bar dataKey="completed" radius={[4, 4, 0, 0]} animationDuration={800}>
                   {weeklyChartData.map((entry: { percentage: number }, index: number) => (
@@ -514,7 +521,7 @@ const Analytics: React.FC = () => {
                           ? '#10b981'
                           : entry.percentage >= 50
                             ? '#2aa3ff'
-                            : '#475569'
+                            : '#64748b'
                       }
                     />
                   ))}
@@ -545,23 +552,23 @@ const Analytics: React.FC = () => {
         <div className="card">
           <h2 className="text-lg font-semibold text-white mb-4">Day-of-Week Performance</h2>
           {loadingPerformance ? (
-            <div className="h-40 flex items-center justify-center">
+            <div className="h-48 sm:h-52 flex items-center justify-center">
               <div className="animate-pulse text-dark-500 text-sm">Loading...</div>
             </div>
           ) : performance?.byDayOfWeek ? (
             <>
-              <div className="h-40">
+              <div className="h-48 sm:h-52">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={performance.byDayOfWeek}>
                     <XAxis
                       dataKey="day"
                       stroke="#64748b"
-                      fontSize={11}
+                      fontSize={12}
                       tickLine={false}
                       axisLine={false}
                       tickFormatter={(day: string) => day.slice(0, 3)}
                     />
-                    <YAxis stroke="#64748b" fontSize={11} tickLine={false} axisLine={false} hide />
+                    <YAxis stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} hide />
                     <Tooltip content={<DayOfWeekTooltip />} />
                     <Bar dataKey="completionRate" radius={[4, 4, 0, 0]} animationDuration={800}>
                       {performance.byDayOfWeek.map((entry, index) => (
@@ -572,7 +579,7 @@ const Analytics: React.FC = () => {
                               ? '#10b981'
                               : entry.completionRate >= 50
                                 ? '#2aa3ff'
-                                : '#475569'
+                                : '#64748b'
                           }
                         />
                       ))}
@@ -641,8 +648,8 @@ const Analytics: React.FC = () => {
                   </PieChart>
                 </ResponsiveContainer>
               </div>
-              <div className="flex-1 space-y-2">
-                {categoryChartData.slice(0, 5).map((cat) => (
+              <div className="flex-1 space-y-2 max-h-40 overflow-y-auto">
+                {categoryChartData.map((cat) => (
                   <div key={cat.name} className="flex items-center gap-3">
                     <div
                       className="w-3 h-3 rounded-full flex-shrink-0"
@@ -733,10 +740,10 @@ const Analytics: React.FC = () => {
           <div className="space-y-3">
             {correlations.slice(0, 6).map((corr, index) => (
               <div key={index} className="flex items-center gap-3 p-3 rounded-lg bg-dark-800">
-                <span className="text-sm text-white font-medium truncate flex-1 text-right">
+                <span className="text-sm text-white font-medium truncate flex-1 text-right min-w-0">
                   {corr.habit1.name}
                 </span>
-                <div className="flex flex-col items-center min-w-[80px]">
+                <div className="flex flex-col items-center min-w-[80px] shrink-0">
                   <div className="flex items-center gap-1">
                     <div
                       className="h-1 rounded-full"
@@ -759,7 +766,7 @@ const Analytics: React.FC = () => {
                     {corr.interpretation}
                   </span>
                 </div>
-                <span className="text-sm text-white font-medium truncate flex-1">
+                <span className="text-sm text-white font-medium truncate flex-1 min-w-0">
                   {corr.habit2.name}
                 </span>
               </div>
@@ -834,8 +841,8 @@ const Analytics: React.FC = () => {
             <div className="space-y-3">
               {predictions.slice(0, 5).map((pred) => (
                 <div key={pred.habitId} className="p-3 rounded-lg bg-dark-800">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium text-white truncate">
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <span className="text-sm font-medium text-white truncate min-w-0 flex-1">
                       {pred.habitName}
                     </span>
                     <Badge
@@ -1101,7 +1108,10 @@ const ActivityHeatmap: React.FC<ActivityHeatmapProps> = ({ data, year, onYearCha
             {/* Day labels */}
             <div className="flex flex-col gap-[3px] mr-1">
               {dayLabels.map((label, i) => (
-                <div key={i} className="w-6 h-3 text-[9px] text-dark-500 leading-3 text-right">
+                <div
+                  key={i}
+                  className="w-6 h-3.5 sm:h-4 text-[9px] text-dark-500 leading-3 text-right"
+                >
                   {label}
                 </div>
               ))}
@@ -1112,7 +1122,7 @@ const ActivityHeatmap: React.FC<ActivityHeatmapProps> = ({ data, year, onYearCha
                 {week.map((cell, di) => (
                   <div
                     key={`${wi}-${di}`}
-                    className="w-3 h-3 rounded-sm"
+                    className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-sm cursor-pointer hover:ring-2 hover:ring-primary-400 transition-all"
                     style={{
                       backgroundColor: cell.empty ? 'transparent' : HEATMAP_COLORS[cell.level],
                     }}
@@ -1122,7 +1132,7 @@ const ActivityHeatmap: React.FC<ActivityHeatmapProps> = ({ data, year, onYearCha
                 {/* Pad incomplete last week */}
                 {week.length < 7 &&
                   Array.from({ length: 7 - week.length }).map((_, pi) => (
-                    <div key={`pad-${pi}`} className="w-3 h-3" />
+                    <div key={`pad-${pi}`} className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   ))}
               </div>
             ))}
@@ -1138,7 +1148,7 @@ const ActivityHeatmap: React.FC<ActivityHeatmapProps> = ({ data, year, onYearCha
         {[0, 1, 2, 3, 4].map((level) => (
           <div
             key={level}
-            className="w-3 h-3 rounded-sm"
+            className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-sm"
             style={{ backgroundColor: HEATMAP_COLORS[level] }}
           />
         ))}

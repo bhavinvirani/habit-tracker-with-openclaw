@@ -7,12 +7,14 @@ import { authLimiter } from '../middleware/rateLimiter';
 
 const router = Router();
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-router.post('/register', authLimiter as any, validateBody(registerSchema), register);
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-router.post('/login', authLimiter as any, validateBody(loginSchema), login);
+router.post('/register', authLimiter, validateBody(registerSchema), register);
+
+router.post('/login', authLimiter, validateBody(loginSchema), login);
+
 router.post('/refresh', refresh);
+
 router.post('/logout', authenticate, logout);
+
 router.get('/me', authenticate, getCurrentUser);
 
 export default router;

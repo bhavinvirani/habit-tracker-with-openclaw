@@ -7,11 +7,6 @@ import { User } from '@prisma/client';
 import { RegisterInput, LoginInput } from '../validators/auth.validator';
 import logger from '../utils/logger';
 
-// Type assertion for prisma client with RefreshToken model
-// This allows TypeScript to compile before migration is run
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const db = prisma as any;
-
 // ============ TYPES ============
 
 export interface SafeUser {
@@ -34,25 +29,25 @@ const MAX_FAILED_ATTEMPTS = 5;
 const LOCKOUT_DURATION_MS = 15 * 60 * 1000; // 15 minutes
 
 async function checkAccountLock(email: string): Promise<void> {
-  const record = await db.loginAttempt.findUnique({ where: { email } });
+  const record = await prisma.loginAttempt.findUnique({ where: { email } });
   if (!record || !record.lockedUntil) return;
 
   if (new Date() < record.lockedUntil) {
     throw new AuthenticationError('Account temporarily locked. Please try again later.');
   }
   // Lock expired, reset
-  await db.loginAttempt.delete({ where: { email } });
+  await prisma.loginAttempt.delete({ where: { email } });
 }
 
 async function recordFailedAttempt(email: string): Promise<void> {
-  const record = await db.loginAttempt.upsert({
+  const record = await prisma.loginAttempt.upsert({
     where: { email },
     create: { email, failedCount: 1 },
     update: { failedCount: { increment: 1 }, lastAttempt: new Date() },
   });
 
   if (record.failedCount >= MAX_FAILED_ATTEMPTS) {
-    await db.loginAttempt.update({
+    await prisma.loginAttempt.update({
       where: { email },
       data: { lockedUntil: new Date(Date.now() + LOCKOUT_DURATION_MS) },
     });
@@ -61,7 +56,7 @@ async function recordFailedAttempt(email: string): Promise<void> {
 }
 
 async function clearFailedAttempts(email: string): Promise<void> {
-  await db.loginAttempt.deleteMany({ where: { email } });
+  await prisma.loginAttempt.deleteMany({ where: { email } });
 }
 
 // ============ HELPERS ============
@@ -87,7 +82,7 @@ async function createRefreshToken(userId: string): Promise<string> {
   const token = crypto.randomBytes(40).toString('hex');
   const expiresAt = new Date(Date.now() + REFRESH_TOKEN_EXPIRY_DAYS * 24 * 60 * 60 * 1000);
 
-  await db.refreshToken.create({
+  await prisma.refreshToken.create({
     data: { token, userId, expiresAt },
   });
 
@@ -175,20 +170,20 @@ export async function login(data: LoginInput): Promise<AuthResponse> {
  * Refresh access token using a valid refresh token (token rotation)
  */
 export async function refreshAccessToken(refreshToken: string): Promise<AuthResponse> {
-  const stored = await db.refreshToken.findUnique({
+  const stored = await prisma.refreshToken.findUnique({
     where: { token: refreshToken },
     include: { user: true },
   });
 
   if (!stored || stored.expiresAt < new Date()) {
     if (stored) {
-      await db.refreshToken.delete({ where: { id: stored.id } });
+      await prisma.refreshToken.delete({ where: { id: stored.id } });
     }
     throw new AuthenticationError('Invalid or expired refresh token');
   }
 
   // Token rotation: delete old, create new
-  await db.refreshToken.delete({ where: { id: stored.id } });
+  await prisma.refreshToken.delete({ where: { id: stored.id } });
 
   const newAccessToken = generateAccessToken(stored.userId);
   const newRefreshToken = await createRefreshToken(stored.userId);
@@ -204,7 +199,7 @@ export async function refreshAccessToken(refreshToken: string): Promise<AuthResp
  * Revoke all refresh tokens for a user (logout)
  */
 export async function revokeRefreshTokens(userId: string): Promise<void> {
-  await db.refreshToken.deleteMany({ where: { userId } });
+  await prisma.refreshToken.deleteMany({ where: { userId } });
 }
 
 /**

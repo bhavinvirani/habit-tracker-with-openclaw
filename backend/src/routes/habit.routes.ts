@@ -30,43 +30,30 @@ const router = Router();
 router.use(authenticate);
 
 // Categories
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-router.get('/categories', readLimiter as any, getCategories);
+router.get('/categories', readLimiter, getCategories);
 
 // Archived habits (must come before :id route)
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-router.get('/archived', readLimiter as any, getArchivedHabits);
+router.get('/archived', readLimiter, getArchivedHabits);
 
 // Reorder habits
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-router.patch('/reorder', writeLimiter as any, validateBody(reorderHabitsSchema), reorderHabits);
+router.patch('/reorder', writeLimiter, validateBody(reorderHabitsSchema), reorderHabits);
 
 // CRUD operations
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-router.post('/', writeLimiter as any, validateBody(createHabitSchema), createHabit);
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-router.get('/', readLimiter as any, validateQuery(getHabitsQuerySchema), getHabits);
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-router.get('/:id', readLimiter as any, getHabitById);
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-router.patch('/:id', writeLimiter as any, validateBody(updateHabitSchema), updateHabit);
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-router.delete('/:id', writeLimiter as any, deleteHabit);
+router.post('/', writeLimiter, validateBody(createHabitSchema), createHabit);
+router.get('/', readLimiter, validateQuery(getHabitsQuerySchema), getHabits);
+router.get('/:id', readLimiter, getHabitById);
+router.patch('/:id', writeLimiter, validateBody(updateHabitSchema), updateHabit);
+router.delete('/:id', writeLimiter, deleteHabit);
 
 // Archive/Unarchive
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-router.post('/:id/archive', writeLimiter as any, archiveHabit);
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-router.post('/:id/unarchive', writeLimiter as any, unarchiveHabit);
+router.post('/:id/archive', writeLimiter, archiveHabit);
+router.post('/:id/unarchive', writeLimiter, unarchiveHabit);
 
 // Pause/Resume (Vacation Mode)
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-router.post('/:id/pause', writeLimiter as any, pauseHabit);
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-router.post('/:id/resume', writeLimiter as any, resumeHabit);
+router.post('/:id/pause', writeLimiter, pauseHabit);
+router.post('/:id/resume', writeLimiter, resumeHabit);
 
 // Habit Stacking
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-router.post('/:id/stack', writeLimiter as any, stackHabit);
+router.post('/:id/stack', writeLimiter, stackHabit);
 
 export default router;

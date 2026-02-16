@@ -24,8 +24,7 @@ export const createTestApp = () => {
 
   app.use(helmet());
   app.use(cors({ credentials: true }));
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  app.use(cookieParser() as any);
+  app.use(cookieParser() as express.RequestHandler);
   app.use(express.json({ limit: '10kb' }));
   app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 

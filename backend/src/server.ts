@@ -3,6 +3,8 @@ import cors from 'cors';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
+import swaggerUi from 'swagger-ui-express';
+import { swaggerSpec } from './config/swagger';
 import logger from './utils/logger';
 import { requestLogger } from './middleware/requestLogger';
 import { errorHandler } from './middleware/errorHandler';
@@ -77,15 +79,13 @@ app.use(
 );
 
 // Cookie and request parsing
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-app.use(cookieParser() as any);
+app.use(cookieParser() as express.RequestHandler);
 app.use(requestLogger);
 app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 
 // Health check (rate limited separately)
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-app.get('/health', healthLimiter as any, async (_req, res) => {
+app.get('/health', healthLimiter, async (_req, res) => {
   try {
     await prisma.$queryRaw`SELECT 1`;
     res.json({
@@ -103,9 +103,15 @@ app.get('/health', healthLimiter as any, async (_req, res) => {
   }
 });
 
+// API Documentation
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+app.get('/api-docs.json', (_req, res) => {
+  res.setHeader('Content-Type', 'application/json');
+  res.send(swaggerSpec);
+});
+
 // Rate limiting for all API routes
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-app.use('/api', generalLimiter as any);
+app.use('/api', generalLimiter);
 
 // Versioned API router (v1)
 const v1Router = express.Router();
@@ -145,23 +151,16 @@ app.listen(Number(PORT), '0.0.0.0', () => {
   setInterval(
     async () => {
       try {
-        // Check if refreshToken model exists (migration may not have run yet)
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const prismaAny = prisma as any;
-        if (prismaAny.refreshToken) {
-          const deleted = await prismaAny.refreshToken.deleteMany({
-            where: { expiresAt: { lt: new Date() } },
-          });
-          if (deleted.count > 0) {
-            logger.info(`Cleaned up ${deleted.count} expired refresh tokens`);
-          }
+        const deleted = await prisma.refreshToken.deleteMany({
+          where: { expiresAt: { lt: new Date() } },
+        });
+        if (deleted.count > 0) {
+          logger.info(`Cleaned up ${deleted.count} expired refresh tokens`);
         }
         // Cleanup expired login lockouts
-        if (prismaAny.loginAttempt) {
-          await prismaAny.loginAttempt.deleteMany({
-            where: { lockedUntil: { lt: new Date() } },
-          });
-        }
+        await prisma.loginAttempt.deleteMany({
+          where: { lockedUntil: { lt: new Date() } },
+        });
       } catch (error) {
         logger.error('Failed to cleanup expired tokens', { error });
       }

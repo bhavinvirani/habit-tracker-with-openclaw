@@ -1,0 +1,215 @@
+paths:
+  /reminders:
+    get:
+      tags: [Reminders]
+      summary: Get all reminders
+      description: Returns all habit reminders configured by the authenticated user.
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Reminders retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      reminders:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: string
+                              format: uuid
+                            habitId:
+                              type: string
+                              format: uuid
+                            time:
+                              type: string
+                              example: "09:00"
+                            createdAt:
+                              type: string
+                              format: date-time
+        401:
+          description: Not authenticated
+        429:
+          description: Too many requests - rate limit exceeded
+
+    post:
+      tags: [Reminders]
+      summary: Create a reminder
+      description: Creates a new reminder for a specific habit at the specified time.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - habitId
+                - time
+              properties:
+                habitId:
+                  type: string
+                  format: uuid
+                  description: The habit to set a reminder for
+                time:
+                  type: string
+                  pattern: '^\d{2}:\d{2}$'
+                  description: Reminder time in HH:mm format
+                  example: "09:00"
+      responses:
+        201:
+          description: Reminder created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      reminder:
+                        type: object
+        400:
+          description: Validation error
+        401:
+          description: Not authenticated
+        429:
+          description: Too many requests - rate limit exceeded
+
+  /reminders/{habitId}:
+    delete:
+      tags: [Reminders]
+      summary: Delete a reminder
+      description: Deletes the reminder associated with the specified habit.
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: habitId
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: The habit ID whose reminder should be deleted
+      responses:
+        200:
+          description: Reminder deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      message:
+                        type: string
+                        example: Reminder deleted successfully
+        401:
+          description: Not authenticated
+        404:
+          description: Reminder not found
+        429:
+          description: Too many requests - rate limit exceeded
+
+  /reminders/settings:
+    get:
+      tags: [Reminders]
+      summary: Get notification settings
+      description: Returns the authenticated user's notification preferences including daily summary and reminder settings.
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Notification settings retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      settings:
+                        type: object
+                        properties:
+                          dailySummaryEnabled:
+                            type: boolean
+                          dailySummaryTime:
+                            type: string
+                            nullable: true
+                            example: "20:00"
+                          reminderEnabled:
+                            type: boolean
+        401:
+          description: Not authenticated
+        429:
+          description: Too many requests - rate limit exceeded
+
+    put:
+      tags: [Reminders]
+      summary: Update notification settings
+      description: Updates the authenticated user's notification preferences for daily summaries and reminders.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                dailySummaryEnabled:
+                  type: boolean
+                  description: Enable or disable daily summary notifications
+                dailySummaryTime:
+                  type: string
+                  nullable: true
+                  pattern: '^\d{2}:\d{2}$'
+                  description: Time to send daily summary in HH:mm format
+                  example: "20:00"
+                reminderEnabled:
+                  type: boolean
+                  description: Enable or disable habit reminders
+      responses:
+        200:
+          description: Notification settings updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      settings:
+                        type: object
+        400:
+          description: Validation error
+        401:
+          description: Not authenticated
+        429:
+          description: Too many requests - rate limit exceeded

@@ -1,0 +1,221 @@
+paths:
+  /tracking/today:
+    get:
+      tags: [Tracking]
+      summary: Get today's habits with completion status
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: List of habits with today's completion status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      type: object
+        401:
+          description: Unauthorized - missing or invalid token
+        429:
+          description: Too many requests - rate limit exceeded
+
+  /tracking/check-in:
+    post:
+      tags: [Tracking]
+      summary: Check in a habit (log completion)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - habitId
+              properties:
+                habitId:
+                  type: string
+                  description: ID of the habit to check in
+                date:
+                  type: string
+                  format: date
+                  description: Date in YYYY-MM-DD format (defaults to today)
+                completed:
+                  type: boolean
+                  default: true
+                value:
+                  type: integer
+                  minimum: 0
+                  nullable: true
+                  description: Value for NUMERIC/DURATION habits
+                notes:
+                  type: string
+                  maxLength: 500
+                  nullable: true
+      responses:
+        200:
+          description: Check-in recorded successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+        401:
+          description: Unauthorized - missing or invalid token
+        429:
+          description: Too many requests - rate limit exceeded
+    delete:
+      tags: [Tracking]
+      summary: Undo a habit check-in
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - habitId
+              properties:
+                habitId:
+                  type: string
+                  description: ID of the habit to undo check-in for
+                date:
+                  type: string
+                  format: date
+                  description: Date in YYYY-MM-DD format (defaults to today)
+      responses:
+        200:
+          description: Check-in undone successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+        401:
+          description: Unauthorized - missing or invalid token
+        429:
+          description: Too many requests - rate limit exceeded
+
+  /tracking/date/{date}:
+    get:
+      tags: [Tracking]
+      summary: Get habits for a specific date
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: date
+          required: true
+          schema:
+            type: string
+            format: date
+          description: Date in YYYY-MM-DD format
+      responses:
+        200:
+          description: List of habits with completion status for the given date
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      type: object
+        401:
+          description: Unauthorized - missing or invalid token
+        429:
+          description: Too many requests - rate limit exceeded
+
+  /tracking/history:
+    get:
+      tags: [Tracking]
+      summary: Get tracking history for calendar/heatmap
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: habitId
+          schema:
+            type: string
+          description: Filter by specific habit ID
+        - in: query
+          name: startDate
+          schema:
+            type: string
+            format: date
+          description: Start date in YYYY-MM-DD format
+        - in: query
+          name: endDate
+          schema:
+            type: string
+            format: date
+          description: End date in YYYY-MM-DD format
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 365
+          description: Maximum number of days to return
+      responses:
+        200:
+          description: Tracking history entries
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      type: object
+        401:
+          description: Unauthorized - missing or invalid token
+        429:
+          description: Too many requests - rate limit exceeded
+
+  /tracking/milestones:
+    get:
+      tags: [Tracking]
+      summary: Get habit milestones and achievements
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: List of milestones achieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      type: object
+        401:
+          description: Unauthorized - missing or invalid token
+        429:
+          description: Too many requests - rate limit exceeded

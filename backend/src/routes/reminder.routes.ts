@@ -18,19 +18,14 @@ const router = Router();
 
 router.use(authenticate);
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-router.get('/', readLimiter as any, getReminders);
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-router.post('/', writeLimiter as any, validateBody(createReminderSchema), createReminder);
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-router.delete('/:habitId', writeLimiter as any, deleteReminder);
+router.get('/', readLimiter, getReminders);
+router.post('/', writeLimiter, validateBody(createReminderSchema), createReminder);
+router.delete('/:habitId', writeLimiter, deleteReminder);
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-router.get('/settings', readLimiter as any, getNotificationSettings);
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+router.get('/settings', readLimiter, getNotificationSettings);
 router.put(
   '/settings',
-  writeLimiter as any,
+  writeLimiter,
   validateBody(updateNotificationSettingsSchema),
   updateNotificationSettings
 );

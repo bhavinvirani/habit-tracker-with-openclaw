@@ -1,14 +1,12 @@
 # Dependencies
 node_modules/
-/.pnp
-.pnp.js
 
 # Testing
 /coverage
 
 # Production
-/build
-/dist
+build/
+dist/
 
 # Environment variables
 .env
@@ -19,9 +17,6 @@ node_modules/
 
 # Logs
 npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-lerna-debug.log*
 *.log
 
 # OS
@@ -35,20 +30,11 @@ Thumbs.db
 *.swo
 *~
 
-# Database
-*.db
-*.sqlite
-*.sqlite3
-
-# Prisma
-prisma/migrations/
-
 # Docker
 docker-compose.override.yml
 
 # Cache
 .cache/
-.parcel-cache/
 .eslintcache
 
 # Claude
@@ -59,3 +45,7 @@ docker-compose.override.yml
 .env.backup
 temp/
 tmp/
+
+.planning/
+
+RELEASE_GUIDE.md

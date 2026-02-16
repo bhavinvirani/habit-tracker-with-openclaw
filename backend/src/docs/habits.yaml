@@ -1,0 +1,622 @@
+paths:
+  /habits/categories:
+    get:
+      tags: [Habits]
+      summary: Get habit categories
+      description: Returns a list of distinct categories used by the authenticated user's habits.
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: List of category strings
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      type: string
+                    example: ["Health", "Productivity", "Fitness"]
+        401:
+          description: Not authenticated
+        429:
+          description: Rate limit exceeded
+
+  /habits/archived:
+    get:
+      tags: [Habits]
+      summary: Get archived habits
+      description: Returns all archived habits for the authenticated user.
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: List of archived habits
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Habit'
+        401:
+          description: Not authenticated
+        429:
+          description: Rate limit exceeded
+
+  /habits/reorder:
+    patch:
+      tags: [Habits]
+      summary: Reorder habits
+      description: Updates the sort order of habits based on the provided array of habit IDs. The order of IDs in the array determines the new sort order.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - habitIds
+              properties:
+                habitIds:
+                  type: array
+                  items:
+                    type: string
+                    format: uuid
+                  minItems: 1
+                  description: Ordered array of habit UUIDs representing the new sort order
+      responses:
+        200:
+          description: Habits reordered successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Habit'
+        400:
+          description: Validation error - invalid or missing habit IDs
+        401:
+          description: Not authenticated
+        429:
+          description: Rate limit exceeded
+
+  /habits:
+    post:
+      tags: [Habits]
+      summary: Create a new habit
+      description: Creates a new habit for the authenticated user. Weekly habits require either daysOfWeek or timesPerWeek.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                  maxLength: 100
+                  example: "Drink water"
+                description:
+                  type: string
+                  maxLength: 500
+                  nullable: true
+                  example: "Drink 8 glasses of water daily"
+                frequency:
+                  type: string
+                  enum: [DAILY, WEEKLY]
+                  default: DAILY
+                daysOfWeek:
+                  type: array
+                  items:
+                    type: integer
+                    minimum: 1
+                    maximum: 7
+                  nullable: true
+                  description: "For weekly habits: specific days (1=Mon, 7=Sun)"
+                  example: [1, 3, 5]
+                timesPerWeek:
+                  type: integer
+                  minimum: 1
+                  maximum: 7
+                  nullable: true
+                  description: "For weekly habits: target times per week"
+                habitType:
+                  type: string
+                  enum: [BOOLEAN, NUMERIC, DURATION]
+                  default: BOOLEAN
+                targetValue:
+                  type: number
+                  nullable: true
+                  description: "Target goal for NUMERIC/DURATION habits"
+                  example: 8
+                unit:
+                  type: string
+                  maxLength: 50
+                  nullable: true
+                  description: "Unit label for NUMERIC/DURATION habits"
+                  example: "glasses"
+                color:
+                  type: string
+                  pattern: "^#[0-9A-Fa-f]{6}$"
+                  default: "#0ea5e9"
+                  example: "#10b981"
+                icon:
+                  type: string
+                  maxLength: 10
+                  nullable: true
+                category:
+                  type: string
+                  maxLength: 50
+                  nullable: true
+                  example: "Health"
+      responses:
+        200:
+          description: Habit created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Habit'
+        400:
+          description: Validation error
+        401:
+          description: Not authenticated
+        429:
+          description: Rate limit exceeded
+    get:
+      tags: [Habits]
+      summary: Get all habits
+      description: Returns a paginated list of habits for the authenticated user, with optional filtering by status, category, and frequency.
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: isActive
+          schema:
+            type: string
+            enum: ["true", "false"]
+          description: Filter by active status
+        - in: query
+          name: isArchived
+          schema:
+            type: string
+            enum: ["true", "false"]
+          description: Filter by archived status
+        - in: query
+          name: category
+          schema:
+            type: string
+          description: Filter by category name
+        - in: query
+          name: frequency
+          schema:
+            type: string
+            enum: [DAILY, WEEKLY]
+          description: Filter by frequency
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+          description: Number of habits to return
+        - in: query
+          name: offset
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+          description: Number of habits to skip
+      responses:
+        200:
+          description: List of habits
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Habit'
+                  meta:
+                    $ref: '#/components/schemas/PaginationMeta'
+        401:
+          description: Not authenticated
+        429:
+          description: Rate limit exceeded
+
+  /habits/{id}:
+    get:
+      tags: [Habits]
+      summary: Get a habit by ID
+      description: Returns a single habit by its ID, including related data. Only accessible by the habit owner.
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Habit UUID
+      responses:
+        200:
+          description: Habit details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Habit'
+        401:
+          description: Not authenticated
+        404:
+          description: Habit not found
+        429:
+          description: Rate limit exceeded
+    patch:
+      tags: [Habits]
+      summary: Update a habit
+      description: Partially updates a habit. Only provided fields are updated. Only accessible by the habit owner.
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Habit UUID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                  maxLength: 100
+                description:
+                  type: string
+                  maxLength: 500
+                  nullable: true
+                frequency:
+                  type: string
+                  enum: [DAILY, WEEKLY]
+                daysOfWeek:
+                  type: array
+                  items:
+                    type: integer
+                    minimum: 1
+                    maximum: 7
+                  nullable: true
+                timesPerWeek:
+                  type: integer
+                  minimum: 1
+                  maximum: 7
+                  nullable: true
+                habitType:
+                  type: string
+                  enum: [BOOLEAN, NUMERIC, DURATION]
+                targetValue:
+                  type: number
+                  nullable: true
+                unit:
+                  type: string
+                  maxLength: 50
+                  nullable: true
+                color:
+                  type: string
+                  pattern: "^#[0-9A-Fa-f]{6}$"
+                icon:
+                  type: string
+                  maxLength: 10
+                  nullable: true
+                category:
+                  type: string
+                  maxLength: 50
+                  nullable: true
+                isActive:
+                  type: boolean
+      responses:
+        200:
+          description: Habit updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Habit'
+        400:
+          description: Validation error
+        401:
+          description: Not authenticated
+        404:
+          description: Habit not found
+        429:
+          description: Rate limit exceeded
+    delete:
+      tags: [Habits]
+      summary: Delete a habit
+      description: Permanently deletes a habit and all associated logs, milestones, and reminders. Only accessible by the habit owner.
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Habit UUID
+      responses:
+        200:
+          description: Habit deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      message:
+                        type: string
+                        example: "Habit deleted successfully"
+        401:
+          description: Not authenticated
+        404:
+          description: Habit not found
+        429:
+          description: Rate limit exceeded
+
+  /habits/{id}/archive:
+    post:
+      tags: [Habits]
+      summary: Archive a habit
+      description: Archives a habit, hiding it from the default view while preserving all history and logs.
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Habit UUID
+      responses:
+        200:
+          description: Habit archived successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Habit'
+        401:
+          description: Not authenticated
+        404:
+          description: Habit not found
+        429:
+          description: Rate limit exceeded
+
+  /habits/{id}/unarchive:
+    post:
+      tags: [Habits]
+      summary: Unarchive a habit
+      description: Restores an archived habit back to the active habit list.
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Habit UUID
+      responses:
+        200:
+          description: Habit unarchived successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Habit'
+        401:
+          description: Not authenticated
+        404:
+          description: Habit not found
+        429:
+          description: Rate limit exceeded
+
+  /habits/{id}/pause:
+    post:
+      tags: [Habits]
+      summary: Pause a habit
+      description: Puts a habit into vacation/pause mode. Paused habits are excluded from daily tracking and streak calculations.
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Habit UUID
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                pausedUntil:
+                  type: string
+                  format: date-time
+                  nullable: true
+                  description: Optional auto-resume date
+                pauseReason:
+                  type: string
+                  nullable: true
+                  description: Optional reason for pausing
+      responses:
+        200:
+          description: Habit paused successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Habit'
+        401:
+          description: Not authenticated
+        404:
+          description: Habit not found
+        429:
+          description: Rate limit exceeded
+
+  /habits/{id}/resume:
+    post:
+      tags: [Habits]
+      summary: Resume a paused habit
+      description: Resumes a habit that was previously paused, returning it to active tracking.
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Habit UUID
+      responses:
+        200:
+          description: Habit resumed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Habit'
+        401:
+          description: Not authenticated
+        404:
+          description: Habit not found
+        429:
+          description: Rate limit exceeded
+
+  /habits/{id}/stack:
+    post:
+      tags: [Habits]
+      summary: Stack a habit
+      description: Links a habit to another habit using the habit stacking technique. The stacked habit is intended to be performed immediately after the anchor habit.
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Habit UUID to stack (the new habit)
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                stackedAfterId:
+                  type: string
+                  format: uuid
+                  description: UUID of the anchor habit to stack after
+      responses:
+        200:
+          description: Habit stacked successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Habit'
+        400:
+          description: Validation error - invalid stacking configuration
+        401:
+          description: Not authenticated
+        404:
+          description: Habit not found
+        429:
+          description: Rate limit exceeded

@@ -20,8 +20,7 @@ const router = Router();
 
 // All bot routes require rate limiting, API key auth, and detailed logging
 router.use(botRequestLogger);
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-router.use(botLimiter as any);
+router.use(botLimiter);
 router.use(authenticateApiKey);
 
 // Habit tracking (read)

@@ -1,0 +1,248 @@
+paths:
+  /bot/habits/today:
+    get:
+      tags: [Bot]
+      summary: Get today's habits
+      description: Returns the list of habits scheduled for today with their completion status. Requires bot:read scope.
+      security:
+        - apiKeyAuth: []
+      responses:
+        200:
+          description: Today's habits retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      habits:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: string
+                              format: uuid
+                            name:
+                              type: string
+                            completed:
+                              type: boolean
+        401:
+          description: Invalid or missing API key
+        403:
+          description: Insufficient scope - requires bot:read
+        429:
+          description: Too many requests - rate limit exceeded
+
+  /bot/habits/summary:
+    get:
+      tags: [Bot]
+      summary: Get daily summary
+      description: Returns a summary of the user's habit progress for today including completion counts and streaks. Requires bot:read scope.
+      security:
+        - apiKeyAuth: []
+      responses:
+        200:
+          description: Daily summary retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      summary:
+                        type: object
+                        properties:
+                          total:
+                            type: integer
+                          completed:
+                            type: integer
+                          remaining:
+                            type: integer
+                          completionRate:
+                            type: number
+                            format: float
+        401:
+          description: Invalid or missing API key
+        403:
+          description: Insufficient scope - requires bot:read
+        429:
+          description: Too many requests - rate limit exceeded
+
+  /bot/habits/check-in:
+    post:
+      tags: [Bot]
+      summary: Check in a habit by ID
+      description: Records a check-in for a specific habit using the habit's UUID. Requires bot:write scope.
+      security:
+        - apiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - habitId
+              properties:
+                habitId:
+                  type: string
+                  format: uuid
+                  description: The habit ID to check in
+                completed:
+                  type: boolean
+                  default: true
+                  description: Whether the habit is completed
+                value:
+                  type: integer
+                  minimum: 0
+                  description: Optional numeric value for the check-in
+                notes:
+                  type: string
+                  maxLength: 500
+                  description: Optional notes for the check-in
+      responses:
+        200:
+          description: Check-in recorded successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+        400:
+          description: Validation error
+        401:
+          description: Invalid or missing API key
+        403:
+          description: Insufficient scope - requires bot:write
+        429:
+          description: Too many requests - rate limit exceeded
+
+  /bot/habits/check-in-by-name:
+    post:
+      tags: [Bot]
+      summary: Check in a habit by name
+      description: Records a check-in for a habit using its name (fuzzy matched). Useful for chatbot integrations where users refer to habits by name. Requires bot:write scope.
+      security:
+        - apiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                  maxLength: 200
+                  description: The habit name to match
+                  example: Morning Meditation
+                completed:
+                  type: boolean
+                  default: true
+                  description: Whether the habit is completed
+                value:
+                  type: integer
+                  minimum: 0
+                  description: Optional numeric value for the check-in
+                notes:
+                  type: string
+                  maxLength: 500
+                  description: Optional notes for the check-in
+      responses:
+        200:
+          description: Check-in recorded successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+        400:
+          description: Validation error
+        401:
+          description: Invalid or missing API key
+        403:
+          description: Insufficient scope - requires bot:write
+        404:
+          description: No habit found matching the given name
+        429:
+          description: Too many requests - rate limit exceeded
+
+  /bot/register-chat:
+    post:
+      tags: [Bot]
+      summary: Register a chat for reminders
+      description: Registers a chat platform (e.g., Telegram, Discord) and chat ID so the bot can send habit reminders. Requires bot:write scope.
+      security:
+        - apiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - provider
+                - chatId
+              properties:
+                provider:
+                  type: string
+                  minLength: 1
+                  maxLength: 50
+                  description: Chat platform provider
+                  example: telegram
+                chatId:
+                  type: string
+                  minLength: 1
+                  maxLength: 200
+                  description: Unique chat identifier on the platform
+                  example: "123456789"
+                username:
+                  type: string
+                  maxLength: 200
+                  description: Optional username on the platform
+                  example: johndoe
+      responses:
+        200:
+          description: Chat registered successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+        400:
+          description: Validation error
+        401:
+          description: Invalid or missing API key
+        403:
+          description: Insufficient scope - requires bot:write
+        429:
+          description: Too many requests - rate limit exceeded

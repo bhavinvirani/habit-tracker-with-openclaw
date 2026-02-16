@@ -7,9 +7,7 @@ const router = Router();
 
 router.use(authenticate);
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-router.get('/', readLimiter as any, getConnectedApps);
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-router.delete('/:provider', writeLimiter as any, disconnectProvider);
+router.get('/', readLimiter, getConnectedApps);
+router.delete('/:provider', writeLimiter, disconnectProvider);
 
 export default router;
