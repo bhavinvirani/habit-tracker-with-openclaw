@@ -10,6 +10,7 @@ import {
   Clock,
   BookOpen,
   Sparkles,
+  Check,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -217,6 +218,20 @@ const Dashboard: React.FC = () => {
         completed: true,
       });
     }
+  };
+
+  // Handle inline quick-add for NUMERIC/DURATION habits (1-click increment)
+  const handleInlineQuickAdd = (habitId: string, amount: number) => {
+    const habit = habits.find((h: TodayHabit) => h.id === habitId);
+    if (!habit) return;
+    const currentValue = habit.logValue || 0;
+    const targetValue = habit.targetValue || 1;
+    const newValue = currentValue + amount;
+    checkInMutation.mutate({
+      habitId,
+      value: newValue,
+      completed: newValue >= targetValue,
+    });
   };
 
   // Handle quick log submission for NUMERIC/DURATION habits
@@ -632,7 +647,11 @@ const Dashboard: React.FC = () => {
                         visible: { opacity: 1, y: 0, transition: { duration: 0.2 } },
                       }}
                     >
-                      <HabitCard habit={habit} onClick={() => handleHabitClick(habit)} />
+                      <HabitCard
+                        habit={habit}
+                        onClick={() => handleHabitClick(habit)}
+                        onQuickAdd={handleInlineQuickAdd}
+                      />
                     </motion.div>
                   ))}
                 </motion.div>
@@ -667,7 +686,12 @@ const Dashboard: React.FC = () => {
                         visible: { opacity: 1, y: 0, transition: { duration: 0.2 } },
                       }}
                     >
-                      <HabitCard habit={habit} onClick={() => handleHabitClick(habit)} isWeekly />
+                      <HabitCard
+                        habit={habit}
+                        onClick={() => handleHabitClick(habit)}
+                        onQuickAdd={handleInlineQuickAdd}
+                        isWeekly
+                      />
                     </motion.div>
                   ))}
                 </motion.div>
@@ -702,24 +726,36 @@ const Dashboard: React.FC = () => {
   );
 };
 
+// Quick-add button increments based on target value
+function getQuickAddButtons(target: number): number[] {
+  if (target <= 10) return [1, 2, 5];
+  if (target <= 30) return [1, 5, 10];
+  return [5, 10, 15];
+}
+
 // Habit Card Component
 interface HabitCardProps {
   habit: TodayHabit;
   onClick: () => void;
+  onQuickAdd?: (habitId: string, amount: number) => void;
   isWeekly?: boolean;
 }
 
-const HabitCard: React.FC<HabitCardProps> = ({ habit, onClick, isWeekly }) => {
+const HabitCard: React.FC<HabitCardProps> = ({ habit, onClick, onQuickAdd, isWeekly }) => {
   const hasGoal = habit.targetValue && habit.targetValue > 0;
   const currentValue = habit.logValue || 0;
   const targetValue = habit.targetValue || 1;
   const goalProgress = hasGoal ? Math.min((currentValue / targetValue) * 100, 100) : 0;
   const isFullyComplete = habit.isCompleted || (hasGoal && currentValue >= targetValue);
+  const isNumericOrDuration = habit.habitType === 'NUMERIC' || habit.habitType === 'DURATION';
+  const showQuickAdd = !!(isNumericOrDuration && hasGoal && !isFullyComplete && onQuickAdd);
+  const quickAddAmounts = showQuickAdd ? getQuickAddButtons(targetValue) : [];
+  const remaining = Math.max(targetValue - currentValue, 0);
 
   return (
     <div
       className={clsx(
-        'relative flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer group',
+        'relative p-3 rounded-xl border transition-all cursor-pointer group',
         isFullyComplete
           ? 'bg-gradient-to-r from-accent-green/10 to-dark-800/50 border-accent-green/30'
           : 'bg-dark-800 border-dark-600 hover:border-dark-500'
@@ -734,53 +770,136 @@ const HabitCard: React.FC<HabitCardProps> = ({ habit, onClick, isWeekly }) => {
         </div>
       )}
 
-      <button
-        className={clsx(
-          'flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-all',
-          isFullyComplete
-            ? 'text-white ring-2 ring-accent-green/50 ring-offset-2 ring-offset-dark-800'
-            : 'text-dark-500 hover:text-dark-300 group-hover:scale-110'
-        )}
-        style={{
-          backgroundColor: isFullyComplete ? habit.color : 'transparent',
-          borderWidth: isFullyComplete ? 0 : 2,
-          borderColor: habit.color,
-        }}
-      >
-        {isFullyComplete && <CheckCircle2 size={18} />}
-      </button>
-
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
-          <h3
-            className={clsx(
-              'font-medium transition-colors',
-              isFullyComplete ? 'text-accent-green' : 'text-white'
-            )}
-          >
-            {habit.icon && <span className="mr-1">{habit.icon}</span>}
-            {habit.name}
-          </h3>
-          {isWeekly && (
-            <span className="px-1.5 py-0.5 rounded text-xs bg-accent-purple/20 text-accent-purple">
-              Weekly
-            </span>
+      {/* Main row */}
+      <div className="flex items-center gap-3">
+        {/* Checkbox circle */}
+        <button
+          className={clsx(
+            'flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-all',
+            isFullyComplete
+              ? 'text-white ring-2 ring-accent-green/50 ring-offset-2 ring-offset-dark-800'
+              : 'text-dark-500 hover:text-dark-300 group-hover:scale-110'
           )}
-          {isFullyComplete && <span className="text-xs text-dark-500">(click to undo)</span>}
+          style={{
+            backgroundColor: isFullyComplete ? habit.color : 'transparent',
+            borderWidth: isFullyComplete ? 0 : 2,
+            borderColor: habit.color,
+          }}
+        >
+          {isFullyComplete && <CheckCircle2 size={18} />}
+        </button>
+
+        {/* Name + badges */}
+        <div className={clsx('min-w-0', !showQuickAdd && 'flex-1')}>
+          <div className="flex items-center gap-2">
+            <h3
+              className={clsx(
+                'font-medium transition-colors whitespace-nowrap',
+                isFullyComplete ? 'text-accent-green' : 'text-white'
+              )}
+            >
+              {habit.icon && <span className="mr-1">{habit.icon}</span>}
+              {habit.name}
+            </h3>
+            {isWeekly && (
+              <span className="px-1.5 py-0.5 rounded text-xs bg-accent-purple/20 text-accent-purple">
+                Weekly
+              </span>
+            )}
+            {isFullyComplete && <span className="text-xs text-dark-500">(click to undo)</span>}
+            {!showQuickAdd && habit.category && (
+              <span
+                className={clsx(
+                  'px-1.5 py-0.5 rounded text-xs',
+                  isFullyComplete ? 'bg-dark-700/50 text-dark-600' : 'bg-dark-700 text-dark-400'
+                )}
+              >
+                {habit.category}
+              </span>
+            )}
+          </div>
+
+          {/* Description for non-goal, non-quick-add habits */}
+          {!hasGoal && habit.description && (
+            <p
+              className={clsx(
+                'text-sm truncate mt-0.5',
+                isFullyComplete ? 'text-dark-600 line-through' : 'text-dark-500'
+              )}
+            >
+              {habit.description}
+            </p>
+          )}
         </div>
 
-        {/* Goal progress */}
-        {hasGoal && (
-          <div className="flex items-center gap-2 mt-1.5">
-            <div className="flex-1 h-2 bg-dark-700 rounded-full overflow-hidden max-w-[120px]">
-              <div
-                className={clsx(
-                  'h-full rounded-full transition-all duration-300',
-                  isFullyComplete ? 'bg-accent-green' : 'bg-primary-500'
-                )}
-                style={{ width: `${goalProgress}%` }}
-              />
-            </div>
+        {/* Inline quick-add buttons for NUMERIC/DURATION habits */}
+        {showQuickAdd && onQuickAdd && (
+          <div className="flex-1 flex items-center justify-end gap-1.5">
+            {quickAddAmounts.map((amount) => (
+              <button
+                key={amount}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onQuickAdd(habit.id, amount);
+                }}
+                className="px-2.5 py-1.5 rounded-lg bg-dark-700 text-xs font-medium text-dark-300 transition-all"
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = `${habit.color}33`;
+                  e.currentTarget.style.color = habit.color;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = '';
+                  e.currentTarget.style.color = '';
+                }}
+              >
+                +{amount}
+              </button>
+            ))}
+            {/* Done: complete to target */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onQuickAdd(habit.id, remaining);
+              }}
+              className="px-2 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1"
+              style={{
+                backgroundColor: `${habit.color}33`,
+                color: habit.color,
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = `${habit.color}4D`;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = `${habit.color}33`;
+              }}
+            >
+              <Check size={14} />
+            </button>
+          </div>
+        )}
+
+        {/* Streak badge */}
+        {habit.currentStreak > 0 && (
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-accent-orange/10">
+            <Flame size={14} className="text-accent-orange" />
+            <span className="text-sm font-medium text-accent-orange">{habit.currentStreak}</span>
+          </div>
+        )}
+
+        {/* Color accent bar */}
+        <div
+          className={clsx(
+            'w-1.5 h-10 rounded-full transition-all',
+            isFullyComplete && 'opacity-50'
+          )}
+          style={{ backgroundColor: habit.color }}
+        />
+      </div>
+
+      {/* Bottom row: progress bar for goal habits */}
+      {hasGoal && (
+        <div className="mt-2 pl-11">
+          <div className="flex items-center gap-2 mb-1">
             <span
               className={clsx(
                 'text-xs font-medium',
@@ -789,28 +908,22 @@ const HabitCard: React.FC<HabitCardProps> = ({ habit, onClick, isWeekly }) => {
             >
               {currentValue}/{targetValue} {habit.unit || ''}
             </span>
-            {!isFullyComplete && (
-              <span className="text-xs text-dark-500">({targetValue - currentValue} left)</span>
-            )}
+            {!isFullyComplete && <span className="text-xs text-dark-500">({remaining} left)</span>}
           </div>
-        )}
-
-        {!hasGoal && habit.description && (
-          <p className="text-sm text-dark-500 truncate">{habit.description}</p>
-        )}
-      </div>
-
-      {habit.currentStreak > 0 && (
-        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-accent-orange/10">
-          <Flame size={14} className="text-accent-orange" />
-          <span className="text-sm font-medium text-accent-orange">{habit.currentStreak}</span>
+          <div className="h-1.5 bg-dark-700 rounded-full overflow-hidden">
+            <div
+              className={clsx(
+                'h-full rounded-full transition-all duration-300',
+                isFullyComplete ? 'bg-accent-green' : ''
+              )}
+              style={{
+                width: `${goalProgress}%`,
+                backgroundColor: isFullyComplete ? undefined : habit.color,
+              }}
+            />
+          </div>
         </div>
       )}
-
-      <div
-        className={clsx('w-1.5 h-10 rounded-full transition-all', isFullyComplete && 'opacity-50')}
-        style={{ backgroundColor: habit.color }}
-      />
     </div>
   );
 };
