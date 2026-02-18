@@ -31,12 +31,13 @@ npm run dev
 
 **Access the application:**
 
-| Service  | URL                            |
-| -------- | ------------------------------ |
-| Frontend | http://localhost:3000          |
-| Backend  | http://localhost:8080          |
-| API Docs | http://localhost:8080/api-docs |
-| Health   | http://localhost:8080/health   |
+| Service        | URL                                  |
+| -------------- | ------------------------------------ |
+| Frontend       | http://localhost:3000                |
+| Backend        | http://localhost:8080                |
+| API Docs       | http://localhost:8080/api-docs       |
+| Health         | http://localhost:8080/health         |
+| Actuator Stats | http://localhost:8080/actuator/stats |
 
 > For detailed development instructions, see [DEVELOPMENT.md](DEVELOPMENT.md)
 
@@ -63,6 +64,26 @@ npm run dev
 - **Telegram Bot** - Track habits and get reminders via Telegram
 - **OpenClaw Integration** - Natural language habit tracking across messaging apps
 - **Responsive Design** - Works on desktop and mobile
+
+### Observability
+
+- **Actuator Stats** (`/actuator/stats`) - Production-grade monitoring endpoint with 13 stat categories:
+
+  | Category        | Description                                                     |
+  | --------------- | --------------------------------------------------------------- |
+  | `application`   | App name, version, environment, Node.js version, uptime         |
+  | `system`        | Memory (RSS, heap), CPU usage, load averages, platform          |
+  | `database`      | Row counts per model (users, habits, logs, books, challenges)   |
+  | `cache`         | Hit/miss counts, hit rate, backend type (Redis or memory)       |
+  | `requests`      | Total requests, by method/status group, avg response time       |
+  | `redis`         | Connection status, server info, memory usage                    |
+  | `deployment`    | Git SHA, build timestamp, Docker image, package version         |
+  | `errors`        | Total errors, breakdown by error code, last 50 recent errors    |
+  | `cronJobs`      | Status of all scheduled jobs (reminders, seeder, token cleanup) |
+  | `rateLimiting`  | Total throttled requests, breakdown by limiter                  |
+  | `activeUsers`   | DAU, WAU, MAU counts via efficient raw SQL                      |
+  | `dependencies`  | Health pings with latency (database, Redis)                     |
+  | `prismaMetrics` | Query counters, connection pool gauges, duration histograms     |
 
 ## Tech Stack
 
@@ -164,17 +185,31 @@ Key endpoint groups: Auth, Habits, Tracking, Analytics, Books, Challenges, Templ
 - **Backend**: Render (Dockerfile in `backend/`)
 - **Database**: Neon.tech (managed PostgreSQL)
 
+The backend Dockerfile supports build-time metadata injection for the actuator stats:
+
+```bash
+docker build \
+  --build-arg GIT_SHA=$(git rev-parse HEAD) \
+  --build-arg BUILD_TIMESTAMP=$(date -u +%Y-%m-%dT%H:%M:%SZ) \
+  -t habit-tracker-backend ./backend
+```
+
 ### Environment Variables
 
 See `backend/.env.example` for the full list. Key vars:
 
-| Variable             | Description                        |
-| -------------------- | ---------------------------------- |
-| `DATABASE_URL`       | PostgreSQL connection string       |
-| `JWT_SECRET`         | Secret for JWT signing (32+ chars) |
-| `CORS_ORIGIN`        | Frontend URL(s) for CORS           |
-| `REACT_APP_API_URL`  | Backend API URL for frontend       |
-| `TELEGRAM_BOT_TOKEN` | Telegram bot token (optional)      |
+| Variable             | Description                                                 |
+| -------------------- | ----------------------------------------------------------- |
+| `DATABASE_URL`       | PostgreSQL connection string                                |
+| `JWT_SECRET`         | Secret for JWT signing (32+ chars)                          |
+| `CORS_ORIGIN`        | Frontend URL(s) for CORS                                    |
+| `REACT_APP_API_URL`  | Backend API URL for frontend                                |
+| `TELEGRAM_BOT_TOKEN` | Telegram bot token (optional)                               |
+| `REDIS_URL`          | Redis connection string (optional, for cache/rate limiting) |
+| `DEMO_USER_EMAIL`    | Enable daily demo data seeding (optional)                   |
+| `GIT_SHA`            | Git commit hash, auto-injected in Docker/CI (optional)      |
+| `BUILD_TIMESTAMP`    | Build time, auto-injected in Docker/CI (optional)           |
+| `DOCKER_IMAGE`       | Docker image tag (optional)                                 |
 
 ## Integrations
 
