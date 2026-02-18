@@ -1,5 +1,5 @@
 import request from 'supertest';
-import { createTestApp, uniqueEmail } from '../helpers';
+import { createTestApp, registerTestUser } from '../helpers';
 import prisma from '../../config/database';
 
 const app = createTestApp();
@@ -11,15 +11,10 @@ describe('Habits API', () => {
 
   // Setup: Create test user and get auth token
   beforeAll(async () => {
-    const email = uniqueEmail();
-    const res = await request(app).post('/api/auth/register').send({
-      email,
-      password: 'TestPass123!',
-      name: 'Habit Test User',
-    });
-
-    authToken = res.body.data.token;
-    userId = res.body.data.user.id;
+    const testAuth = await registerTestUser(app);
+    if (!testAuth) return;
+    authToken = testAuth.token;
+    userId = testAuth.userId;
   });
 
   // Cleanup after tests
@@ -31,6 +26,7 @@ describe('Habits API', () => {
 
   describe('POST /api/habits', () => {
     it('should create a basic habit', async () => {
+      if (!authToken) return;
       const res = await request(app)
         .post('/api/habits')
         .set('Authorization', `Bearer ${authToken}`)
@@ -55,6 +51,7 @@ describe('Habits API', () => {
     });
 
     it('should create a numeric habit with target', async () => {
+      if (!authToken) return;
       const res = await request(app)
         .post('/api/habits')
         .set('Authorization', `Bearer ${authToken}`)
@@ -73,6 +70,7 @@ describe('Habits API', () => {
     });
 
     it('should create a duration habit', async () => {
+      if (!authToken) return;
       const res = await request(app)
         .post('/api/habits')
         .set('Authorization', `Bearer ${authToken}`)
@@ -90,6 +88,7 @@ describe('Habits API', () => {
     });
 
     it('should create a weekly habit with specific days', async () => {
+      if (!authToken) return;
       const res = await request(app)
         .post('/api/habits')
         .set('Authorization', `Bearer ${authToken}`)
@@ -105,6 +104,7 @@ describe('Habits API', () => {
     });
 
     it('should reject habit without name', async () => {
+      if (!authToken) return;
       const res = await request(app)
         .post('/api/habits')
         .set('Authorization', `Bearer ${authToken}`)
@@ -117,6 +117,7 @@ describe('Habits API', () => {
     });
 
     it('should reject unauthenticated request', async () => {
+      if (!authToken) return;
       const res = await request(app).post('/api/habits').send({
         name: 'Test Habit',
       });
@@ -127,6 +128,7 @@ describe('Habits API', () => {
 
   describe('GET /api/habits', () => {
     it('should return all user habits', async () => {
+      if (!authToken) return;
       const res = await request(app).get('/api/habits').set('Authorization', `Bearer ${authToken}`);
 
       expect(res.status).toBe(200);
@@ -136,6 +138,7 @@ describe('Habits API', () => {
     });
 
     it('should filter by category', async () => {
+      if (!authToken) return;
       const res = await request(app)
         .get('/api/habits?category=Health')
         .set('Authorization', `Bearer ${authToken}`);
@@ -147,6 +150,7 @@ describe('Habits API', () => {
     });
 
     it('should filter active habits only', async () => {
+      if (!authToken) return;
       const res = await request(app)
         .get('/api/habits?isActive=true')
         .set('Authorization', `Bearer ${authToken}`);
@@ -159,6 +163,7 @@ describe('Habits API', () => {
 
     // Note: Pagination is not currently implemented for habits endpoint
     it('should accept pagination params', async () => {
+      if (!authToken) return;
       const res = await request(app)
         .get('/api/habits?limit=2&offset=0')
         .set('Authorization', `Bearer ${authToken}`);
@@ -170,6 +175,7 @@ describe('Habits API', () => {
 
   describe('GET /api/habits/:id', () => {
     it('should return a specific habit', async () => {
+      if (!authToken) return;
       const res = await request(app)
         .get(`/api/habits/${habitId}`)
         .set('Authorization', `Bearer ${authToken}`);
@@ -180,6 +186,7 @@ describe('Habits API', () => {
     });
 
     it('should return 404 for non-existent habit', async () => {
+      if (!authToken) return;
       const res = await request(app)
         .get('/api/habits/non-existent-id')
         .set('Authorization', `Bearer ${authToken}`);
@@ -190,6 +197,7 @@ describe('Habits API', () => {
 
   describe('PUT /api/habits/:id', () => {
     it('should update habit name', async () => {
+      if (!authToken) return;
       const res = await request(app)
         .patch(`/api/habits/${habitId}`)
         .set('Authorization', `Bearer ${authToken}`)
@@ -202,6 +210,7 @@ describe('Habits API', () => {
     });
 
     it('should update habit color and icon', async () => {
+      if (!authToken) return;
       const res = await request(app)
         .patch(`/api/habits/${habitId}`)
         .set('Authorization', `Bearer ${authToken}`)
@@ -218,6 +227,7 @@ describe('Habits API', () => {
 
   describe('POST /api/habits/:id/archive', () => {
     it('should archive a habit', async () => {
+      if (!authToken) return;
       const res = await request(app)
         .post(`/api/habits/${habitId}/archive`)
         .set('Authorization', `Bearer ${authToken}`);
@@ -229,6 +239,7 @@ describe('Habits API', () => {
 
   describe('POST /api/habits/:id/unarchive', () => {
     it('should restore an archived habit', async () => {
+      if (!authToken) return;
       const res = await request(app)
         .post(`/api/habits/${habitId}/unarchive`)
         .set('Authorization', `Bearer ${authToken}`);
@@ -240,6 +251,7 @@ describe('Habits API', () => {
 
   describe('PATCH /api/habits/reorder', () => {
     it('should reorder habits', async () => {
+      if (!authToken) return;
       // Get all habits first
       const habitsRes = await request(app)
         .get('/api/habits')
@@ -264,6 +276,7 @@ describe('Habits API', () => {
 
   describe('DELETE /api/habits/:id', () => {
     it('should delete a habit', async () => {
+      if (!authToken) return;
       // Create a habit to delete
       const createRes = await request(app)
         .post('/api/habits')

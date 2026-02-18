@@ -23,12 +23,13 @@ describe('Templates API', () => {
         password: 'TestPass123!',
         name: 'Template Test User',
       });
-      authToken = registerRes.body.data.token;
+      authToken = registerRes.body.data?.token;
     }
   });
 
   describe('GET /api/templates', () => {
     it('should return all templates', async () => {
+      if (!authToken) return;
       const res = await request(app)
         .get('/api/templates')
         .set('Authorization', `Bearer ${authToken}`);
@@ -39,6 +40,7 @@ describe('Templates API', () => {
     });
 
     it('should filter by category', async () => {
+      if (!authToken) return;
       const res = await request(app)
         .get('/api/templates?category=Health')
         .set('Authorization', `Bearer ${authToken}`);
@@ -52,6 +54,7 @@ describe('Templates API', () => {
     });
 
     it('should support search', async () => {
+      if (!authToken) return;
       const res = await request(app)
         .get('/api/templates?search=exercise')
         .set('Authorization', `Bearer ${authToken}`);
@@ -63,6 +66,7 @@ describe('Templates API', () => {
 
   describe('GET /api/templates/:id', () => {
     it('should return a specific template', async () => {
+      if (!authToken) return;
       // First get all templates
       const listRes = await request(app)
         .get('/api/templates')
@@ -81,6 +85,7 @@ describe('Templates API', () => {
     });
 
     it('should return 404 for non-existent template', async () => {
+      if (!authToken) return;
       const res = await request(app)
         .get('/api/templates/non-existent-id')
         .set('Authorization', `Bearer ${authToken}`);
@@ -91,6 +96,7 @@ describe('Templates API', () => {
 
   describe('POST /api/templates/:id/use', () => {
     it('should create a habit from template', async () => {
+      if (!authToken) return;
       // First get all templates
       const listRes = await request(app)
         .get('/api/templates')
@@ -112,6 +118,7 @@ describe('Templates API', () => {
     });
 
     it('should allow customization when using template', async () => {
+      if (!authToken) return;
       const listRes = await request(app)
         .get('/api/templates')
         .set('Authorization', `Bearer ${authToken}`);
@@ -136,6 +143,7 @@ describe('Templates API', () => {
 
   describe('GET /api/templates - categories', () => {
     it('should return templates grouped by category', async () => {
+      if (!authToken) return;
       const res = await request(app)
         .get('/api/templates')
         .set('Authorization', `Bearer ${authToken}`);

@@ -3,6 +3,7 @@ import { NotFoundError, ConflictError } from '../utils/AppError';
 import { Prisma, Habit, Frequency, HabitType } from '@prisma/client';
 import { CreateHabitInput, UpdateHabitInput } from '../validators/habit.validator';
 import logger from '../utils/logger';
+import { invalidateUserAnalyticsCache } from '../utils/cache';
 
 // ============ TYPES ============
 
@@ -63,6 +64,7 @@ export async function createHabit(
   });
 
   logger.info('Habit created', { habitId: habit.id, userId, name: habit.name });
+  await invalidateUserAnalyticsCache(userId);
   return habit;
 }
 
@@ -201,6 +203,7 @@ export async function updateHabit(
   });
 
   logger.info('Habit updated', { habitId, userId });
+  await invalidateUserAnalyticsCache(userId);
   return habit;
 }
 
@@ -216,6 +219,7 @@ export async function deleteHabit(habitId: string, userId: string): Promise<void
   });
 
   logger.info('Habit deleted', { habitId, userId });
+  await invalidateUserAnalyticsCache(userId);
 }
 
 /**
@@ -234,6 +238,7 @@ export async function archiveHabit(habitId: string, userId: string): Promise<Hab
   });
 
   logger.info('Habit archived', { habitId, userId });
+  await invalidateUserAnalyticsCache(userId);
   return habit;
 }
 
@@ -257,6 +262,7 @@ export async function unarchiveHabit(habitId: string, userId: string): Promise<H
   });
 
   logger.info('Habit unarchived', { habitId, userId });
+  await invalidateUserAnalyticsCache(userId);
   return habit;
 }
 
@@ -331,6 +337,7 @@ export async function pauseHabit(
   });
 
   logger.info('Habit paused', { habitId, userId, pausedUntil });
+  await invalidateUserAnalyticsCache(userId);
   return updated;
 }
 
@@ -357,6 +364,7 @@ export async function resumeHabit(habitId: string, userId: string): Promise<Habi
   });
 
   logger.info('Habit resumed', { habitId, userId });
+  await invalidateUserAnalyticsCache(userId);
   return updated;
 }
 

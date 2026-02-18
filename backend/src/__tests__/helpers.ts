@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
+import request from 'supertest';
 import { errorHandler } from '../middleware/errorHandler';
 import { notFoundHandler } from '../middleware/notFoundHandler';
 import authRoutes from '../routes/auth.routes';
@@ -15,6 +16,8 @@ import challengeRoutes from '../routes/challenge.routes';
 import botRoutes from '../routes/bot.routes';
 import integrationRoutes from '../routes/integration.routes';
 import reminderRoutes from '../routes/reminder.routes';
+import actuatorRoutes from '../routes/actuator.routes';
+import { recordRequest, incrementActive, decrementActive } from '../utils/requestMetrics';
 
 /**
  * Create Express app for testing (without starting the server)
@@ -28,10 +31,24 @@ export const createTestApp = () => {
   app.use(express.json({ limit: '10kb' }));
   app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 
+  // Request metrics collection
+  app.use((req, res, next) => {
+    const startTime = Date.now();
+    incrementActive();
+    res.on('finish', () => {
+      decrementActive();
+      recordRequest(req.method, res.statusCode, Date.now() - startTime);
+    });
+    next();
+  });
+
   // Health check
   app.get('/health', (_req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
   });
+
+  // Actuator stats
+  app.use('/actuator', actuatorRoutes);
 
   // API Routes
   app.use('/api/auth', authRoutes);
@@ -77,3 +94,23 @@ export const randomString = (length: number = 8): string => {
 export const uniqueEmail = (): string => {
   return `test-${randomString()}@example.com`;
 };
+
+/**
+ * Safely register a test user. Returns null if DB is unavailable.
+ */
+export async function registerTestUser(
+  app: express.Express
+): Promise<{ token: string; userId: string } | null> {
+  try {
+    const email = uniqueEmail();
+    const res = await request(app).post('/api/auth/register').send({
+      email,
+      password: 'TestPass123!',
+      name: 'Test User',
+    });
+    if (!res.body.data?.token) return null;
+    return { token: res.body.data.token, userId: res.body.data.user.id };
+  } catch {
+    return null;
+  }
+}

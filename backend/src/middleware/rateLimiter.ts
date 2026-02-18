@@ -1,6 +1,8 @@
 import rateLimit, { Options } from 'express-rate-limit';
+import { RedisStore } from 'rate-limit-redis';
 import { Request, RequestHandler } from 'express';
 import { AuthRequest } from './auth';
+import { getRedisClientForStore } from '../config/redis';
 
 const isTest = process.env.NODE_ENV === 'test';
 
@@ -10,10 +12,28 @@ const noopLimiter: RequestHandler = (_req, _res, next) => {
 };
 
 /**
+ * Create a Redis store for rate limiting if Redis is available.
+ * Falls back to the default in-memory store otherwise.
+ */
+function createRedisStore(prefix: string): RedisStore | undefined {
+  const redis = getRedisClientForStore();
+  if (!redis) return undefined;
+
+  return new RedisStore({
+    // Use sendCommand for ioredis compatibility
+    sendCommand: (...args: string[]) => redis.call(args[0], ...args.slice(1)) as never,
+    prefix: `rl:${prefix}:`,
+  });
+}
+
+/**
  * Helper to create a rate limiter (disabled in test)
  */
-function createLimiter(opts: Partial<Options>): RequestHandler {
+function createLimiter(opts: Partial<Options> & { redisPrefix?: string }): RequestHandler {
   if (isTest) return noopLimiter;
+
+  const { redisPrefix, ...rateLimitOpts } = opts;
+
   return rateLimit({
     standardHeaders: 'draft-7',
     legacyHeaders: false,
@@ -24,7 +44,8 @@ function createLimiter(opts: Partial<Options>): RequestHandler {
         code: 'RATE_LIMIT_ERROR',
       },
     },
-    ...opts,
+    ...(redisPrefix ? { store: createRedisStore(redisPrefix) } : {}),
+    ...rateLimitOpts,
   });
 }
 
@@ -36,6 +57,7 @@ function createLimiter(opts: Partial<Options>): RequestHandler {
 export const authLimiter = createLimiter({
   windowMs: 15 * 60 * 1000,
   limit: 10,
+  redisPrefix: 'auth',
   message: {
     success: false,
     error: {
@@ -54,6 +76,7 @@ export const authLimiter = createLimiter({
 export const writeLimiter = createLimiter({
   windowMs: 15 * 60 * 1000,
   limit: 60,
+  redisPrefix: 'write',
   keyGenerator: (req: Request) => {
     return (req as AuthRequest).userId || req.ip || 'unknown';
   },
@@ -75,6 +98,7 @@ export const writeLimiter = createLimiter({
 export const readLimiter = createLimiter({
   windowMs: 15 * 60 * 1000,
   limit: 200,
+  redisPrefix: 'read',
   keyGenerator: (req: Request) => {
     return (req as AuthRequest).userId || req.ip || 'unknown';
   },
@@ -89,6 +113,7 @@ export const readLimiter = createLimiter({
 export const analyticsLimiter = createLimiter({
   windowMs: 15 * 60 * 1000,
   limit: 120,
+  redisPrefix: 'analytics',
   keyGenerator: (req: Request) => {
     return (req as AuthRequest).userId || req.ip || 'unknown';
   },
@@ -110,6 +135,7 @@ export const analyticsLimiter = createLimiter({
 export const botLimiter = createLimiter({
   windowMs: 60 * 1000,
   limit: 30,
+  redisPrefix: 'bot',
   keyGenerator: (req: Request) => {
     return (req.headers['x-api-key'] as string) || req.ip || 'unknown';
   },
@@ -130,6 +156,7 @@ export const botLimiter = createLimiter({
 export const sensitiveLimiter = createLimiter({
   windowMs: 60 * 60 * 1000,
   limit: 5,
+  redisPrefix: 'sensitive',
   keyGenerator: (req: Request) => {
     return (req as AuthRequest).userId || req.ip || 'unknown';
   },
@@ -150,6 +177,26 @@ export const sensitiveLimiter = createLimiter({
 export const healthLimiter = createLimiter({
   windowMs: 60 * 1000,
   limit: 20,
+  redisPrefix: 'health',
+});
+
+// ============ ACTUATOR (public stats endpoint) ============
+
+/**
+ * Actuator stats: 10 requests per minute per IP
+ * Stricter than health since it runs DB queries
+ */
+export const actuatorLimiter = createLimiter({
+  windowMs: 60 * 1000,
+  limit: 10,
+  redisPrefix: 'actuator',
+  message: {
+    success: false,
+    error: {
+      message: 'Too many actuator requests, please try again later',
+      code: 'ACTUATOR_RATE_LIMIT',
+    },
+  },
 });
 
 // ============ GENERAL FALLBACK ============
@@ -161,4 +208,5 @@ export const healthLimiter = createLimiter({
 export const generalLimiter = createLimiter({
   windowMs: 15 * 60 * 1000,
   limit: 100,
+  redisPrefix: 'general',
 });

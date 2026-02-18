@@ -6,6 +6,7 @@ import {
   PeriodQuery,
   HeatmapQuery,
   StreaksQuery,
+  PaginatedQuery,
 } from '../validators/analytics.validator';
 import { getUserTimezone, getTodayForTimezone } from '../utils/timezone';
 import {
@@ -568,16 +569,21 @@ export async function getHabitStats(userId: string, habitId: string): Promise<Ha
 export async function getStreakLeaderboard(
   userId: string,
   query: StreaksQuery
-): Promise<StreakLeader[]> {
+): Promise<{ streaks: StreakLeader[]; total: number }> {
   const limit = query.limit || 10;
+  const offset = query.offset || 0;
 
-  const habits = await prisma.habit.findMany({
-    where: { userId },
-    orderBy: { currentStreak: 'desc' },
-    take: limit,
-  });
+  const [habits, total] = await Promise.all([
+    prisma.habit.findMany({
+      where: { userId },
+      orderBy: { currentStreak: 'desc' },
+      take: limit,
+      skip: offset,
+    }),
+    prisma.habit.count({ where: { userId } }),
+  ]);
 
-  return habits.map((h) => ({
+  const streaks = habits.map((h) => ({
     habitId: h.id,
     habitName: h.name,
     color: h.color,
@@ -586,6 +592,8 @@ export async function getStreakLeaderboard(
     longestStreak: h.longestStreak,
     isActive: h.isActive && !h.isArchived,
   }));
+
+  return { streaks, total };
 }
 
 /**
@@ -1208,7 +1216,10 @@ export async function getBestPerformingAnalysis(userId: string): Promise<BestPer
 /**
  * Find habit correlations (which habits tend to be completed together)
  */
-export async function getHabitCorrelations(userId: string): Promise<HabitCorrelation[]> {
+export async function getHabitCorrelations(
+  userId: string,
+  query?: PaginatedQuery
+): Promise<{ correlations: HabitCorrelation[]; total: number }> {
   const timezone = await getUserTimezone(userId);
   const today = getTodayForTimezone(timezone);
   const thirtyDaysAgo = subDays(today, 30);
@@ -1219,7 +1230,7 @@ export async function getHabitCorrelations(userId: string): Promise<HabitCorrela
     orderBy: { totalCompletions: 'desc' },
   });
 
-  if (habits.length < 2) return [];
+  if (habits.length < 2) return { correlations: [], total: 0 };
 
   const logs = await prisma.habitLog.findMany({
     where: { userId, date: { gte: thirtyDaysAgo, lte: today }, completed: true },
@@ -1290,13 +1301,21 @@ export async function getHabitCorrelations(userId: string): Promise<HabitCorrela
     }
   }
 
-  return correlations.sort((a, b) => Math.abs(b.correlation) - Math.abs(a.correlation));
+  const sorted = correlations.sort((a, b) => Math.abs(b.correlation) - Math.abs(a.correlation));
+  const total = sorted.length;
+  const limit = query?.limit || 20;
+  const offset = query?.offset || 0;
+
+  return { correlations: sorted.slice(offset, offset + limit), total };
 }
 
 /**
  * Predict streak milestones and risk assessment
  */
-export async function getStreakPredictions(userId: string): Promise<StreakPrediction[]> {
+export async function getStreakPredictions(
+  userId: string,
+  query?: PaginatedQuery
+): Promise<{ predictions: StreakPrediction[]; total: number }> {
   const timezone = await getUserTimezone(userId);
   const today = getTodayForTimezone(timezone);
   const sevenDaysAgo = subDays(today, 7);
@@ -1360,5 +1379,12 @@ export async function getStreakPredictions(userId: string): Promise<StreakPredic
     });
   }
 
-  return predictions.sort((a, b) => a.predictedDaysToMilestone - b.predictedDaysToMilestone);
+  const sorted = predictions.sort(
+    (a, b) => a.predictedDaysToMilestone - b.predictedDaysToMilestone
+  );
+  const total = sorted.length;
+  const limit = query?.limit || 20;
+  const offset = query?.offset || 0;
+
+  return { predictions: sorted.slice(offset, offset + limit), total };
 }

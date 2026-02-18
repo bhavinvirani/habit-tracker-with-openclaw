@@ -1,16 +1,21 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import compression from 'compression';
 import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
 import swaggerUi from 'swagger-ui-express';
+import cron from 'node-cron';
 import { swaggerSpec } from './config/swagger';
 import logger from './utils/logger';
 import { requestLogger } from './middleware/requestLogger';
 import { errorHandler } from './middleware/errorHandler';
 import { notFoundHandler } from './middleware/notFoundHandler';
 import { generalLimiter, healthLimiter } from './middleware/rateLimiter';
+import { recordRequest, incrementActive, decrementActive } from './utils/requestMetrics';
 import prisma from './config/database';
+import { isRedisConnected, disconnectRedis } from './config/redis';
+import { cacheMetrics, warmAnalyticsCache } from './utils/cache';
 import authRoutes from './routes/auth.routes';
 import habitRoutes from './routes/habit.routes';
 import templateRoutes from './routes/template.routes';
@@ -22,6 +27,7 @@ import challengeRoutes from './routes/challenge.routes';
 import botRoutes from './routes/bot.routes';
 import integrationRoutes from './routes/integration.routes';
 import reminderRoutes from './routes/reminder.routes';
+import actuatorRoutes from './routes/actuator.routes';
 import { initReminderScheduler } from './services/reminder.service';
 
 dotenv.config();
@@ -69,6 +75,20 @@ app.use(
   })
 );
 
+// Compression (production only)
+if (isProduction) {
+  app.use(
+    compression({
+      level: 6,
+      threshold: 1024,
+      filter: (req, res) => {
+        if (req.headers['x-no-compression']) return false;
+        return compression.filter(req, res);
+      },
+    })
+  );
+}
+
 // Prevent information leakage
 app.disable('x-powered-by');
 app.use(
@@ -84,14 +104,34 @@ app.use(requestLogger);
 app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 
+// Request metrics collection
+app.use((req, res, next) => {
+  const startTime = Date.now();
+  incrementActive();
+  res.on('finish', () => {
+    decrementActive();
+    recordRequest(req.method, res.statusCode, Date.now() - startTime);
+  });
+  next();
+});
+
 // Health check (rate limited separately)
 app.get('/health', healthLimiter, async (_req, res) => {
   try {
     await prisma.$queryRaw`SELECT 1`;
+    const total = cacheMetrics.hits + cacheMetrics.misses;
     res.json({
       status: 'ok',
       timestamp: new Date().toISOString(),
       database: 'connected',
+      redis: isRedisConnected() ? 'connected' : 'disconnected (optional)',
+      cache: {
+        hits: cacheMetrics.hits,
+        misses: cacheMetrics.misses,
+        sets: cacheMetrics.sets,
+        invalidations: cacheMetrics.invalidations,
+        hitRate: total > 0 ? `${((cacheMetrics.hits / total) * 100).toFixed(1)}%` : '0%',
+      },
       version: process.env.npm_package_version || '1.0.0',
     });
   } catch {
@@ -99,9 +139,13 @@ app.get('/health', healthLimiter, async (_req, res) => {
       status: 'error',
       timestamp: new Date().toISOString(),
       database: 'disconnected',
+      redis: isRedisConnected() ? 'connected' : 'disconnected (optional)',
     });
   }
 });
+
+// Actuator stats (public, rate limited)
+app.use('/actuator', actuatorRoutes);
 
 // API Documentation
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
@@ -137,7 +181,7 @@ app.use('/api', v1Router);
 app.use(notFoundHandler);
 app.use(errorHandler);
 
-app.listen(Number(PORT), '0.0.0.0', () => {
+const server = app.listen(Number(PORT), '0.0.0.0', () => {
   logger.info('Server started successfully', {
     port: PORT,
     environment: process.env.NODE_ENV || 'development',
@@ -147,26 +191,80 @@ app.listen(Number(PORT), '0.0.0.0', () => {
   // Initialize reminder scheduler
   initReminderScheduler();
 
-  // Cleanup expired refresh tokens every hour
-  setInterval(
-    async () => {
-      try {
-        const deleted = await prisma.refreshToken.deleteMany({
-          where: { expiresAt: { lt: new Date() } },
-        });
-        if (deleted.count > 0) {
-          logger.info(`Cleaned up ${deleted.count} expired refresh tokens`);
-        }
-        // Cleanup expired login lockouts
-        await prisma.loginAttempt.deleteMany({
-          where: { lockedUntil: { lt: new Date() } },
-        });
-      } catch (error) {
-        logger.error('Failed to cleanup expired tokens', { error });
-      }
-    },
-    60 * 60 * 1000
-  );
+  // Warm analytics cache for recently active users (after 5s delay)
+  if (process.env.NODE_ENV !== 'test') {
+    setTimeout(() => warmAnalyticsCache(), 5000);
+  }
 });
+
+// Cleanup expired refresh tokens every hour
+const tokenCleanupInterval = setInterval(
+  async () => {
+    try {
+      const deleted = await prisma.refreshToken.deleteMany({
+        where: { expiresAt: { lt: new Date() } },
+      });
+      if (deleted.count > 0) {
+        logger.info(`Cleaned up ${deleted.count} expired refresh tokens`);
+      }
+      // Cleanup expired login lockouts
+      await prisma.loginAttempt.deleteMany({
+        where: { lockedUntil: { lt: new Date() } },
+      });
+    } catch (error) {
+      logger.error('Failed to cleanup expired tokens', { error });
+    }
+  },
+  60 * 60 * 1000
+);
+
+// ============ GRACEFUL SHUTDOWN ============
+
+let isShuttingDown = false;
+
+async function gracefulShutdown(signal: string) {
+  if (isShuttingDown) return;
+  isShuttingDown = true;
+
+  logger.info(`${signal} received, starting graceful shutdown...`);
+
+  // 10s forced exit timeout
+  const forceExitTimeout = setTimeout(() => {
+    logger.error('Forced exit after timeout');
+    process.exit(1);
+  }, 10_000);
+  forceExitTimeout.unref();
+
+  try {
+    // 1. Stop accepting new connections, drain in-flight requests
+    await new Promise<void>((resolve) => {
+      server.close(() => resolve());
+    });
+    logger.info('HTTP server closed');
+
+    // 2. Stop token cleanup interval
+    clearInterval(tokenCleanupInterval);
+
+    // 3. Stop cron jobs
+    cron.getTasks().forEach((task) => task.stop());
+    logger.info('Cron jobs stopped');
+
+    // 4. Disconnect Redis
+    await disconnectRedis();
+
+    // 5. Disconnect database
+    await prisma.$disconnect();
+    logger.info('Database disconnected');
+
+    logger.info('Graceful shutdown complete');
+    process.exit(0);
+  } catch (error) {
+    logger.error('Error during shutdown', { error });
+    process.exit(1);
+  }
+}
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
 export default app;

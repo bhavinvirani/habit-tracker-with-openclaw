@@ -53,6 +53,28 @@ export const streaksQuerySchema = z.object({
     .transform((val: string) => parseInt(val, 10))
     .pipe(z.number().int().min(1).max(50))
     .optional(),
+  offset: z
+    .string()
+    .transform((val: string) => parseInt(val, 10))
+    .pipe(z.number().int().min(0))
+    .optional(),
 });
 
 export type StreaksQuery = z.infer<typeof streaksQuerySchema>;
+
+// ============ PAGINATED QUERY ============
+
+export const paginatedQuerySchema = z.object({
+  limit: z
+    .string()
+    .transform((val: string) => parseInt(val, 10))
+    .pipe(z.number().int().min(1).max(50))
+    .optional(),
+  offset: z
+    .string()
+    .transform((val: string) => parseInt(val, 10))
+    .pipe(z.number().int().min(0))
+    .optional(),
+});
+
+export type PaginatedQuery = z.infer<typeof paginatedQuerySchema>;

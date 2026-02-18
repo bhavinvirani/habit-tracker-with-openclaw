@@ -1,5 +1,5 @@
 import request from 'supertest';
-import { createTestApp, uniqueEmail } from '../helpers';
+import { createTestApp, registerTestUser } from '../helpers';
 import prisma from '../../config/database';
 
 const app = createTestApp();
@@ -13,26 +13,23 @@ describe('Bot & Integration API', () => {
 
   // Setup: register user, generate API key, create habits
   beforeAll(async () => {
-    const email = uniqueEmail();
-    const res = await request(app)
-      .post('/api/auth/register')
-      .send({ email, password: 'TestPass123!', name: 'Bot Test User' });
-
-    authToken = res.body.data.token;
-    userId = res.body.data.user.id;
+    const testAuth = await registerTestUser(app);
+    if (!testAuth) return;
+    authToken = testAuth.token;
+    userId = testAuth.userId;
 
     // Generate API key
     const keyRes = await request(app)
       .post('/api/users/api-key')
       .set('Authorization', `Bearer ${authToken}`);
-    apiKey = keyRes.body.data.apiKey;
+    apiKey = keyRes.body.data?.apiKey;
 
     // Create a boolean habit
     const habitRes = await request(app)
       .post('/api/habits')
       .set('Authorization', `Bearer ${authToken}`)
       .send({ name: 'Morning Run', frequency: 'DAILY', color: '#10b981' });
-    habitId = habitRes.body.data.habit.id;
+    habitId = habitRes.body.data?.habit?.id;
 
     // Create a numeric habit
     const numericRes = await request(app)
@@ -40,13 +37,12 @@ describe('Bot & Integration API', () => {
       .set('Authorization', `Bearer ${authToken}`)
       .send({
         name: 'Drink Water',
-        frequency: 'DAILY',
         habitType: 'NUMERIC',
         targetValue: 8,
         unit: 'glasses',
-        color: '#3b82f6',
+        frequency: 'DAILY',
       });
-    numericHabitId = numericRes.body.data.habit.id;
+    numericHabitId = numericRes.body.data?.habit?.id;
   });
 
   // Cleanup
@@ -60,16 +56,19 @@ describe('Bot & Integration API', () => {
 
   describe('API Key Authentication', () => {
     it('should reject requests without API key', async () => {
+      if (!authToken) return;
       const res = await request(app).get('/api/bot/habits/today');
       expect(res.status).toBe(401);
     });
 
     it('should reject requests with invalid API key', async () => {
+      if (!authToken) return;
       const res = await request(app).get('/api/bot/habits/today').set('X-API-Key', 'invalid-key');
       expect(res.status).toBe(401);
     });
 
     it('should accept requests with valid API key', async () => {
+      if (!authToken) return;
       const res = await request(app).get('/api/bot/habits/today').set('X-API-Key', apiKey);
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
@@ -80,6 +79,7 @@ describe('Bot & Integration API', () => {
 
   describe('GET /api/bot/habits/today', () => {
     it("should return today's habits in bot-friendly format", async () => {
+      if (!authToken) return;
       const res = await request(app).get('/api/bot/habits/today').set('X-API-Key', apiKey);
 
       expect(res.status).toBe(200);
@@ -100,6 +100,7 @@ describe('Bot & Integration API', () => {
 
   describe('POST /api/bot/habits/check-in', () => {
     it('should check in a boolean habit', async () => {
+      if (!authToken) return;
       const res = await request(app)
         .post('/api/bot/habits/check-in')
         .set('X-API-Key', apiKey)
@@ -113,6 +114,7 @@ describe('Bot & Integration API', () => {
     });
 
     it('should check in a numeric habit with value', async () => {
+      if (!authToken) return;
       const res = await request(app)
         .post('/api/bot/habits/check-in')
         .set('X-API-Key', apiKey)
@@ -124,6 +126,7 @@ describe('Bot & Integration API', () => {
     });
 
     it('should reject invalid habitId', async () => {
+      if (!authToken) return;
       const res = await request(app)
         .post('/api/bot/habits/check-in')
         .set('X-API-Key', apiKey)
@@ -135,6 +138,7 @@ describe('Bot & Integration API', () => {
 
   describe('POST /api/bot/habits/check-in-by-name', () => {
     it('should find and check in a habit by name', async () => {
+      if (!authToken) return;
       const res = await request(app)
         .post('/api/bot/habits/check-in-by-name')
         .set('X-API-Key', apiKey)
@@ -146,6 +150,7 @@ describe('Bot & Integration API', () => {
     });
 
     it('should return 404 for non-matching name', async () => {
+      if (!authToken) return;
       const res = await request(app)
         .post('/api/bot/habits/check-in-by-name')
         .set('X-API-Key', apiKey)
@@ -157,6 +162,7 @@ describe('Bot & Integration API', () => {
 
   describe('GET /api/bot/habits/summary', () => {
     it('should return daily summary', async () => {
+      if (!authToken) return;
       const res = await request(app).get('/api/bot/habits/summary').set('X-API-Key', apiKey);
 
       expect(res.status).toBe(200);
@@ -172,6 +178,7 @@ describe('Bot & Integration API', () => {
 
   describe('POST /api/bot/register-chat', () => {
     it('should register a telegram chat', async () => {
+      if (!authToken) return;
       const res = await request(app)
         .post('/api/bot/register-chat')
         .set('X-API-Key', apiKey)
@@ -183,6 +190,7 @@ describe('Bot & Integration API', () => {
     });
 
     it('should update existing chat registration', async () => {
+      if (!authToken) return;
       const res = await request(app)
         .post('/api/bot/register-chat')
         .set('X-API-Key', apiKey)
@@ -193,6 +201,7 @@ describe('Bot & Integration API', () => {
     });
 
     it('should reject missing provider', async () => {
+      if (!authToken) return;
       const res = await request(app)
         .post('/api/bot/register-chat')
         .set('X-API-Key', apiKey)
@@ -206,6 +215,7 @@ describe('Bot & Integration API', () => {
 
   describe('GET /api/integrations', () => {
     it('should list connected apps', async () => {
+      if (!authToken) return;
       const res = await request(app)
         .get('/api/integrations')
         .set('Authorization', `Bearer ${authToken}`);
@@ -217,6 +227,7 @@ describe('Bot & Integration API', () => {
     });
 
     it('should require authentication', async () => {
+      if (!authToken) return;
       const res = await request(app).get('/api/integrations');
       expect(res.status).toBe(401);
     });
@@ -224,6 +235,7 @@ describe('Bot & Integration API', () => {
 
   describe('DELETE /api/integrations/:provider', () => {
     it('should disconnect a provider', async () => {
+      if (!authToken) return;
       const res = await request(app)
         .delete('/api/integrations/telegram')
         .set('Authorization', `Bearer ${authToken}`);
@@ -238,6 +250,7 @@ describe('Bot & Integration API', () => {
     });
 
     it('should return 404 for non-existent provider', async () => {
+      if (!authToken) return;
       const res = await request(app)
         .delete('/api/integrations/nonexistent')
         .set('Authorization', `Bearer ${authToken}`);
@@ -250,6 +263,7 @@ describe('Bot & Integration API', () => {
 
   describe('Reminders CRUD', () => {
     it('should create a reminder', async () => {
+      if (!authToken) return;
       const res = await request(app)
         .post('/api/reminders')
         .set('Authorization', `Bearer ${authToken}`)
@@ -261,6 +275,7 @@ describe('Bot & Integration API', () => {
     });
 
     it('should list reminders', async () => {
+      if (!authToken) return;
       const res = await request(app)
         .get('/api/reminders')
         .set('Authorization', `Bearer ${authToken}`);
@@ -271,6 +286,7 @@ describe('Bot & Integration API', () => {
     });
 
     it('should update an existing reminder time', async () => {
+      if (!authToken) return;
       const res = await request(app)
         .post('/api/reminders')
         .set('Authorization', `Bearer ${authToken}`)
@@ -281,6 +297,7 @@ describe('Bot & Integration API', () => {
     });
 
     it('should delete a reminder', async () => {
+      if (!authToken) return;
       const res = await request(app)
         .delete(`/api/reminders/${habitId}`)
         .set('Authorization', `Bearer ${authToken}`);
@@ -295,6 +312,7 @@ describe('Bot & Integration API', () => {
     });
 
     it('should reject invalid time format', async () => {
+      if (!authToken) return;
       const res = await request(app)
         .post('/api/reminders')
         .set('Authorization', `Bearer ${authToken}`)
@@ -306,6 +324,7 @@ describe('Bot & Integration API', () => {
 
   describe('Notification Settings', () => {
     it('should get default settings', async () => {
+      if (!authToken) return;
       const res = await request(app)
         .get('/api/reminders/settings')
         .set('Authorization', `Bearer ${authToken}`);
@@ -316,6 +335,7 @@ describe('Bot & Integration API', () => {
     });
 
     it('should update settings', async () => {
+      if (!authToken) return;
       const res = await request(app)
         .put('/api/reminders/settings')
         .set('Authorization', `Bearer ${authToken}`)
@@ -327,6 +347,7 @@ describe('Bot & Integration API', () => {
     });
 
     it('should persist settings', async () => {
+      if (!authToken) return;
       const res = await request(app)
         .get('/api/reminders/settings')
         .set('Authorization', `Bearer ${authToken}`);

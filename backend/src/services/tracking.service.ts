@@ -5,6 +5,7 @@ import { CheckInInput, UndoCheckInInput, HistoryQuery } from '../validators/trac
 import * as habitService from './habit.service';
 import logger from '../utils/logger';
 import { getUserTimezone, getTodayForTimezone } from '../utils/timezone';
+import { invalidateUserAnalyticsCache } from '../utils/cache';
 import {
   endOfDay,
   subDays,
@@ -395,6 +396,9 @@ export async function checkIn(
   // Check for new milestones
   const milestones = data.completed ? await checkMilestones(data.habitId, userId, streak) : [];
 
+  // Invalidate analytics cache
+  await invalidateUserAnalyticsCache(userId);
+
   return { log, streak, milestones };
 }
 
@@ -439,6 +443,9 @@ export async function undoCheckIn(userId: string, data: UndoCheckInInput): Promi
       lastCompletedAt: streak.lastCompletedAt,
     },
   });
+
+  // Invalidate analytics cache
+  await invalidateUserAnalyticsCache(userId);
 
   logger.info('Habit check-in undone', { habitId: data.habitId, date: formatDate(date) });
 }

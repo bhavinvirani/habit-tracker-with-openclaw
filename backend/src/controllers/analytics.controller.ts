@@ -9,6 +9,7 @@ import {
   HeatmapQuery,
   HabitIdParam,
   StreaksQuery,
+  PaginatedQuery,
 } from '../validators/analytics.validator';
 
 /**
@@ -79,9 +80,18 @@ export const getHabitStats = asyncHandler(async (req: AuthRequest, res: Response
  */
 export const getStreaks = asyncHandler(async (req: AuthRequest, res: Response) => {
   const query = req.query as unknown as StreaksQuery;
-  const streaks = await analyticsService.getStreakLeaderboard(req.userId!, query);
+  const result = await analyticsService.getStreakLeaderboard(req.userId!, query);
 
-  sendSuccess(res, { streaks }, 'Streak leaderboard retrieved successfully');
+  sendSuccess(
+    res,
+    {
+      streaks: result.streaks,
+      total: result.total,
+      limit: query.limit || 10,
+      offset: query.offset || 0,
+    },
+    'Streak leaderboard retrieved successfully'
+  );
 });
 
 /**
@@ -162,9 +172,19 @@ export const getBestPerforming = asyncHandler(async (req: AuthRequest, res: Resp
  * Get habit correlations
  */
 export const getCorrelations = asyncHandler(async (req: AuthRequest, res: Response) => {
-  const result = await analyticsService.getHabitCorrelations(req.userId!);
+  const query = req.query as unknown as PaginatedQuery;
+  const result = await analyticsService.getHabitCorrelations(req.userId!, query);
 
-  sendSuccess(res, { correlations: result }, 'Habit correlations retrieved successfully');
+  sendSuccess(
+    res,
+    {
+      correlations: result.correlations,
+      total: result.total,
+      limit: query.limit || 20,
+      offset: query.offset || 0,
+    },
+    'Habit correlations retrieved successfully'
+  );
 });
 
 /**
@@ -172,7 +192,17 @@ export const getCorrelations = asyncHandler(async (req: AuthRequest, res: Respon
  * Get streak predictions and risk assessment
  */
 export const getPredictions = asyncHandler(async (req: AuthRequest, res: Response) => {
-  const result = await analyticsService.getStreakPredictions(req.userId!);
+  const query = req.query as unknown as PaginatedQuery;
+  const result = await analyticsService.getStreakPredictions(req.userId!, query);
 
-  sendSuccess(res, { predictions: result }, 'Streak predictions retrieved successfully');
+  sendSuccess(
+    res,
+    {
+      predictions: result.predictions,
+      total: result.total,
+      limit: query.limit || 20,
+      offset: query.offset || 0,
+    },
+    'Streak predictions retrieved successfully'
+  );
 });

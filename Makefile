@@ -1,4 +1,4 @@
-.PHONY: help up down build logs restart clean migrate studio install-backend install-frontend
+.PHONY: help up down build logs restart clean migrate studio install-backend install-frontend redis-cli flush-cache logs-redis
 
 # Default target
 help:
@@ -24,6 +24,9 @@ help:
 	@echo "  shell-backend   Open shell in backend container"
 	@echo "  shell-frontend  Open shell in frontend container"
 	@echo "  shell-db        Open PostgreSQL shell"
+	@echo "  redis-cli       Open Redis CLI"
+	@echo "  flush-cache     Flush all Redis cache keys"
+	@echo "  logs-redis      View Redis logs"
 	@echo "  prod            Start in production mode"
 
 up:
@@ -93,3 +96,13 @@ shell-frontend:
 
 shell-db:
 	docker-compose -f docker-compose.dev.yml exec postgres psql -U postgres habit_tracker
+
+redis-cli:
+	docker-compose -f docker-compose.dev.yml exec redis redis-cli
+
+flush-cache:
+	docker-compose -f docker-compose.dev.yml exec redis redis-cli FLUSHALL
+	@echo "✅ Redis cache flushed"
+
+logs-redis:
+	docker-compose -f docker-compose.dev.yml logs -f redis
