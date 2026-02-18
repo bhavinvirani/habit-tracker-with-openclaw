@@ -22,6 +22,9 @@ model User {
   apiKeyCreatedAt DateTime?
   apiKeyScopes    String[]  @default(["bot:read", "bot:write"])
 
+  // Admin flag
+  isAdmin Boolean @default(false)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -35,6 +38,7 @@ model User {
   connectedApps        ConnectedApp[]
   habitReminders       HabitReminder[]
   notificationSettings UserNotificationSettings?
+  weeklyReports        WeeklyReport[]
 
   @@map("users")
 }
@@ -364,6 +368,43 @@ model UserNotificationSettings {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("user_notification_settings")
+}
+
+// ============ FEATURE FLAGS ============
+
+model FeatureFlag {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  name        String
+  description String?
+  category    String   @default("general")
+  enabled     Boolean  @default(false)
+  metadata    Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([category])
+  @@map("feature_flags")
+}
+
+// ============ AI WEEKLY REPORTS ============
+
+model WeeklyReport {
+  id            String   @id @default(cuid())
+  userId        String
+  patterns      Json
+  risks         Json
+  optimizations Json
+  narrative     String
+  periodStart   DateTime
+  periodEnd     DateTime
+  generatedAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId])
+  @@index([userId])
+  @@map("weekly_reports")
 }
 
 // ============ ENUMS ============
