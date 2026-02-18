@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import React, { useState, useRef } from 'react';
+import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import {
   ChevronLeft,
   ChevronRight,
@@ -28,6 +28,7 @@ import {
   eachMonthOfInterval,
   getDay,
 } from 'date-fns';
+import { motion, AnimatePresence } from 'framer-motion';
 import { analyticsApi } from '../services/habits';
 import clsx from 'clsx';
 import { ViewToggle, type ViewOption, Skeleton } from '../components/ui';
@@ -60,11 +61,18 @@ const Calendar: React.FC = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
   const [viewMode, setViewMode] = useState<ViewMode>('calendar');
+  const directionRef = useRef(1); // 1 = forward, -1 = backward
 
   // Fetch calendar data (day-by-day with habits)
-  const { data: calendarData, isLoading } = useQuery({
+  // keepPreviousData prevents the full skeleton from flashing on month navigation
+  const {
+    data: calendarData,
+    isLoading,
+    isFetching,
+  } = useQuery({
     queryKey: ['calendar', currentDate.getFullYear(), currentDate.getMonth() + 1],
     queryFn: () => analyticsApi.getCalendar(currentDate.getFullYear(), currentDate.getMonth() + 1),
+    placeholderData: keepPreviousData,
   });
 
   // Fetch heatmap data for the year view
@@ -88,31 +96,39 @@ const Calendar: React.FC = () => {
       </h2>
       <div className="flex items-center gap-2">
         <button
-          onClick={() =>
-            setCurrentDate(
+          onClick={() => {
+            directionRef.current = -1;
+            const newDate =
               viewMode === 'heatmap'
                 ? new Date(currentDate.getFullYear() - 1, 0, 1)
-                : subMonths(currentDate, 1)
-            )
-          }
+                : subMonths(currentDate, 1);
+            setCurrentDate(newDate);
+            setSelectedDate(null);
+          }}
           className="p-2 hover:bg-dark-700 rounded-lg transition-colors text-dark-300 hover:text-white"
         >
           <ChevronLeft size={20} />
         </button>
         <button
-          onClick={() => setCurrentDate(new Date())}
+          onClick={() => {
+            directionRef.current = 1;
+            setCurrentDate(new Date());
+            setSelectedDate(new Date());
+          }}
           className="px-3 py-1.5 text-sm text-primary-400 hover:bg-primary-600/20 rounded-lg transition-colors"
         >
           Today
         </button>
         <button
-          onClick={() =>
-            setCurrentDate(
+          onClick={() => {
+            directionRef.current = 1;
+            const newDate =
               viewMode === 'heatmap'
                 ? new Date(currentDate.getFullYear() + 1, 0, 1)
-                : addMonths(currentDate, 1)
-            )
-          }
+                : addMonths(currentDate, 1);
+            setCurrentDate(newDate);
+            setSelectedDate(null);
+          }}
           className="p-2 hover:bg-dark-700 rounded-lg transition-colors text-dark-300 hover:text-white"
         >
           <ChevronRight size={20} />
@@ -464,7 +480,24 @@ const Calendar: React.FC = () => {
           {viewMode === 'calendar' && (
             <>
               {renderDays()}
-              {renderCells()}
+              <div className="relative">
+                <AnimatePresence mode="wait" initial={false}>
+                  <motion.div
+                    key={format(currentDate, 'yyyy-MM')}
+                    initial={{ x: directionRef.current * 40, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    exit={{ x: directionRef.current * -40, opacity: 0 }}
+                    transition={{ duration: 0.2, ease: 'easeInOut' }}
+                  >
+                    {renderCells()}
+                  </motion.div>
+                </AnimatePresence>
+                {isFetching && (
+                  <div className="absolute inset-0 bg-dark-900/30 rounded-lg flex items-center justify-center pointer-events-none">
+                    <Loader2 className="w-5 h-5 animate-spin text-primary-400" />
+                  </div>
+                )}
+              </div>
 
               {/* Legend */}
               <div className="flex items-center justify-center gap-4 mt-6 pt-4 border-t border-dark-700">

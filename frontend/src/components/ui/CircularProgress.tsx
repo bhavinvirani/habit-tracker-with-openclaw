@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion, useSpring, useTransform, useMotionValue } from 'framer-motion';
 import clsx from 'clsx';
 
 interface CircularProgressProps {
@@ -35,7 +36,25 @@ const CircularProgress: React.FC<CircularProgressProps> = ({
 }) => {
   const radius = (size - strokeWidth) / 2;
   const circumference = radius * 2 * Math.PI;
-  const offset = circumference - (Math.min(100, Math.max(0, percent)) / 100) * circumference;
+  const clampedPercent = Math.min(100, Math.max(0, percent));
+
+  // Animate the stroke from 0 to target offset
+  const target = circumference - (clampedPercent / 100) * circumference;
+  const motionOffset = useSpring(circumference, { stiffness: 60, damping: 20 });
+
+  // Drive the spring to the target whenever percent changes
+  React.useEffect(() => {
+    motionOffset.set(target);
+  }, [target, motionOffset]);
+
+  // Animated number display
+  const motionPercent = useMotionValue(0);
+  const springPercent = useSpring(motionPercent, { stiffness: 60, damping: 20 });
+  const displayPercent = useTransform(springPercent, (v) => Math.round(v));
+
+  React.useEffect(() => {
+    motionPercent.set(clampedPercent);
+  }, [clampedPercent, motionPercent]);
 
   return (
     <div className="relative" style={{ width: size, height: size }}>
@@ -51,7 +70,7 @@ const CircularProgress: React.FC<CircularProgressProps> = ({
           className="text-dark-700"
         />
         {/* Progress arc */}
-        <circle
+        <motion.circle
           cx={size / 2}
           cy={size / 2}
           r={radius}
@@ -60,8 +79,7 @@ const CircularProgress: React.FC<CircularProgressProps> = ({
           fill="none"
           strokeLinecap="round"
           strokeDasharray={circumference}
-          strokeDashoffset={offset}
-          className="transition-all duration-500"
+          style={{ strokeDashoffset: motionOffset }}
         />
         <defs>
           <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="0%">
@@ -76,7 +94,7 @@ const CircularProgress: React.FC<CircularProgressProps> = ({
         ) : showText ? (
           <>
             <span className={clsx('font-bold text-white', size > 100 ? 'text-4xl' : 'text-lg')}>
-              {Math.round(percent)}%
+              <motion.span>{displayPercent}</motion.span>%
             </span>
             {label && <span className="text-sm text-dark-400">{label}</span>}
           </>

@@ -2,49 +2,10 @@ import React, { useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Sparkles, Mail, Lock, ArrowRight, Loader2 } from 'lucide-react';
 import { motion, useMotionValue, useSpring, AnimatePresence } from 'framer-motion';
-import confetti from 'canvas-confetti';
 import toast from 'react-hot-toast';
 import api from '../services/api';
 import { useAuthStore } from '../store/authStore';
-
-// ── Confetti burst helper ─────────────────────────────────────────────────────
-const fireConfetti = () => {
-  const colors = ['#2aa3ff', '#8b5cf6', '#ec4899', '#10b981', '#f59e0b', '#06b6d4'];
-
-  confetti({
-    particleCount: 80,
-    spread: 100,
-    origin: { y: 0.6 },
-    colors,
-    startVelocity: 30,
-    gravity: 1.2,
-    ticks: 200,
-  });
-
-  setTimeout(() => {
-    confetti({
-      particleCount: 40,
-      angle: 60,
-      spread: 55,
-      origin: { x: 0, y: 0.65 },
-      colors,
-      startVelocity: 45,
-      ticks: 200,
-    });
-  }, 150);
-
-  setTimeout(() => {
-    confetti({
-      particleCount: 40,
-      angle: 120,
-      spread: 55,
-      origin: { x: 1, y: 0.65 },
-      colors,
-      startVelocity: 45,
-      ticks: 200,
-    });
-  }, 300);
-};
+import { fireConfetti } from '../utils/confetti';
 
 // ── Spring configs ────────────────────────────────────────────────────────────
 const magneticSpring = { stiffness: 150, damping: 15 };

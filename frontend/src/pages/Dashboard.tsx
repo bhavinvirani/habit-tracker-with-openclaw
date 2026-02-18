@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   CheckCircle2,
@@ -12,7 +12,9 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
+import { fireConfetti } from '../utils/confetti';
 import {
   trackingApi,
   analyticsApi,
@@ -218,6 +220,25 @@ const Dashboard: React.FC = () => {
     }
   };
 
+  // Fire confetti when all daily habits are completed
+  const prevAllDoneRef = useRef(false);
+  const allDailyDone = (() => {
+    const daily = (todayData?.habits || []).filter((h: TodayHabit) => h.frequency === 'DAILY');
+    if (daily.length === 0) return false;
+    return daily.every((h: TodayHabit) => {
+      const hasGoal = h.targetValue && h.targetValue > 0;
+      const currentValue = h.logValue || 0;
+      return h.isCompleted || (hasGoal && currentValue >= (h.targetValue || 0));
+    });
+  })();
+
+  useEffect(() => {
+    if (allDailyDone && !prevAllDoneRef.current) {
+      fireConfetti();
+    }
+    prevAllDoneRef.current = allDailyDone;
+  }, [allDailyDone]);
+
   const isLoading = loadingToday || loadingStats;
 
   if (isLoading) {
@@ -239,7 +260,6 @@ const Dashboard: React.FC = () => {
     const currentValue = h.logValue || 0;
     return h.isCompleted || (hasGoal && currentValue >= (h.targetValue || 0));
   }).length;
-  const allDailyDone = dailyHabits.length > 0 && dailyCompleted === dailyHabits.length;
 
   // Generate mini heatmap data (last 14 days)
   const heatmapDays = Array.from({ length: 14 }, (_, i) => {
@@ -518,17 +538,33 @@ const Dashboard: React.FC = () => {
       {/* Today's Habits */}
       <div className="space-y-6">
         {habits.length === 0 ? (
-          <div className="card text-center py-12">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-dark-800 mb-4">
-              <Sparkles className="w-8 h-8 text-dark-500" />
-            </div>
-            <h3 className="text-lg font-medium text-white mb-2">No habits yet</h3>
-            <p className="text-dark-400 mb-4">Create your first habit to start tracking</p>
-            <button onClick={() => setIsModalOpen(true)} className="btn btn-primary">
+          <motion.div
+            className="card text-center py-16"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+          >
+            <motion.div
+              className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-primary-500/20 to-accent-purple/20 border border-primary-500/10 mb-5"
+              animate={{ y: [0, -6, 0] }}
+              transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+            >
+              <Sparkles className="w-10 h-10 text-primary-400" />
+            </motion.div>
+            <h3 className="text-xl font-semibold text-white mb-2">Start your journey</h3>
+            <p className="text-dark-400 mb-6 max-w-xs mx-auto">
+              Create your first habit and begin building a better routine, one day at a time.
+            </p>
+            <motion.button
+              onClick={() => setIsModalOpen(true)}
+              className="btn btn-primary"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+            >
               <Plus size={18} />
-              Create Habit
-            </button>
-          </div>
+              Create Your First Habit
+            </motion.button>
+          </motion.div>
         ) : (
           <>
             {/* Daily Habits Section */}
@@ -569,15 +605,27 @@ const Dashboard: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="space-y-3">
+                <motion.div
+                  className="space-y-3"
+                  initial="hidden"
+                  animate="visible"
+                  variants={{
+                    hidden: {},
+                    visible: { transition: { staggerChildren: 0.04 } },
+                  }}
+                >
                   {dailyHabits.map((habit: TodayHabit) => (
-                    <HabitCard
+                    <motion.div
                       key={habit.id}
-                      habit={habit}
-                      onClick={() => handleHabitClick(habit)}
-                    />
+                      variants={{
+                        hidden: { opacity: 0, y: 8 },
+                        visible: { opacity: 1, y: 0, transition: { duration: 0.2 } },
+                      }}
+                    >
+                      <HabitCard habit={habit} onClick={() => handleHabitClick(habit)} />
+                    </motion.div>
                   ))}
-                </div>
+                </motion.div>
               </div>
             )}
 
@@ -592,16 +640,27 @@ const Dashboard: React.FC = () => {
                   <span className="text-xs text-dark-500">Resets every week</span>
                 </div>
 
-                <div className="space-y-3">
+                <motion.div
+                  className="space-y-3"
+                  initial="hidden"
+                  animate="visible"
+                  variants={{
+                    hidden: {},
+                    visible: { transition: { staggerChildren: 0.04 } },
+                  }}
+                >
                   {weeklyHabits.map((habit: TodayHabit) => (
-                    <HabitCard
+                    <motion.div
                       key={habit.id}
-                      habit={habit}
-                      onClick={() => handleHabitClick(habit)}
-                      isWeekly
-                    />
+                      variants={{
+                        hidden: { opacity: 0, y: 8 },
+                        visible: { opacity: 1, y: 0, transition: { duration: 0.2 } },
+                      }}
+                    >
+                      <HabitCard habit={habit} onClick={() => handleHabitClick(habit)} isWeekly />
+                    </motion.div>
                   ))}
-                </div>
+                </motion.div>
               </div>
             )}
           </>
