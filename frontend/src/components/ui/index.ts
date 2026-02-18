@@ -14,6 +14,7 @@ export { default as Card, CardSectionHeader } from './Card';
 export { default as Button } from './Button';
 export { default as Sparkline } from './Sparkline';
 export { default as ConfirmDialog } from './ConfirmDialog';
+export { default as QuickLogDialog } from './QuickLogDialog';
 export { default as TrendIndicator } from './TrendIndicator';
 export {
   default as Skeleton,

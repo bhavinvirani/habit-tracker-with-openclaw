@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -376,69 +377,80 @@ const Profile: React.FC = () => {
       </div>
 
       {/* Level Info Modal */}
-      {showLevelInfo && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-dark-950/80 backdrop-blur-sm">
-          <div className="card max-w-md w-full animate-in fade-in zoom-in duration-200">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <div className="w-10 h-10 rounded-xl bg-accent-yellow/20 flex items-center justify-center">
-                  <Star className="w-5 h-5 text-accent-yellow" />
+      {showLevelInfo &&
+        createPortal(
+          <div
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4"
+            onClick={() => setShowLevelInfo(false)}
+          >
+            <div
+              className="card max-w-md w-full animate-in fade-in zoom-in duration-200"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <div className="w-10 h-10 rounded-xl bg-accent-yellow/20 flex items-center justify-center">
+                    <Star className="w-5 h-5 text-accent-yellow" />
+                  </div>
+                  <h2 className="text-xl font-bold text-white">{LEVEL_INFO.title}</h2>
                 </div>
-                <h2 className="text-xl font-bold text-white">{LEVEL_INFO.title}</h2>
+                <button
+                  onClick={() => setShowLevelInfo(false)}
+                  className="text-dark-400 hover:text-white transition-colors"
+                >
+                  ✕
+                </button>
               </div>
+
+              <p className="text-dark-300 mb-4">{LEVEL_INFO.description}</p>
+
+              {/* Formula */}
+              <div className="bg-dark-800/50 rounded-lg p-3 mb-4">
+                <p className="text-sm text-dark-400 mb-1">Level Formula:</p>
+                <code className="text-primary-400 font-mono">{LEVEL_INFO.formula}</code>
+                <div className="flex gap-4 mt-2 text-xs text-dark-500">
+                  <span>• {LEVEL_INFO.xpPerCompletion}</span>
+                  <span>• {LEVEL_INFO.xpPerLevel}</span>
+                </div>
+              </div>
+
+              {/* Level Tiers */}
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-dark-400">Level Tiers:</p>
+                {LEVEL_INFO.tiers.map((tier) => (
+                  <div
+                    key={tier.level}
+                    className="flex items-center justify-between p-2 rounded-lg bg-dark-800/30"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className={clsx('font-bold', tier.color)}>Lv {tier.level}</span>
+                      <span className="text-white">{tier.title}</span>
+                    </div>
+                    <span className="text-xs text-dark-500">{tier.completions} completions</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Your Progress */}
+              <div className="mt-4 pt-4 border-t border-dark-700">
+                <div className="flex items-center justify-between">
+                  <span className="text-dark-400">Your progress:</span>
+                  <span className="text-white font-bold">
+                    Level {level.level} ({level.completions} completions)
+                  </span>
+                </div>
+              </div>
+
               <button
                 onClick={() => setShowLevelInfo(false)}
-                className="text-dark-400 hover:text-white transition-colors"
+                className="w-full mt-4 btn btn-primary"
               >
-                ✕
+                Got it!
               </button>
             </div>
-
-            <p className="text-dark-300 mb-4">{LEVEL_INFO.description}</p>
-
-            {/* Formula */}
-            <div className="bg-dark-800/50 rounded-lg p-3 mb-4">
-              <p className="text-sm text-dark-400 mb-1">Level Formula:</p>
-              <code className="text-primary-400 font-mono">{LEVEL_INFO.formula}</code>
-              <div className="flex gap-4 mt-2 text-xs text-dark-500">
-                <span>• {LEVEL_INFO.xpPerCompletion}</span>
-                <span>• {LEVEL_INFO.xpPerLevel}</span>
-              </div>
-            </div>
-
-            {/* Level Tiers */}
-            <div className="space-y-2">
-              <p className="text-sm font-medium text-dark-400">Level Tiers:</p>
-              {LEVEL_INFO.tiers.map((tier) => (
-                <div
-                  key={tier.level}
-                  className="flex items-center justify-between p-2 rounded-lg bg-dark-800/30"
-                >
-                  <div className="flex items-center gap-3">
-                    <span className={clsx('font-bold', tier.color)}>Lv {tier.level}</span>
-                    <span className="text-white">{tier.title}</span>
-                  </div>
-                  <span className="text-xs text-dark-500">{tier.completions} completions</span>
-                </div>
-              ))}
-            </div>
-
-            {/* Your Progress */}
-            <div className="mt-4 pt-4 border-t border-dark-700">
-              <div className="flex items-center justify-between">
-                <span className="text-dark-400">Your progress:</span>
-                <span className="text-white font-bold">
-                  Level {level.level} ({level.completions} completions)
-                </span>
-              </div>
-            </div>
-
-            <button onClick={() => setShowLevelInfo(false)} className="w-full mt-4 btn btn-primary">
-              Got it!
-            </button>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body
+        )}
 
       {/* Tabs */}
       <div className="flex gap-2 border-b border-dark-700 pb-2">

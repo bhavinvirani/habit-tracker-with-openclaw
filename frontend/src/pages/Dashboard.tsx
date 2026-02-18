@@ -34,11 +34,13 @@ import {
   CircularProgress,
   Button,
   DashboardSkeleton,
+  QuickLogDialog,
 } from '../components/ui';
 
 const Dashboard: React.FC = () => {
   const queryClient = useQueryClient();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [quickLogHabit, setQuickLogHabit] = useState<TodayHabit | null>(null);
 
   // Fetch today's habits
   const { data: todayData, isLoading: loadingToday } = useQuery({
@@ -203,14 +205,11 @@ const Dashboard: React.FC = () => {
       // Undo the check-in
       undoMutation.mutate(habit.id);
     } else if (hasGoal && habit.habitType !== 'BOOLEAN') {
-      // Increment value by 1
-      const newValue = currentValue + 1;
-      const willComplete = newValue >= targetValue;
-      checkInMutation.mutate({
-        habitId: habit.id,
-        value: newValue,
-        completed: willComplete,
-      });
+      // Open quick log dialog for NUMERIC/DURATION habits
+      const fullHabit = habits.find((h: TodayHabit) => h.id === habit.id);
+      if (fullHabit) {
+        setQuickLogHabit(fullHabit);
+      }
     } else {
       // Boolean habit - just mark complete
       checkInMutation.mutate({
@@ -218,6 +217,17 @@ const Dashboard: React.FC = () => {
         completed: true,
       });
     }
+  };
+
+  // Handle quick log submission for NUMERIC/DURATION habits
+  const handleQuickLog = (value: number, completed: boolean) => {
+    if (!quickLogHabit) return;
+    checkInMutation.mutate({
+      habitId: quickLogHabit.id,
+      value,
+      completed,
+    });
+    setQuickLogHabit(null);
   };
 
   // Fire confetti when all daily habits are completed
@@ -606,7 +616,7 @@ const Dashboard: React.FC = () => {
                 </div>
 
                 <motion.div
-                  className="space-y-3"
+                  className="space-y-2"
                   initial="hidden"
                   animate="visible"
                   variants={{
@@ -641,7 +651,7 @@ const Dashboard: React.FC = () => {
                 </div>
 
                 <motion.div
-                  className="space-y-3"
+                  className="space-y-2"
                   initial="hidden"
                   animate="visible"
                   variants={{
@@ -674,6 +684,20 @@ const Dashboard: React.FC = () => {
         onSubmit={handleCreateHabit}
         isLoading={createMutation.isPending}
       />
+
+      {/* Quick Log Dialog for NUMERIC/DURATION habits */}
+      <QuickLogDialog
+        isOpen={!!quickLogHabit}
+        onClose={() => setQuickLogHabit(null)}
+        onSubmit={handleQuickLog}
+        habitName={quickLogHabit?.name || ''}
+        habitIcon={quickLogHabit?.icon || null}
+        habitColor={quickLogHabit?.color || '#6366f1'}
+        currentValue={quickLogHabit?.logValue || 0}
+        targetValue={quickLogHabit?.targetValue || 1}
+        unit={quickLogHabit?.unit || null}
+        loading={checkInMutation.isPending}
+      />
     </div>
   );
 };
@@ -695,7 +719,7 @@ const HabitCard: React.FC<HabitCardProps> = ({ habit, onClick, isWeekly }) => {
   return (
     <div
       className={clsx(
-        'relative flex items-center gap-4 p-4 rounded-xl border transition-all cursor-pointer group',
+        'relative flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer group',
         isFullyComplete
           ? 'bg-gradient-to-r from-accent-green/10 to-dark-800/50 border-accent-green/30'
           : 'bg-dark-800 border-dark-600 hover:border-dark-500'
