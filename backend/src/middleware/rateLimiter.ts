@@ -5,6 +5,7 @@ import { AuthRequest } from './auth';
 import { getRedisClientForStore } from '../config/redis';
 
 const isTest = process.env.NODE_ENV === 'test';
+const isDev = process.env.NODE_ENV === 'development' || !process.env.NODE_ENV;
 
 // ============ RATE LIMIT STATS ============
 
@@ -42,7 +43,7 @@ function createLimiter(
   name: string,
   opts: Partial<Options> & { redisPrefix?: string }
 ): RequestHandler {
-  if (isTest) return noopLimiter;
+  if (isTest || isDev) return noopLimiter;
 
   const { redisPrefix, ...rateLimitOpts } = opts;
 

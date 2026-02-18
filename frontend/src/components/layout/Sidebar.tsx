@@ -15,8 +15,10 @@ import {
   HelpCircle,
   X,
   MessageCircle,
+  Shield,
 } from 'lucide-react';
 import { analyticsApi, trackingApi } from '../../services/habits';
+import { useAuthStore } from '../../store/authStore';
 import clsx from 'clsx';
 
 interface SidebarProps {
@@ -25,6 +27,8 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
+  const { user } = useAuthStore();
+
   // Fetch stats
   const { data: stats } = useQuery({
     queryKey: ['overview'],
@@ -82,6 +86,16 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
       label: 'Profile',
       badge: null,
     },
+    ...(user?.isAdmin
+      ? [
+          {
+            to: '/admin',
+            icon: Shield,
+            label: 'Admin',
+            badge: null,
+          },
+        ]
+      : []),
   ];
 
   const todayProgress = todayData?.summary

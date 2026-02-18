@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, type ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   Flame,
@@ -30,6 +30,7 @@ import {
   Area,
 } from 'recharts';
 import { format, subWeeks, addWeeks, getDay, startOfYear, eachDayOfInterval } from 'date-fns';
+import { motion } from 'framer-motion';
 import { analyticsApi } from '../services/habits';
 import clsx from 'clsx';
 import { WeeklyDay, StreakInfo, ChartTooltipProps } from '../types';
@@ -41,6 +42,8 @@ import {
   Badge,
 } from '../components/ui';
 import { ChartSkeleton } from '../components/ui/Skeleton';
+import { FeatureGate } from '../contexts/FeatureFlagContext';
+import AIInsightsSection from '../components/analytics/AIInsightsSection';
 
 // ── Heatmap helpers ───────────────────────────────────────────────
 
@@ -104,6 +107,17 @@ const GRADE_COLORS: Record<string, [string, string]> = {
   D: ['#f97316', '#fb923c'],
   F: ['#ef4444', '#f87171'],
 };
+
+// ── Fade-in wrapper for progressive reveal ───────────────────────
+const FadeIn: React.FC<{ children: ReactNode; delay?: number }> = ({ children, delay = 0 }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 10 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.3, delay, ease: 'easeOut' }}
+  >
+    {children}
+  </motion.div>
+);
 
 // ── Component ─────────────────────────────────────────────────────
 
@@ -277,700 +291,735 @@ const Analytics: React.FC = () => {
       <PageHeader title="Analytics" subtitle="Track your progress and insights" />
 
       {/* ── 1. Productivity Score + Week Comparison ── */}
-      <div className="grid lg:grid-cols-5 gap-6">
-        {/* Productivity Score */}
-        <div className="lg:col-span-3">
-          {loadingProductivity ? (
-            <ChartSkeleton />
-          ) : productivity ? (
-            <ProductivityScoreCard productivity={productivity} />
-          ) : null}
-        </div>
+      <FadeIn>
+        <div className="grid lg:grid-cols-5 gap-6">
+          {/* Productivity Score */}
+          <div className="lg:col-span-3">
+            {loadingProductivity ? (
+              <ChartSkeleton />
+            ) : productivity ? (
+              <ProductivityScoreCard productivity={productivity} />
+            ) : null}
+          </div>
 
-        {/* Week Comparison */}
-        <div className="lg:col-span-2">
-          {loadingComparison ? (
-            <div className="card h-full flex flex-col justify-center p-4 min-h-[120px]">
-              <div className="flex items-center gap-4 mb-3">
-                <div className="w-10 h-10 rounded-full bg-dark-700/50 animate-pulse" />
-                <div className="flex-1 space-y-2">
-                  <div className="h-4 w-32 bg-dark-700/50 rounded-md animate-pulse" />
-                  <div className="h-3 w-24 bg-dark-700/50 rounded-md animate-pulse" />
+          {/* Week Comparison */}
+          <div className="lg:col-span-2">
+            {loadingComparison ? (
+              <div className="card h-full flex flex-col justify-center p-4 min-h-[120px]">
+                <div className="flex items-center gap-4 mb-3">
+                  <div className="w-10 h-10 rounded-full bg-dark-700/50 animate-pulse" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 w-32 bg-dark-700/50 rounded-md animate-pulse" />
+                    <div className="h-3 w-24 bg-dark-700/50 rounded-md animate-pulse" />
+                  </div>
                 </div>
+                <div className="h-8 w-20 bg-dark-700/50 rounded-md animate-pulse" />
               </div>
-              <div className="h-8 w-20 bg-dark-700/50 rounded-md animate-pulse" />
-            </div>
-          ) : comparison ? (
-            <div
-              className={clsx(
-                'p-4 rounded-xl border flex flex-col justify-center h-full',
-                comparison.trend === 'up'
-                  ? 'bg-accent-green/10 border-accent-green/20'
-                  : comparison.trend === 'down'
-                    ? 'bg-accent-red/10 border-accent-red/20'
-                    : 'bg-dark-800 border-dark-700'
-              )}
-            >
-              <div className="flex items-center gap-4">
-                {comparison.trend === 'up' ? (
-                  <div className="w-10 h-10 rounded-full bg-accent-green/20 flex items-center justify-center shrink-0">
-                    <ArrowUpRight className="w-5 h-5 text-accent-green" />
-                  </div>
-                ) : comparison.trend === 'down' ? (
-                  <div className="w-10 h-10 rounded-full bg-accent-red/20 flex items-center justify-center shrink-0">
-                    <ArrowDownRight className="w-5 h-5 text-accent-red" />
-                  </div>
-                ) : (
-                  <div className="w-10 h-10 rounded-full bg-dark-700 flex items-center justify-center shrink-0">
-                    <Minus className="w-5 h-5 text-dark-400" />
-                  </div>
-                )}
-                <div className="min-w-0">
-                  <p className="text-white font-semibold text-sm">
-                    {comparison.trend === 'up'
-                      ? "You're doing better this week!"
-                      : comparison.trend === 'down'
-                        ? 'Room for improvement'
-                        : 'Staying consistent!'}
-                  </p>
-                  <p className="text-xs text-dark-400">
-                    {comparison.thisWeek.rate}% this week vs {comparison.lastWeek.rate}% last
-                  </p>
-                </div>
-              </div>
+            ) : comparison ? (
               <div
                 className={clsx(
-                  'text-3xl font-bold mt-3',
+                  'p-4 rounded-xl border flex flex-col justify-center h-full',
                   comparison.trend === 'up'
-                    ? 'text-accent-green'
+                    ? 'bg-accent-green/10 border-accent-green/20'
                     : comparison.trend === 'down'
-                      ? 'text-accent-red'
-                      : 'text-dark-400'
+                      ? 'bg-accent-red/10 border-accent-red/20'
+                      : 'bg-dark-800 border-dark-700'
                 )}
               >
-                {comparison.change > 0 ? '+' : ''}
-                {comparison.change}%
-              </div>
-            </div>
-          ) : null}
-        </div>
-      </div>
-
-      {/* ── 2. Overview Stats ── */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <div className="stat-card">
-          <div className="flex items-center justify-between">
-            <span className="stat-label">Current Streak</span>
-            <Flame className="w-5 h-5 text-accent-orange" />
-          </div>
-          <p className="stat-value text-accent-orange">{overview?.currentBestStreak || 0}</p>
-          <p className="text-sm text-dark-500">days in a row</p>
-        </div>
-
-        <div className="stat-card">
-          <div className="flex items-center justify-between">
-            <span className="stat-label">Best Streak</span>
-            <TrendingUp className="w-5 h-5 text-accent-green" />
-          </div>
-          <p className="stat-value text-accent-green">{overview?.longestEverStreak || 0}</p>
-          <p className="text-sm text-dark-500">personal record</p>
-        </div>
-
-        <div className="stat-card">
-          <div className="flex items-center justify-between">
-            <span className="stat-label">Avg Completion</span>
-            <Target className="w-5 h-5 text-primary-400" />
-          </div>
-          <p className="stat-value text-primary-400">{overview?.monthlyCompletionRate || 0}%</p>
-          <p className="text-sm text-dark-500">last 30 days</p>
-        </div>
-
-        <div className="stat-card">
-          <div className="flex items-center justify-between">
-            <span className="stat-label">Active Habits</span>
-            <Calendar className="w-5 h-5 text-accent-purple" />
-          </div>
-          <p className="stat-value text-accent-purple">{overview?.activeHabits || 0}</p>
-          <p className="text-sm text-dark-500">being tracked</p>
-        </div>
-      </div>
-
-      {/* ── 3. Activity Heatmap ── */}
-      {loadingHeatmap ? (
-        <div className="card">
-          <div className="flex items-center justify-between mb-4">
-            <div className="animate-pulse bg-dark-700/50 h-5 w-36 rounded-md" />
-          </div>
-          <div className="animate-pulse bg-dark-700/50 h-24 w-full rounded-md" />
-        </div>
-      ) : (
-        <ActivityHeatmap data={heatmap?.heatmap} year={heatmapYear} onYearChange={setHeatmapYear} />
-      )}
-
-      {/* ── 4. 30-Day Trend ── */}
-      {loadingTrend ? (
-        <ChartSkeleton />
-      ) : (
-        trend &&
-        trendChartData.length > 0 && (
-          <div className="card">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h2 className="text-xl font-semibold text-white">30-Day Trend</h2>
-                <p className="text-sm text-dark-400">Daily completion rate over the past month</p>
-              </div>
-              <div className="text-right">
-                <p className="text-2xl font-bold text-primary-400">{trend.averageRate}%</p>
-                <p className="text-xs text-dark-500">average</p>
-              </div>
-            </div>
-            <div className="h-48 sm:h-56">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={trendChartData}>
-                  <defs>
-                    <linearGradient id="trendGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#2aa3ff" stopOpacity={0.3} />
-                      <stop offset="95%" stopColor="#2aa3ff" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <XAxis
-                    dataKey="date"
-                    stroke="#64748b"
-                    fontSize={11}
-                    tickLine={false}
-                    axisLine={false}
-                    interval={6}
-                  />
-                  <YAxis
-                    stroke="#64748b"
-                    fontSize={11}
-                    tickLine={false}
-                    axisLine={false}
-                    domain={[0, 100]}
-                    tickFormatter={(v) => `${v}%`}
-                  />
-                  <Tooltip content={<TrendTooltip />} />
-                  <Area
-                    type="monotone"
-                    dataKey="rate"
-                    stroke="#2aa3ff"
-                    strokeWidth={2}
-                    fill="url(#trendGradient)"
-                    isAnimationActive={true}
-                    animationDuration={1200}
-                    animationEasing="ease-in-out"
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-        )
-      )}
-
-      {/* ── 5. Weekly Progress + Day-of-Week Performance ── */}
-      <div className="grid lg:grid-cols-2 gap-6">
-        {/* Weekly Chart */}
-        <div className="card">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-white">Weekly Progress</h2>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setWeekOffset(weekOffset - 1)}
-                className="p-1.5 hover:bg-dark-700 rounded-lg transition-colors text-dark-300 hover:text-white"
-              >
-                <ChevronLeft size={16} />
-              </button>
-              <span className="text-xs text-dark-400 min-w-[100px] text-center">
-                {weekly?.days && weekly.days.length > 0
-                  ? `${format(new Date(weekly.days[0].date), 'MMM d')} - ${format(new Date(weekly.days[weekly.days.length - 1].date), 'MMM d')}`
-                  : 'This Week'}
-              </span>
-              <button
-                onClick={() => setWeekOffset(weekOffset + 1)}
-                disabled={weekOffset >= 0}
-                className={clsx(
-                  'p-1.5 rounded-lg transition-colors',
-                  weekOffset >= 0
-                    ? 'text-dark-600 cursor-not-allowed'
-                    : 'hover:bg-dark-700 text-dark-300 hover:text-white'
-                )}
-              >
-                <ChevronRight size={16} />
-              </button>
-            </div>
-          </div>
-
-          <div className="h-48 sm:h-52">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={weeklyChartData}>
-                <XAxis
-                  dataKey="name"
-                  stroke="#64748b"
-                  fontSize={12}
-                  tickLine={false}
-                  axisLine={false}
-                />
-                <YAxis stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} hide />
-                <Tooltip content={<CustomTooltip />} />
-                <Bar dataKey="completed" radius={[4, 4, 0, 0]} animationDuration={800}>
-                  {weeklyChartData.map((entry: { percentage: number }, index: number) => (
-                    <Cell
-                      key={`cell-${index}`}
-                      fill={
-                        entry.percentage >= 80
-                          ? '#10b981'
-                          : entry.percentage >= 50
-                            ? '#2aa3ff'
-                            : '#64748b'
-                      }
-                    />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-
-          {weekly?.summary && (
-            <div className="grid grid-cols-3 gap-3 mt-4 pt-4 border-t border-dark-700">
-              <div className="text-center">
-                <p className="text-lg font-bold text-white">{weekly.summary.completed}</p>
-                <p className="text-xs text-dark-400">Completed</p>
-              </div>
-              <div className="text-center">
-                <p className="text-lg font-bold text-primary-400">{weekly.summary.rate}%</p>
-                <p className="text-xs text-dark-400">Success</p>
-              </div>
-              <div className="text-center">
-                <p className="text-lg font-bold text-dark-300">{weekly.summary.total}</p>
-                <p className="text-xs text-dark-400">Expected</p>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Day-of-Week Performance */}
-        <div className="card">
-          <h2 className="text-lg font-semibold text-white mb-4">Day-of-Week Performance</h2>
-          {loadingPerformance ? (
-            <div className="h-48 sm:h-52 flex items-center justify-center">
-              <div className="animate-pulse text-dark-500 text-sm">Loading...</div>
-            </div>
-          ) : performance?.byDayOfWeek ? (
-            <>
-              <div className="h-48 sm:h-52">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={performance.byDayOfWeek}>
-                    <XAxis
-                      dataKey="day"
-                      stroke="#64748b"
-                      fontSize={12}
-                      tickLine={false}
-                      axisLine={false}
-                      tickFormatter={(day: string) => day.slice(0, 3)}
-                    />
-                    <YAxis stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} hide />
-                    <Tooltip content={<DayOfWeekTooltip />} />
-                    <Bar dataKey="completionRate" radius={[4, 4, 0, 0]} animationDuration={800}>
-                      {performance.byDayOfWeek.map((entry, index) => (
-                        <Cell
-                          key={`dow-${index}`}
-                          fill={
-                            entry.completionRate >= 80
-                              ? '#10b981'
-                              : entry.completionRate >= 50
-                                ? '#2aa3ff'
-                                : '#64748b'
-                          }
-                        />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-              <div className="grid grid-cols-2 gap-3 mt-4 pt-4 border-t border-dark-700">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-accent-green/20 flex items-center justify-center shrink-0">
-                    <ArrowUpRight className="w-4 h-4 text-accent-green" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-white">
-                      {performance.bestDayOfWeek.day}
-                    </p>
-                    <p className="text-xs text-dark-400">
-                      {performance.bestDayOfWeek.completionRate}% avg
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-accent-red/20 flex items-center justify-center shrink-0">
-                    <ArrowDownRight className="w-4 h-4 text-accent-red" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-white">
-                      {performance.worstDayOfWeek.day}
-                    </p>
-                    <p className="text-xs text-dark-400">
-                      {performance.worstDayOfWeek.completionRate}% avg
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </>
-          ) : (
-            <p className="text-dark-400 text-center py-8">Not enough data yet</p>
-          )}
-        </div>
-      </div>
-
-      {/* ── 6. Category Breakdown + Habit Performance ── */}
-      <div className="grid lg:grid-cols-2 gap-6">
-        {/* Category Breakdown */}
-        <div className="card">
-          <h2 className="text-lg font-semibold text-white mb-4">By Category</h2>
-          {categoryChartData.length > 0 ? (
-            <div className="flex items-center gap-6">
-              <div className="w-32 h-32">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={categoryChartData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={35}
-                      outerRadius={55}
-                      paddingAngle={3}
-                      dataKey="value"
-                    >
-                      {categoryChartData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-              <div className="flex-1 space-y-2 max-h-40 overflow-y-auto">
-                {categoryChartData.map((cat) => (
-                  <div key={cat.name} className="flex items-center gap-3">
-                    <div
-                      className="w-3 h-3 rounded-full flex-shrink-0"
-                      style={{ backgroundColor: cat.color }}
-                    />
-                    <span className="text-sm text-dark-300 flex-1 truncate">{cat.name}</span>
-                    <span className="text-sm font-medium text-white">{cat.value}%</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <p className="text-dark-400 text-center py-8">No category data yet</p>
-          )}
-        </div>
-
-        {/* Habit Performance */}
-        <div className="card">
-          <div className="flex items-center gap-2 mb-4">
-            <BarChart3 className="w-5 h-5 text-primary-400" />
-            <h2 className="text-lg font-semibold text-white">Habit Performance (30 days)</h2>
-          </div>
-          {categories?.habitRates && categories.habitRates.length > 0 ? (
-            <div className="space-y-3">
-              {categories.habitRates.slice(0, 8).map((habit) => (
-                <div key={habit.id} className="flex items-center gap-3">
-                  <span className="text-lg">{habit.icon || '📌'}</span>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-sm text-white truncate">{habit.name}</span>
-                      <span className="text-sm font-medium text-dark-300">
-                        {habit.completionRate}%
-                      </span>
+                <div className="flex items-center gap-4">
+                  {comparison.trend === 'up' ? (
+                    <div className="w-10 h-10 rounded-full bg-accent-green/20 flex items-center justify-center shrink-0">
+                      <ArrowUpRight className="w-5 h-5 text-accent-green" />
                     </div>
-                    <div className="h-2 bg-dark-700 rounded-full overflow-hidden">
-                      <div
-                        className="h-full rounded-full transition-all"
-                        style={{
-                          width: `${habit.completionRate}%`,
-                          backgroundColor:
-                            habit.completionRate >= 80
-                              ? '#10b981'
-                              : habit.completionRate >= 50
-                                ? '#2aa3ff'
-                                : '#ef4444',
-                        }}
-                      />
+                  ) : comparison.trend === 'down' ? (
+                    <div className="w-10 h-10 rounded-full bg-accent-red/20 flex items-center justify-center shrink-0">
+                      <ArrowDownRight className="w-5 h-5 text-accent-red" />
                     </div>
-                  </div>
-                  {habit.currentStreak > 0 && (
-                    <div className="flex items-center gap-1 text-accent-orange text-xs">
-                      <Flame size={12} />
-                      <span>{habit.currentStreak}</span>
+                  ) : (
+                    <div className="w-10 h-10 rounded-full bg-dark-700 flex items-center justify-center shrink-0">
+                      <Minus className="w-5 h-5 text-dark-400" />
                     </div>
                   )}
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-dark-400 text-center py-8">No habit data yet</p>
-          )}
-        </div>
-      </div>
-
-      {/* ── 7. Habit Correlations ── */}
-      <div className="card">
-        <div className="flex items-center gap-2 mb-2">
-          <Link2 className="w-5 h-5 text-accent-purple" />
-          <h2 className="text-lg font-semibold text-white">Habit Correlations</h2>
-        </div>
-        <p className="text-sm text-dark-400 mb-4">
-          Habits that tend to be completed together (last 30 days)
-        </p>
-        {loadingCorrelations ? (
-          <div className="space-y-3">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <div
-                key={i}
-                className="animate-pulse flex items-center gap-3 p-3 rounded-lg bg-dark-800"
-              >
-                <div className="h-3 flex-1 bg-dark-700/50 rounded-md" />
-                <div className="h-4 w-16 bg-dark-700/50 rounded-md" />
-                <div className="h-3 flex-1 bg-dark-700/50 rounded-md" />
-              </div>
-            ))}
-          </div>
-        ) : correlations && correlations.length > 0 ? (
-          <div className="space-y-3">
-            {correlations.slice(0, 6).map((corr, index) => (
-              <div key={index} className="flex items-center gap-3 p-3 rounded-lg bg-dark-800">
-                <span className="text-sm text-white font-medium truncate flex-1 text-right min-w-0">
-                  {corr.habit1.name}
-                </span>
-                <div className="flex flex-col items-center min-w-[80px] shrink-0">
-                  <div className="flex items-center gap-1">
-                    <div
-                      className="h-1 rounded-full"
-                      style={{
-                        width: `${Math.abs(corr.correlation) * 40}px`,
-                        backgroundColor: corr.correlation > 0 ? '#10b981' : '#ef4444',
-                      }}
-                    />
-                    <span
-                      className={clsx(
-                        'text-xs font-bold',
-                        corr.correlation > 0 ? 'text-accent-green' : 'text-accent-red'
-                      )}
-                    >
-                      {corr.correlation > 0 ? '+' : ''}
-                      {corr.correlation.toFixed(2)}
-                    </span>
+                  <div className="min-w-0">
+                    <p className="text-white font-semibold text-sm">
+                      {comparison.trend === 'up'
+                        ? "You're doing better this week!"
+                        : comparison.trend === 'down'
+                          ? 'Room for improvement'
+                          : 'Staying consistent!'}
+                    </p>
+                    <p className="text-xs text-dark-400">
+                      {comparison.thisWeek.rate}% this week vs {comparison.lastWeek.rate}% last
+                    </p>
                   </div>
-                  <span className="text-[10px] text-dark-500 mt-0.5 text-center leading-tight">
-                    {corr.interpretation}
-                  </span>
                 </div>
-                <span className="text-sm text-white font-medium truncate flex-1 min-w-0">
-                  {corr.habit2.name}
-                </span>
+                <div
+                  className={clsx(
+                    'text-3xl font-bold mt-3',
+                    comparison.trend === 'up'
+                      ? 'text-accent-green'
+                      : comparison.trend === 'down'
+                        ? 'text-accent-red'
+                        : 'text-dark-400'
+                  )}
+                >
+                  {comparison.change > 0 ? '+' : ''}
+                  {comparison.change}%
+                </div>
               </div>
-            ))}
+            ) : null}
+          </div>
+        </div>
+      </FadeIn>
+
+      {/* ── 2. Overview Stats ── */}
+      <FadeIn delay={0.05}>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="stat-card">
+            <div className="flex items-center justify-between">
+              <span className="stat-label">Current Streak</span>
+              <Flame className="w-5 h-5 text-accent-orange" />
+            </div>
+            <p className="stat-value text-accent-orange">{overview?.currentBestStreak || 0}</p>
+            <p className="text-sm text-dark-500">days in a row</p>
+          </div>
+
+          <div className="stat-card">
+            <div className="flex items-center justify-between">
+              <span className="stat-label">Best Streak</span>
+              <TrendingUp className="w-5 h-5 text-accent-green" />
+            </div>
+            <p className="stat-value text-accent-green">{overview?.longestEverStreak || 0}</p>
+            <p className="text-sm text-dark-500">personal record</p>
+          </div>
+
+          <div className="stat-card">
+            <div className="flex items-center justify-between">
+              <span className="stat-label">Avg Completion</span>
+              <Target className="w-5 h-5 text-primary-400" />
+            </div>
+            <p className="stat-value text-primary-400">{overview?.monthlyCompletionRate || 0}%</p>
+            <p className="text-sm text-dark-500">last 30 days</p>
+          </div>
+
+          <div className="stat-card">
+            <div className="flex items-center justify-between">
+              <span className="stat-label">Active Habits</span>
+              <Calendar className="w-5 h-5 text-accent-purple" />
+            </div>
+            <p className="stat-value text-accent-purple">{overview?.activeHabits || 0}</p>
+            <p className="text-sm text-dark-500">being tracked</p>
+          </div>
+        </div>
+      </FadeIn>
+
+      {/* ── 3. Activity Heatmap ── */}
+      <FadeIn delay={0.1}>
+        {loadingHeatmap ? (
+          <div className="card">
+            <div className="flex items-center justify-between mb-4">
+              <div className="animate-pulse bg-dark-700/50 h-5 w-36 rounded-md" />
+            </div>
+            <div className="animate-pulse bg-dark-700/50 h-24 w-full rounded-md" />
           </div>
         ) : (
-          <p className="text-dark-400 text-center py-8">Track more habits to see correlations!</p>
+          <ActivityHeatmap
+            data={heatmap?.heatmap}
+            year={heatmapYear}
+            onYearChange={setHeatmapYear}
+          />
         )}
-      </div>
+      </FadeIn>
 
-      {/* ── 8. Streak Leaders + Streak Predictions ── */}
-      <div className="grid lg:grid-cols-2 gap-6">
-        {/* Top Streaks */}
-        <div className="card">
-          <h2 className="text-lg font-semibold text-white mb-4">Streak Leaders</h2>
-          {streaks?.streaks && streaks.streaks.length > 0 ? (
-            <div className="space-y-2">
-              {streaks.streaks.slice(0, 5).map((habit: StreakInfo, index: number) => (
-                <div
-                  key={habit.habitId}
-                  className="flex items-center gap-3 p-2 rounded-lg bg-dark-800"
+      {/* ── 4. 30-Day Trend ── */}
+      <FadeIn delay={0.15}>
+        {loadingTrend ? (
+          <ChartSkeleton />
+        ) : (
+          trend &&
+          trendChartData.length > 0 && (
+            <div className="card">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h2 className="text-xl font-semibold text-white">30-Day Trend</h2>
+                  <p className="text-sm text-dark-400">Daily completion rate over the past month</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-2xl font-bold text-primary-400">{trend.averageRate}%</p>
+                  <p className="text-xs text-dark-500">average</p>
+                </div>
+              </div>
+              <div className="h-48 sm:h-56">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={trendChartData}>
+                    <defs>
+                      <linearGradient id="trendGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#2aa3ff" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="#2aa3ff" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <XAxis
+                      dataKey="date"
+                      stroke="#64748b"
+                      fontSize={11}
+                      tickLine={false}
+                      axisLine={false}
+                      interval={6}
+                    />
+                    <YAxis
+                      stroke="#64748b"
+                      fontSize={11}
+                      tickLine={false}
+                      axisLine={false}
+                      domain={[0, 100]}
+                      tickFormatter={(v) => `${v}%`}
+                    />
+                    <Tooltip content={<TrendTooltip />} />
+                    <Area
+                      type="monotone"
+                      dataKey="rate"
+                      stroke="#2aa3ff"
+                      strokeWidth={2}
+                      fill="url(#trendGradient)"
+                      isAnimationActive={true}
+                      animationDuration={1200}
+                      animationEasing="ease-in-out"
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          )
+        )}
+      </FadeIn>
+
+      {/* ── 5. Weekly Progress + Day-of-Week Performance ── */}
+      <FadeIn delay={0.2}>
+        <div className="grid lg:grid-cols-2 gap-6">
+          {/* Weekly Chart */}
+          <div className="card">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-white">Weekly Progress</h2>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setWeekOffset(weekOffset - 1)}
+                  className="p-1.5 hover:bg-dark-700 rounded-lg transition-colors text-dark-300 hover:text-white"
                 >
-                  <span
-                    className={clsx(
-                      'w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold',
-                      index === 0
-                        ? 'bg-accent-yellow/20 text-accent-yellow'
-                        : index === 1
-                          ? 'bg-dark-500/20 text-dark-300'
-                          : index === 2
-                            ? 'bg-accent-orange/20 text-accent-orange'
-                            : 'bg-dark-700 text-dark-400'
-                    )}
-                  >
-                    {index + 1}
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-white truncate">{habit.habitName}</p>
-                    <p className="text-xs text-dark-400">Best: {habit.longestStreak}d</p>
-                  </div>
-                  <div className="flex items-center gap-1 text-accent-orange">
-                    <Flame size={14} />
-                    <span className="font-bold text-sm">{habit.currentStreak}</span>
-                  </div>
-                </div>
-              ))}
+                  <ChevronLeft size={16} />
+                </button>
+                <span className="text-xs text-dark-400 min-w-[100px] text-center">
+                  {weekly?.days && weekly.days.length > 0
+                    ? `${format(new Date(weekly.days[0].date), 'MMM d')} - ${format(new Date(weekly.days[weekly.days.length - 1].date), 'MMM d')}`
+                    : 'This Week'}
+                </span>
+                <button
+                  onClick={() => setWeekOffset(weekOffset + 1)}
+                  disabled={weekOffset >= 0}
+                  className={clsx(
+                    'p-1.5 rounded-lg transition-colors',
+                    weekOffset >= 0
+                      ? 'text-dark-600 cursor-not-allowed'
+                      : 'hover:bg-dark-700 text-dark-300 hover:text-white'
+                  )}
+                >
+                  <ChevronRight size={16} />
+                </button>
+              </div>
             </div>
-          ) : (
-            <p className="text-dark-400 text-center py-8">No streak data yet</p>
-          )}
-        </div>
 
-        {/* Streak Predictions */}
-        <div className="card">
-          <div className="flex items-center gap-2 mb-4">
-            <Zap className="w-5 h-5 text-accent-yellow" />
-            <h2 className="text-lg font-semibold text-white">Milestone Predictions</h2>
-          </div>
-          {loadingPredictions ? (
-            <div className="space-y-3">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="animate-pulse p-3 rounded-lg bg-dark-800 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="h-3 w-28 bg-dark-700/50 rounded-md" />
-                    <div className="h-5 w-16 bg-dark-700/50 rounded-full" />
-                  </div>
-                  <div className="h-1.5 w-full bg-dark-700/50 rounded-full" />
-                </div>
-              ))}
+            <div className="h-48 sm:h-52">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={weeklyChartData}>
+                  <XAxis
+                    dataKey="name"
+                    stroke="#64748b"
+                    fontSize={12}
+                    tickLine={false}
+                    axisLine={false}
+                  />
+                  <YAxis stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} hide />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Bar dataKey="completed" radius={[4, 4, 0, 0]} animationDuration={800}>
+                    {weeklyChartData.map((entry: { percentage: number }, index: number) => (
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={
+                          entry.percentage >= 80
+                            ? '#10b981'
+                            : entry.percentage >= 50
+                              ? '#2aa3ff'
+                              : '#64748b'
+                        }
+                      />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
             </div>
-          ) : predictions && predictions.length > 0 ? (
-            <div className="space-y-3">
-              {predictions.slice(0, 5).map((pred) => (
-                <div key={pred.habitId} className="p-3 rounded-lg bg-dark-800">
-                  <div className="flex items-center justify-between gap-2 mb-2">
-                    <span className="text-sm font-medium text-white truncate min-w-0 flex-1">
-                      {pred.habitName}
-                    </span>
-                    <Badge
-                      variant={
-                        pred.riskLevel === 'low'
-                          ? 'success'
-                          : pred.riskLevel === 'medium'
-                            ? 'warning'
-                            : 'danger'
-                      }
-                      size="sm"
-                    >
-                      {pred.riskLevel} risk
-                    </Badge>
+
+            {weekly?.summary && (
+              <div className="grid grid-cols-3 gap-3 mt-4 pt-4 border-t border-dark-700">
+                <div className="text-center">
+                  <p className="text-lg font-bold text-white">{weekly.summary.completed}</p>
+                  <p className="text-xs text-dark-400">Completed</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-lg font-bold text-primary-400">{weekly.summary.rate}%</p>
+                  <p className="text-xs text-dark-400">Success</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-lg font-bold text-dark-300">{weekly.summary.total}</p>
+                  <p className="text-xs text-dark-400">Expected</p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Day-of-Week Performance */}
+          <div className="card">
+            <h2 className="text-lg font-semibold text-white mb-4">Day-of-Week Performance</h2>
+            {loadingPerformance ? (
+              <div className="h-48 sm:h-52 flex items-center justify-center">
+                <div className="animate-pulse text-dark-500 text-sm">Loading...</div>
+              </div>
+            ) : performance?.byDayOfWeek ? (
+              <>
+                <div className="h-48 sm:h-52">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={performance.byDayOfWeek}>
+                      <XAxis
+                        dataKey="day"
+                        stroke="#64748b"
+                        fontSize={12}
+                        tickLine={false}
+                        axisLine={false}
+                        tickFormatter={(day: string) => day.slice(0, 3)}
+                      />
+                      <YAxis
+                        stroke="#64748b"
+                        fontSize={12}
+                        tickLine={false}
+                        axisLine={false}
+                        hide
+                      />
+                      <Tooltip content={<DayOfWeekTooltip />} />
+                      <Bar dataKey="completionRate" radius={[4, 4, 0, 0]} animationDuration={800}>
+                        {performance.byDayOfWeek.map((entry, index) => (
+                          <Cell
+                            key={`dow-${index}`}
+                            fill={
+                              entry.completionRate >= 80
+                                ? '#10b981'
+                                : entry.completionRate >= 50
+                                  ? '#2aa3ff'
+                                  : '#64748b'
+                            }
+                          />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="grid grid-cols-2 gap-3 mt-4 pt-4 border-t border-dark-700">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-lg bg-accent-green/20 flex items-center justify-center shrink-0">
+                      <ArrowUpRight className="w-4 h-4 text-accent-green" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-white">
+                        {performance.bestDayOfWeek.day}
+                      </p>
+                      <p className="text-xs text-dark-400">
+                        {performance.bestDayOfWeek.completionRate}% avg
+                      </p>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <div className="flex-1">
-                      <div className="flex justify-between text-xs mb-1">
-                        <span className="text-dark-400 flex items-center gap-1">
-                          <Flame size={10} className="text-accent-orange" />
-                          {pred.currentStreak}d streak
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-lg bg-accent-red/20 flex items-center justify-center shrink-0">
+                      <ArrowDownRight className="w-4 h-4 text-accent-red" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-white">
+                        {performance.worstDayOfWeek.day}
+                      </p>
+                      <p className="text-xs text-dark-400">
+                        {performance.worstDayOfWeek.completionRate}% avg
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <p className="text-dark-400 text-center py-8">Not enough data yet</p>
+            )}
+          </div>
+        </div>
+      </FadeIn>
+
+      {/* ── 6. Category Breakdown + Habit Performance ── */}
+      <FadeIn delay={0.25}>
+        <div className="grid lg:grid-cols-2 gap-6">
+          {/* Category Breakdown */}
+          <div className="card">
+            <h2 className="text-lg font-semibold text-white mb-4">By Category</h2>
+            {categoryChartData.length > 0 ? (
+              <div className="flex items-center gap-6">
+                <div className="w-32 h-32">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={categoryChartData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={35}
+                        outerRadius={55}
+                        paddingAngle={3}
+                        dataKey="value"
+                      >
+                        {categoryChartData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="flex-1 space-y-2 max-h-40 overflow-y-auto">
+                  {categoryChartData.map((cat) => (
+                    <div key={cat.name} className="flex items-center gap-3">
+                      <div
+                        className="w-3 h-3 rounded-full flex-shrink-0"
+                        style={{ backgroundColor: cat.color }}
+                      />
+                      <span className="text-sm text-dark-300 flex-1 truncate">{cat.name}</span>
+                      <span className="text-sm font-medium text-white">{cat.value}%</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <p className="text-dark-400 text-center py-8">No category data yet</p>
+            )}
+          </div>
+
+          {/* Habit Performance */}
+          <div className="card">
+            <div className="flex items-center gap-2 mb-4">
+              <BarChart3 className="w-5 h-5 text-primary-400" />
+              <h2 className="text-lg font-semibold text-white">Habit Performance (30 days)</h2>
+            </div>
+            {categories?.habitRates && categories.habitRates.length > 0 ? (
+              <div className="space-y-3">
+                {categories.habitRates.slice(0, 8).map((habit) => (
+                  <div key={habit.id} className="flex items-center gap-3">
+                    <span className="text-lg">{habit.icon || '📌'}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-sm text-white truncate">{habit.name}</span>
+                        <span className="text-sm font-medium text-dark-300">
+                          {habit.completionRate}%
                         </span>
-                        <span className="text-dark-400">Goal: {pred.nextMilestone}d</span>
                       </div>
-                      <div className="h-1.5 bg-dark-700 rounded-full">
+                      <div className="h-2 bg-dark-700 rounded-full overflow-hidden">
                         <div
-                          className="h-full rounded-full bg-accent-orange transition-all"
+                          className="h-full rounded-full transition-all"
                           style={{
-                            width: `${Math.min(100, (pred.currentStreak / pred.nextMilestone) * 100)}%`,
+                            width: `${habit.completionRate}%`,
+                            backgroundColor:
+                              habit.completionRate >= 80
+                                ? '#10b981'
+                                : habit.completionRate >= 50
+                                  ? '#2aa3ff'
+                                  : '#ef4444',
                           }}
                         />
                       </div>
                     </div>
-                    <div className="text-right min-w-[50px]">
-                      <p className="text-lg font-bold text-white">
-                        {pred.predictedDaysToMilestone}
-                      </p>
-                      <p className="text-[10px] text-dark-500">days left</p>
-                    </div>
+                    {habit.currentStreak > 0 && (
+                      <div className="flex items-center gap-1 text-accent-orange text-xs">
+                        <Flame size={12} />
+                        <span>{habit.currentStreak}</span>
+                      </div>
+                    )}
                   </div>
-                  {pred.riskReason && (
-                    <p className="text-xs text-dark-500 mt-1.5 flex items-center gap-1">
-                      <AlertTriangle size={10} className="text-accent-yellow shrink-0" />
-                      {pred.riskReason}
-                    </p>
-                  )}
+                ))}
+              </div>
+            ) : (
+              <p className="text-dark-400 text-center py-8">No habit data yet</p>
+            )}
+          </div>
+        </div>
+      </FadeIn>
+
+      {/* ── 7. Habit Correlations ── */}
+      <FadeIn delay={0.3}>
+        <div className="card">
+          <div className="flex items-center gap-2 mb-2">
+            <Link2 className="w-5 h-5 text-accent-purple" />
+            <h2 className="text-lg font-semibold text-white">Habit Correlations</h2>
+          </div>
+          <p className="text-sm text-dark-400 mb-4">
+            Habits that tend to be completed together (last 30 days)
+          </p>
+          {loadingCorrelations ? (
+            <div className="space-y-3">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="animate-pulse flex items-center gap-3 p-3 rounded-lg bg-dark-800"
+                >
+                  <div className="h-3 flex-1 bg-dark-700/50 rounded-md" />
+                  <div className="h-4 w-16 bg-dark-700/50 rounded-md" />
+                  <div className="h-3 flex-1 bg-dark-700/50 rounded-md" />
+                </div>
+              ))}
+            </div>
+          ) : correlations && correlations.length > 0 ? (
+            <div className="space-y-3">
+              {correlations.slice(0, 6).map((corr, index) => (
+                <div key={index} className="flex items-center gap-3 p-3 rounded-lg bg-dark-800">
+                  <span className="text-sm text-white font-medium truncate flex-1 text-right min-w-0">
+                    {corr.habit1.name}
+                  </span>
+                  <div className="flex flex-col items-center min-w-[80px] shrink-0">
+                    <div className="flex items-center gap-1">
+                      <div
+                        className="h-1 rounded-full"
+                        style={{
+                          width: `${Math.abs(corr.correlation) * 40}px`,
+                          backgroundColor: corr.correlation > 0 ? '#10b981' : '#ef4444',
+                        }}
+                      />
+                      <span
+                        className={clsx(
+                          'text-xs font-bold',
+                          corr.correlation > 0 ? 'text-accent-green' : 'text-accent-red'
+                        )}
+                      >
+                        {corr.correlation > 0 ? '+' : ''}
+                        {corr.correlation.toFixed(2)}
+                      </span>
+                    </div>
+                    <span className="text-[10px] text-dark-500 mt-0.5 text-center leading-tight">
+                      {corr.interpretation}
+                    </span>
+                  </div>
+                  <span className="text-sm text-white font-medium truncate flex-1 min-w-0">
+                    {corr.habit2.name}
+                  </span>
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-dark-400 text-center py-8">
-              Start building streaks to see predictions!
-            </p>
+            <p className="text-dark-400 text-center py-8">Track more habits to see correlations!</p>
           )}
         </div>
-      </div>
+      </FadeIn>
 
-      {/* ── 9. Insights ── */}
-      <div className="card">
-        <div className="flex items-center gap-2 mb-4">
-          <Lightbulb className="w-5 h-5 text-accent-yellow" />
-          <h2 className="text-lg font-semibold text-white">Insights</h2>
-        </div>
-
-        {(insights?.bestDay || insights?.topHabit) && (
-          <div className="grid grid-cols-2 gap-2 mb-4">
-            {insights?.bestDay && (
-              <div className="p-2 rounded-lg bg-gradient-to-br from-accent-green/20 to-accent-green/5 border border-accent-green/20">
-                <div className="flex items-center gap-1 mb-0.5">
-                  <span className="text-sm">🎯</span>
-                  <span className="text-xs text-accent-green font-medium">Best Day</span>
-                </div>
-                <p className="text-lg font-bold text-white">{insights.bestDay.day}</p>
-                <p className="text-xs text-dark-400">{insights.bestDay.percentage}%</p>
-              </div>
-            )}
-            {insights?.topHabit && (
-              <div className="p-2 rounded-lg bg-gradient-to-br from-accent-orange/20 to-accent-orange/5 border border-accent-orange/20">
-                <div className="flex items-center gap-1 mb-0.5">
-                  <span className="text-sm">🔥</span>
-                  <span className="text-xs text-accent-orange font-medium">Top Streak</span>
-                </div>
-                <p className="text-lg font-bold text-white">{insights.topHabit.streak}d</p>
-                <p className="text-xs text-dark-400 truncate">{insights.topHabit.name}</p>
-              </div>
-            )}
-          </div>
-        )}
-
-        {insights?.suggestions && insights.suggestions?.length > 0 ? (
-          <div className="space-y-2">
-            {insights.suggestions.slice(0, 2).map((suggestion: string, index: number) => (
-              <div
-                key={index}
-                className="p-2 rounded-lg bg-dark-800/50 border border-dark-700/50 flex items-start gap-2"
-              >
-                <span className="text-primary-400 text-sm">💡</span>
-                <p className="text-xs text-dark-300 leading-relaxed">{suggestion}</p>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-4">
-            <p className="text-dark-400 text-xs">Keep tracking to get insights!</p>
-          </div>
-        )}
-
-        {insights?.needsAttention && insights.needsAttention.length > 0 && (
-          <div className="mt-3 pt-3 border-t border-dark-700">
-            <p className="text-xs text-dark-500 uppercase tracking-wide font-medium mb-2">
-              Needs Attention
-            </p>
-            <div className="space-y-1">
-              {insights.needsAttention
-                .slice(0, 2)
-                .map((item: { name: string; missedDays: number }, index: number) => (
+      {/* ── 8. Streak Leaders + Streak Predictions ── */}
+      <FadeIn delay={0.35}>
+        <div className="grid lg:grid-cols-2 gap-6">
+          {/* Top Streaks */}
+          <div className="card">
+            <h2 className="text-lg font-semibold text-white mb-4">Streak Leaders</h2>
+            {streaks?.streaks && streaks.streaks.length > 0 ? (
+              <div className="space-y-2">
+                {streaks.streaks.slice(0, 5).map((habit: StreakInfo, index: number) => (
                   <div
-                    key={index}
-                    className="flex items-center justify-between p-1.5 rounded bg-accent-red/10 border border-accent-red/20"
+                    key={habit.habitId}
+                    className="flex items-center gap-3 p-2 rounded-lg bg-dark-800"
                   >
-                    <span className="text-xs text-dark-300 truncate">{item.name}</span>
-                    <span className="text-xs text-accent-red">{item.missedDays}d</span>
+                    <span
+                      className={clsx(
+                        'w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold',
+                        index === 0
+                          ? 'bg-accent-yellow/20 text-accent-yellow'
+                          : index === 1
+                            ? 'bg-dark-500/20 text-dark-300'
+                            : index === 2
+                              ? 'bg-accent-orange/20 text-accent-orange'
+                              : 'bg-dark-700 text-dark-400'
+                      )}
+                    >
+                      {index + 1}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-white truncate">{habit.habitName}</p>
+                      <p className="text-xs text-dark-400">Best: {habit.longestStreak}d</p>
+                    </div>
+                    <div className="flex items-center gap-1 text-accent-orange">
+                      <Flame size={14} />
+                      <span className="font-bold text-sm">{habit.currentStreak}</span>
+                    </div>
                   </div>
                 ))}
-            </div>
+              </div>
+            ) : (
+              <p className="text-dark-400 text-center py-8">No streak data yet</p>
+            )}
           </div>
-        )}
-      </div>
+
+          {/* Streak Predictions */}
+          <div className="card">
+            <div className="flex items-center gap-2 mb-4">
+              <Zap className="w-5 h-5 text-accent-yellow" />
+              <h2 className="text-lg font-semibold text-white">Milestone Predictions</h2>
+            </div>
+            {loadingPredictions ? (
+              <div className="space-y-3">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} className="animate-pulse p-3 rounded-lg bg-dark-800 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="h-3 w-28 bg-dark-700/50 rounded-md" />
+                      <div className="h-5 w-16 bg-dark-700/50 rounded-full" />
+                    </div>
+                    <div className="h-1.5 w-full bg-dark-700/50 rounded-full" />
+                  </div>
+                ))}
+              </div>
+            ) : predictions && predictions.length > 0 ? (
+              <div className="space-y-3">
+                {predictions.slice(0, 5).map((pred) => (
+                  <div key={pred.habitId} className="p-3 rounded-lg bg-dark-800">
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                      <span className="text-sm font-medium text-white truncate min-w-0 flex-1">
+                        {pred.habitName}
+                      </span>
+                      <Badge
+                        variant={
+                          pred.riskLevel === 'low'
+                            ? 'success'
+                            : pred.riskLevel === 'medium'
+                              ? 'warning'
+                              : 'danger'
+                        }
+                        size="sm"
+                      >
+                        {pred.riskLevel} risk
+                      </Badge>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="flex-1">
+                        <div className="flex justify-between text-xs mb-1">
+                          <span className="text-dark-400 flex items-center gap-1">
+                            <Flame size={10} className="text-accent-orange" />
+                            {pred.currentStreak}d streak
+                          </span>
+                          <span className="text-dark-400">Goal: {pred.nextMilestone}d</span>
+                        </div>
+                        <div className="h-1.5 bg-dark-700 rounded-full">
+                          <div
+                            className="h-full rounded-full bg-accent-orange transition-all"
+                            style={{
+                              width: `${Math.min(100, (pred.currentStreak / pred.nextMilestone) * 100)}%`,
+                            }}
+                          />
+                        </div>
+                      </div>
+                      <div className="text-right min-w-[50px]">
+                        <p className="text-lg font-bold text-white">
+                          {pred.predictedDaysToMilestone}
+                        </p>
+                        <p className="text-[10px] text-dark-500">days left</p>
+                      </div>
+                    </div>
+                    {pred.riskReason && (
+                      <p className="text-xs text-dark-500 mt-1.5 flex items-center gap-1">
+                        <AlertTriangle size={10} className="text-accent-yellow shrink-0" />
+                        {pred.riskReason}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-dark-400 text-center py-8">
+                Start building streaks to see predictions!
+              </p>
+            )}
+          </div>
+        </div>
+      </FadeIn>
+
+      {/* ── AI Weekly Insights ── */}
+      <FeatureGate flag="ai_insights">
+        <FadeIn delay={0.38}>
+          <AIInsightsSection />
+        </FadeIn>
+      </FeatureGate>
+
+      {/* ── 9. Insights ── */}
+      <FadeIn delay={0.4}>
+        <div className="card">
+          <div className="flex items-center gap-2 mb-4">
+            <Lightbulb className="w-5 h-5 text-accent-yellow" />
+            <h2 className="text-lg font-semibold text-white">Insights</h2>
+          </div>
+
+          {(insights?.bestDay || insights?.topHabit) && (
+            <div className="grid grid-cols-2 gap-2 mb-4">
+              {insights?.bestDay && (
+                <div className="p-2 rounded-lg bg-gradient-to-br from-accent-green/20 to-accent-green/5 border border-accent-green/20">
+                  <div className="flex items-center gap-1 mb-0.5">
+                    <span className="text-sm">🎯</span>
+                    <span className="text-xs text-accent-green font-medium">Best Day</span>
+                  </div>
+                  <p className="text-lg font-bold text-white">{insights.bestDay.day}</p>
+                  <p className="text-xs text-dark-400">{insights.bestDay.percentage}%</p>
+                </div>
+              )}
+              {insights?.topHabit && (
+                <div className="p-2 rounded-lg bg-gradient-to-br from-accent-orange/20 to-accent-orange/5 border border-accent-orange/20">
+                  <div className="flex items-center gap-1 mb-0.5">
+                    <span className="text-sm">🔥</span>
+                    <span className="text-xs text-accent-orange font-medium">Top Streak</span>
+                  </div>
+                  <p className="text-lg font-bold text-white">{insights.topHabit.streak}d</p>
+                  <p className="text-xs text-dark-400 truncate">{insights.topHabit.name}</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {insights?.suggestions && insights.suggestions?.length > 0 ? (
+            <div className="space-y-2">
+              {insights.suggestions.slice(0, 2).map((suggestion: string, index: number) => (
+                <div
+                  key={index}
+                  className="p-2 rounded-lg bg-dark-800/50 border border-dark-700/50 flex items-start gap-2"
+                >
+                  <span className="text-primary-400 text-sm">💡</span>
+                  <p className="text-xs text-dark-300 leading-relaxed">{suggestion}</p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-4">
+              <p className="text-dark-400 text-xs">Keep tracking to get insights!</p>
+            </div>
+          )}
+
+          {insights?.needsAttention && insights.needsAttention.length > 0 && (
+            <div className="mt-3 pt-3 border-t border-dark-700">
+              <p className="text-xs text-dark-500 uppercase tracking-wide font-medium mb-2">
+                Needs Attention
+              </p>
+              <div className="space-y-1">
+                {insights.needsAttention
+                  .slice(0, 2)
+                  .map((item: { name: string; missedDays: number }, index: number) => (
+                    <div
+                      key={index}
+                      className="flex items-center justify-between p-1.5 rounded bg-accent-red/10 border border-accent-red/20"
+                    >
+                      <span className="text-xs text-dark-300 truncate">{item.name}</span>
+                      <span className="text-xs text-accent-red">{item.missedDays}d</span>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </FadeIn>
     </div>
   );
 };

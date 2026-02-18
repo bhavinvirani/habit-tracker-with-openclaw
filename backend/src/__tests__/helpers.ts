@@ -17,6 +17,7 @@ import botRoutes from '../routes/bot.routes';
 import integrationRoutes from '../routes/integration.routes';
 import reminderRoutes from '../routes/reminder.routes';
 import actuatorRoutes from '../routes/actuator.routes';
+import adminRoutes from '../routes/admin.routes';
 import { recordRequest, incrementActive, decrementActive } from '../utils/requestMetrics';
 
 /**
@@ -62,6 +63,7 @@ export const createTestApp = () => {
   app.use('/api/bot', botRoutes);
   app.use('/api/integrations', integrationRoutes);
   app.use('/api/reminders', reminderRoutes);
+  app.use('/api/', adminRoutes);
 
   // Error handling
   app.use(notFoundHandler);

@@ -28,7 +28,9 @@ import botRoutes from './routes/bot.routes';
 import integrationRoutes from './routes/integration.routes';
 import reminderRoutes from './routes/reminder.routes';
 import actuatorRoutes from './routes/actuator.routes';
+import adminRoutes from './routes/admin.routes';
 import { initReminderScheduler } from './services/reminder.service';
+import { featureFlagService } from './services/featureFlag.service';
 import { initDemoSeeder } from './services/demoSeed.service';
 import { registerCronJob, reportCronRun } from './utils/cronTracker';
 
@@ -172,6 +174,7 @@ v1Router.use('/challenges', challengeRoutes);
 v1Router.use('/bot', botRoutes);
 v1Router.use('/integrations', integrationRoutes);
 v1Router.use('/reminders', reminderRoutes);
+v1Router.use('/', adminRoutes);
 
 // Mount versioned routes
 app.use('/api/v1', v1Router);
@@ -188,6 +191,17 @@ const server = app.listen(Number(PORT), '0.0.0.0', () => {
     port: PORT,
     environment: process.env.NODE_ENV || 'development',
     healthCheck: `http://localhost:${PORT}/health`,
+  });
+
+  // Load feature flags and register defaults
+  featureFlagService.loadAll().then(async () => {
+    await featureFlagService.register({
+      key: 'ai_insights',
+      name: 'AI Weekly Insights',
+      description: 'Claude-powered weekly habit analysis reports',
+      category: 'ai',
+      defaultEnabled: false,
+    });
   });
 
   // Initialize reminder scheduler
@@ -218,6 +232,19 @@ const tokenCleanupInterval = setInterval(
       await prisma.loginAttempt.deleteMany({
         where: { lockedUntil: { lt: new Date() } },
       });
+
+      // Cleanup used/expired password reset tokens
+      const deletedResets = await prisma.passwordReset.deleteMany({
+        where: {
+          OR: [
+            { usedAt: { not: null }, expiresAt: { lt: new Date() } },
+            { createdAt: { lt: new Date(Date.now() - 24 * 60 * 60 * 1000) } },
+          ],
+        },
+      });
+      if (deletedResets.count > 0) {
+        logger.info(`Cleaned up ${deletedResets.count} expired password reset tokens`);
+      }
       reportCronRun('tokenCleanup', 'success', Date.now() - start);
     } catch (error) {
       reportCronRun('tokenCleanup', 'failure', Date.now() - start, (error as Error).message);

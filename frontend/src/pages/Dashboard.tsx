@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   CheckCircle2,
@@ -10,9 +10,12 @@ import {
   Clock,
   BookOpen,
   Sparkles,
+  Check,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
+import { fireConfetti } from '../utils/confetti';
 import {
   trackingApi,
   analyticsApi,
@@ -32,11 +35,15 @@ import {
   CircularProgress,
   Button,
   DashboardSkeleton,
+  QuickLogDialog,
 } from '../components/ui';
+import { FeatureGate } from '../contexts/FeatureFlagContext';
+import WeeklyInsightsCard from '../components/dashboard/WeeklyInsightsCard';
 
 const Dashboard: React.FC = () => {
   const queryClient = useQueryClient();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [quickLogHabit, setQuickLogHabit] = useState<TodayHabit | null>(null);
 
   // Fetch today's habits
   const { data: todayData, isLoading: loadingToday } = useQuery({
@@ -201,14 +208,11 @@ const Dashboard: React.FC = () => {
       // Undo the check-in
       undoMutation.mutate(habit.id);
     } else if (hasGoal && habit.habitType !== 'BOOLEAN') {
-      // Increment value by 1
-      const newValue = currentValue + 1;
-      const willComplete = newValue >= targetValue;
-      checkInMutation.mutate({
-        habitId: habit.id,
-        value: newValue,
-        completed: willComplete,
-      });
+      // Open quick log dialog for NUMERIC/DURATION habits
+      const fullHabit = habits.find((h: TodayHabit) => h.id === habit.id);
+      if (fullHabit) {
+        setQuickLogHabit(fullHabit);
+      }
     } else {
       // Boolean habit - just mark complete
       checkInMutation.mutate({
@@ -217,6 +221,50 @@ const Dashboard: React.FC = () => {
       });
     }
   };
+
+  // Handle inline quick-add for NUMERIC/DURATION habits (1-click increment)
+  const handleInlineQuickAdd = (habitId: string, amount: number) => {
+    const habit = habits.find((h: TodayHabit) => h.id === habitId);
+    if (!habit) return;
+    const currentValue = habit.logValue || 0;
+    const targetValue = habit.targetValue || 1;
+    const newValue = currentValue + amount;
+    checkInMutation.mutate({
+      habitId,
+      value: newValue,
+      completed: newValue >= targetValue,
+    });
+  };
+
+  // Handle quick log submission for NUMERIC/DURATION habits
+  const handleQuickLog = (value: number, completed: boolean) => {
+    if (!quickLogHabit) return;
+    checkInMutation.mutate({
+      habitId: quickLogHabit.id,
+      value,
+      completed,
+    });
+    setQuickLogHabit(null);
+  };
+
+  // Fire confetti when all daily habits are completed
+  const prevAllDoneRef = useRef(false);
+  const allDailyDone = (() => {
+    const daily = (todayData?.habits || []).filter((h: TodayHabit) => h.frequency === 'DAILY');
+    if (daily.length === 0) return false;
+    return daily.every((h: TodayHabit) => {
+      const hasGoal = h.targetValue && h.targetValue > 0;
+      const currentValue = h.logValue || 0;
+      return h.isCompleted || (hasGoal && currentValue >= (h.targetValue || 0));
+    });
+  })();
+
+  useEffect(() => {
+    if (allDailyDone && !prevAllDoneRef.current) {
+      fireConfetti();
+    }
+    prevAllDoneRef.current = allDailyDone;
+  }, [allDailyDone]);
 
   const isLoading = loadingToday || loadingStats;
 
@@ -239,7 +287,6 @@ const Dashboard: React.FC = () => {
     const currentValue = h.logValue || 0;
     return h.isCompleted || (hasGoal && currentValue >= (h.targetValue || 0));
   }).length;
-  const allDailyDone = dailyHabits.length > 0 && dailyCompleted === dailyHabits.length;
 
   // Generate mini heatmap data (last 14 days)
   const heatmapDays = Array.from({ length: 14 }, (_, i) => {
@@ -396,6 +443,11 @@ const Dashboard: React.FC = () => {
         </div>
       </div>
 
+      {/* AI Weekly Insights Card */}
+      <FeatureGate flag="ai_insights">
+        <WeeklyInsightsCard />
+      </FeatureGate>
+
       {/* Currently Reading Widget - Compact with Progress Bar */}
       <div className="card p-4">
         {/* Header */}
@@ -518,17 +570,33 @@ const Dashboard: React.FC = () => {
       {/* Today's Habits */}
       <div className="space-y-6">
         {habits.length === 0 ? (
-          <div className="card text-center py-12">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-dark-800 mb-4">
-              <Sparkles className="w-8 h-8 text-dark-500" />
-            </div>
-            <h3 className="text-lg font-medium text-white mb-2">No habits yet</h3>
-            <p className="text-dark-400 mb-4">Create your first habit to start tracking</p>
-            <button onClick={() => setIsModalOpen(true)} className="btn btn-primary">
+          <motion.div
+            className="card text-center py-16"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+          >
+            <motion.div
+              className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-primary-500/20 to-accent-purple/20 border border-primary-500/10 mb-5"
+              animate={{ y: [0, -6, 0] }}
+              transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+            >
+              <Sparkles className="w-10 h-10 text-primary-400" />
+            </motion.div>
+            <h3 className="text-xl font-semibold text-white mb-2">Start your journey</h3>
+            <p className="text-dark-400 mb-6 max-w-xs mx-auto">
+              Create your first habit and begin building a better routine, one day at a time.
+            </p>
+            <motion.button
+              onClick={() => setIsModalOpen(true)}
+              className="btn btn-primary"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+            >
               <Plus size={18} />
-              Create Habit
-            </button>
-          </div>
+              Create Your First Habit
+            </motion.button>
+          </motion.div>
         ) : (
           <>
             {/* Daily Habits Section */}
@@ -569,15 +637,31 @@ const Dashboard: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="space-y-3">
+                <motion.div
+                  className="space-y-2"
+                  initial="hidden"
+                  animate="visible"
+                  variants={{
+                    hidden: {},
+                    visible: { transition: { staggerChildren: 0.04 } },
+                  }}
+                >
                   {dailyHabits.map((habit: TodayHabit) => (
-                    <HabitCard
+                    <motion.div
                       key={habit.id}
-                      habit={habit}
-                      onClick={() => handleHabitClick(habit)}
-                    />
+                      variants={{
+                        hidden: { opacity: 0, y: 8 },
+                        visible: { opacity: 1, y: 0, transition: { duration: 0.2 } },
+                      }}
+                    >
+                      <HabitCard
+                        habit={habit}
+                        onClick={() => handleHabitClick(habit)}
+                        onQuickAdd={handleInlineQuickAdd}
+                      />
+                    </motion.div>
                   ))}
-                </div>
+                </motion.div>
               </div>
             )}
 
@@ -592,16 +676,32 @@ const Dashboard: React.FC = () => {
                   <span className="text-xs text-dark-500">Resets every week</span>
                 </div>
 
-                <div className="space-y-3">
+                <motion.div
+                  className="space-y-2"
+                  initial="hidden"
+                  animate="visible"
+                  variants={{
+                    hidden: {},
+                    visible: { transition: { staggerChildren: 0.04 } },
+                  }}
+                >
                   {weeklyHabits.map((habit: TodayHabit) => (
-                    <HabitCard
+                    <motion.div
                       key={habit.id}
-                      habit={habit}
-                      onClick={() => handleHabitClick(habit)}
-                      isWeekly
-                    />
+                      variants={{
+                        hidden: { opacity: 0, y: 8 },
+                        visible: { opacity: 1, y: 0, transition: { duration: 0.2 } },
+                      }}
+                    >
+                      <HabitCard
+                        habit={habit}
+                        onClick={() => handleHabitClick(habit)}
+                        onQuickAdd={handleInlineQuickAdd}
+                        isWeekly
+                      />
+                    </motion.div>
                   ))}
-                </div>
+                </motion.div>
               </div>
             )}
           </>
@@ -615,28 +715,54 @@ const Dashboard: React.FC = () => {
         onSubmit={handleCreateHabit}
         isLoading={createMutation.isPending}
       />
+
+      {/* Quick Log Dialog for NUMERIC/DURATION habits */}
+      <QuickLogDialog
+        isOpen={!!quickLogHabit}
+        onClose={() => setQuickLogHabit(null)}
+        onSubmit={handleQuickLog}
+        habitName={quickLogHabit?.name || ''}
+        habitIcon={quickLogHabit?.icon || null}
+        habitColor={quickLogHabit?.color || '#6366f1'}
+        currentValue={quickLogHabit?.logValue || 0}
+        targetValue={quickLogHabit?.targetValue || 1}
+        unit={quickLogHabit?.unit || null}
+        loading={checkInMutation.isPending}
+      />
     </div>
   );
 };
+
+// Quick-add button increments based on target value
+function getQuickAddButtons(target: number): number[] {
+  if (target <= 10) return [1, 2, 5];
+  if (target <= 30) return [1, 5, 10];
+  return [5, 10, 15];
+}
 
 // Habit Card Component
 interface HabitCardProps {
   habit: TodayHabit;
   onClick: () => void;
+  onQuickAdd?: (habitId: string, amount: number) => void;
   isWeekly?: boolean;
 }
 
-const HabitCard: React.FC<HabitCardProps> = ({ habit, onClick, isWeekly }) => {
+const HabitCard: React.FC<HabitCardProps> = ({ habit, onClick, onQuickAdd, isWeekly }) => {
   const hasGoal = habit.targetValue && habit.targetValue > 0;
   const currentValue = habit.logValue || 0;
   const targetValue = habit.targetValue || 1;
   const goalProgress = hasGoal ? Math.min((currentValue / targetValue) * 100, 100) : 0;
   const isFullyComplete = habit.isCompleted || (hasGoal && currentValue >= targetValue);
+  const isNumericOrDuration = habit.habitType === 'NUMERIC' || habit.habitType === 'DURATION';
+  const showQuickAdd = !!(isNumericOrDuration && hasGoal && !isFullyComplete && onQuickAdd);
+  const quickAddAmounts = showQuickAdd ? getQuickAddButtons(targetValue) : [];
+  const remaining = Math.max(targetValue - currentValue, 0);
 
   return (
     <div
       className={clsx(
-        'relative flex items-center gap-4 p-4 rounded-xl border transition-all cursor-pointer group',
+        'relative p-3 rounded-xl border transition-all cursor-pointer group',
         isFullyComplete
           ? 'bg-gradient-to-r from-accent-green/10 to-dark-800/50 border-accent-green/30'
           : 'bg-dark-800 border-dark-600 hover:border-dark-500'
@@ -651,53 +777,136 @@ const HabitCard: React.FC<HabitCardProps> = ({ habit, onClick, isWeekly }) => {
         </div>
       )}
 
-      <button
-        className={clsx(
-          'flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-all',
-          isFullyComplete
-            ? 'text-white ring-2 ring-accent-green/50 ring-offset-2 ring-offset-dark-800'
-            : 'text-dark-500 hover:text-dark-300 group-hover:scale-110'
-        )}
-        style={{
-          backgroundColor: isFullyComplete ? habit.color : 'transparent',
-          borderWidth: isFullyComplete ? 0 : 2,
-          borderColor: habit.color,
-        }}
-      >
-        {isFullyComplete && <CheckCircle2 size={18} />}
-      </button>
-
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
-          <h3
-            className={clsx(
-              'font-medium transition-colors',
-              isFullyComplete ? 'text-accent-green' : 'text-white'
-            )}
-          >
-            {habit.icon && <span className="mr-1">{habit.icon}</span>}
-            {habit.name}
-          </h3>
-          {isWeekly && (
-            <span className="px-1.5 py-0.5 rounded text-xs bg-accent-purple/20 text-accent-purple">
-              Weekly
-            </span>
+      {/* Main row */}
+      <div className="flex items-center gap-3">
+        {/* Checkbox circle */}
+        <button
+          className={clsx(
+            'flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-all',
+            isFullyComplete
+              ? 'text-white ring-2 ring-accent-green/50 ring-offset-2 ring-offset-dark-800'
+              : 'text-dark-500 hover:text-dark-300 group-hover:scale-110'
           )}
-          {isFullyComplete && <span className="text-xs text-dark-500">(click to undo)</span>}
+          style={{
+            backgroundColor: isFullyComplete ? habit.color : 'transparent',
+            borderWidth: isFullyComplete ? 0 : 2,
+            borderColor: habit.color,
+          }}
+        >
+          {isFullyComplete && <CheckCircle2 size={18} />}
+        </button>
+
+        {/* Name + badges */}
+        <div className={clsx('min-w-0', !showQuickAdd && 'flex-1')}>
+          <div className="flex items-center gap-2">
+            <h3
+              className={clsx(
+                'font-medium transition-colors whitespace-nowrap',
+                isFullyComplete ? 'text-accent-green' : 'text-white'
+              )}
+            >
+              {habit.icon && <span className="mr-1">{habit.icon}</span>}
+              {habit.name}
+            </h3>
+            {isWeekly && (
+              <span className="px-1.5 py-0.5 rounded text-xs bg-accent-purple/20 text-accent-purple">
+                Weekly
+              </span>
+            )}
+            {isFullyComplete && <span className="text-xs text-dark-500">(click to undo)</span>}
+            {!showQuickAdd && habit.category && (
+              <span
+                className={clsx(
+                  'px-1.5 py-0.5 rounded text-xs',
+                  isFullyComplete ? 'bg-dark-700/50 text-dark-600' : 'bg-dark-700 text-dark-400'
+                )}
+              >
+                {habit.category}
+              </span>
+            )}
+          </div>
+
+          {/* Description for non-goal, non-quick-add habits */}
+          {!hasGoal && habit.description && (
+            <p
+              className={clsx(
+                'text-sm truncate mt-0.5',
+                isFullyComplete ? 'text-dark-600 line-through' : 'text-dark-500'
+              )}
+            >
+              {habit.description}
+            </p>
+          )}
         </div>
 
-        {/* Goal progress */}
-        {hasGoal && (
-          <div className="flex items-center gap-2 mt-1.5">
-            <div className="flex-1 h-2 bg-dark-700 rounded-full overflow-hidden max-w-[120px]">
-              <div
-                className={clsx(
-                  'h-full rounded-full transition-all duration-300',
-                  isFullyComplete ? 'bg-accent-green' : 'bg-primary-500'
-                )}
-                style={{ width: `${goalProgress}%` }}
-              />
-            </div>
+        {/* Inline quick-add buttons for NUMERIC/DURATION habits */}
+        {showQuickAdd && onQuickAdd && (
+          <div className="flex-1 flex items-center justify-end gap-1.5">
+            {quickAddAmounts.map((amount) => (
+              <button
+                key={amount}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onQuickAdd(habit.id, amount);
+                }}
+                className="px-2.5 py-1.5 rounded-lg bg-dark-700 text-xs font-medium text-dark-300 transition-all"
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = `${habit.color}33`;
+                  e.currentTarget.style.color = habit.color;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = '';
+                  e.currentTarget.style.color = '';
+                }}
+              >
+                +{amount}
+              </button>
+            ))}
+            {/* Done: complete to target */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onQuickAdd(habit.id, remaining);
+              }}
+              className="px-2 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1"
+              style={{
+                backgroundColor: `${habit.color}33`,
+                color: habit.color,
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = `${habit.color}4D`;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = `${habit.color}33`;
+              }}
+            >
+              <Check size={14} />
+            </button>
+          </div>
+        )}
+
+        {/* Streak badge */}
+        {habit.currentStreak > 0 && (
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-accent-orange/10">
+            <Flame size={14} className="text-accent-orange" />
+            <span className="text-sm font-medium text-accent-orange">{habit.currentStreak}</span>
+          </div>
+        )}
+
+        {/* Color accent bar */}
+        <div
+          className={clsx(
+            'w-1.5 h-10 rounded-full transition-all',
+            isFullyComplete && 'opacity-50'
+          )}
+          style={{ backgroundColor: habit.color }}
+        />
+      </div>
+
+      {/* Bottom row: progress bar for goal habits */}
+      {hasGoal && (
+        <div className="mt-2 pl-11">
+          <div className="flex items-center gap-2 mb-1">
             <span
               className={clsx(
                 'text-xs font-medium',
@@ -706,28 +915,22 @@ const HabitCard: React.FC<HabitCardProps> = ({ habit, onClick, isWeekly }) => {
             >
               {currentValue}/{targetValue} {habit.unit || ''}
             </span>
-            {!isFullyComplete && (
-              <span className="text-xs text-dark-500">({targetValue - currentValue} left)</span>
-            )}
+            {!isFullyComplete && <span className="text-xs text-dark-500">({remaining} left)</span>}
           </div>
-        )}
-
-        {!hasGoal && habit.description && (
-          <p className="text-sm text-dark-500 truncate">{habit.description}</p>
-        )}
-      </div>
-
-      {habit.currentStreak > 0 && (
-        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-accent-orange/10">
-          <Flame size={14} className="text-accent-orange" />
-          <span className="text-sm font-medium text-accent-orange">{habit.currentStreak}</span>
+          <div className="h-1.5 bg-dark-700 rounded-full overflow-hidden">
+            <div
+              className={clsx(
+                'h-full rounded-full transition-all duration-300',
+                isFullyComplete ? 'bg-accent-green' : ''
+              )}
+              style={{
+                width: `${goalProgress}%`,
+                backgroundColor: isFullyComplete ? undefined : habit.color,
+              }}
+            />
+          </div>
         </div>
       )}
-
-      <div
-        className={clsx('w-1.5 h-10 rounded-full transition-all', isFullyComplete && 'opacity-50')}
-        style={{ backgroundColor: habit.color }}
-      />
     </div>
   );
 };

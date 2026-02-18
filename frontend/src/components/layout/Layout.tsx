@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import Header from './Header';
 import Sidebar from './Sidebar';
 import KeyboardShortcutsModal from '../KeyboardShortcutsModal';
+import AnimatedPage from '../AnimatedPage';
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts';
 
 const Layout: React.FC = () => {
@@ -23,6 +24,8 @@ const Layout: React.FC = () => {
     enabled: true,
   });
 
+  const location = useLocation();
+
   return (
     <div className="min-h-screen bg-dark-950">
       <Header
@@ -34,7 +37,9 @@ const Layout: React.FC = () => {
         <Sidebar isOpen={isMobileMenuOpen} onClose={closeMobileMenu} />
         <main className="flex-1 p-4 lg:p-6 lg:ml-64 mt-16">
           <div className="max-w-7xl mx-auto">
-            <Outlet />
+            <AnimatedPage key={location.pathname}>
+              <Outlet />
+            </AnimatedPage>
           </div>
         </main>
       </div>

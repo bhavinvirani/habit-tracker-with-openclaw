@@ -80,3 +80,37 @@ export const getCurrentUser = asyncHandler(async (req: AuthRequest, res: Respons
 
   sendSuccess(res, { user }, 'User details retrieved successfully');
 });
+
+/**
+ * Request password reset email
+ * POST /api/auth/forgot-password
+ */
+export const forgotPassword = asyncHandler(async (req: Request, res: Response) => {
+  await authService.forgotPassword(req.body);
+
+  sendSuccess(
+    res,
+    null,
+    'If an account with that email exists, a password reset link has been sent.'
+  );
+});
+
+/**
+ * Validate a reset token (check before showing form)
+ * POST /api/auth/validate-reset-token
+ */
+export const validateResetToken = asyncHandler(async (req: Request, res: Response) => {
+  await authService.validateResetToken(req.body.token);
+
+  sendSuccess(res, null, 'Token is valid');
+});
+
+/**
+ * Reset password with token
+ * POST /api/auth/reset-password
+ */
+export const resetPassword = asyncHandler(async (req: Request, res: Response) => {
+  await authService.resetPassword(req.body);
+
+  sendSuccess(res, null, 'Password has been reset successfully. You can now log in.');
+});

@@ -35,6 +35,7 @@
     "install:all": "npm install && npm install --workspace=backend && npm install --workspace=frontend",
     "build": "npm run build --workspace=backend && npm run build --workspace=frontend",
     "lint": "npm run lint --workspaces",
+    "test:frontend": "npm run test --workspace=frontend",
     "format": "prettier --write \"**/*.{js,jsx,ts,tsx,json,md}\"",
     "prepare": "node -e \"if (process.env.NODE_ENV !== 'production' && process.env.CI !== 'true' && !process.env.VERCEL) { require('child_process').execSync('husky', { stdio: 'inherit' }) }\""
   },

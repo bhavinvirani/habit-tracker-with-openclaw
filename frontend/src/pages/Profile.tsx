@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -32,6 +33,7 @@ import {
   RotateCcw,
 } from 'lucide-react';
 import { format, differenceInDays } from 'date-fns';
+import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../store/authStore';
 import { analyticsApi, trackingApi, habitsApi } from '../services/habits';
@@ -375,69 +377,80 @@ const Profile: React.FC = () => {
       </div>
 
       {/* Level Info Modal */}
-      {showLevelInfo && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-dark-950/80 backdrop-blur-sm">
-          <div className="card max-w-md w-full animate-in fade-in zoom-in duration-200">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <div className="w-10 h-10 rounded-xl bg-accent-yellow/20 flex items-center justify-center">
-                  <Star className="w-5 h-5 text-accent-yellow" />
+      {showLevelInfo &&
+        createPortal(
+          <div
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4"
+            onClick={() => setShowLevelInfo(false)}
+          >
+            <div
+              className="card max-w-md w-full animate-in fade-in zoom-in duration-200"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <div className="w-10 h-10 rounded-xl bg-accent-yellow/20 flex items-center justify-center">
+                    <Star className="w-5 h-5 text-accent-yellow" />
+                  </div>
+                  <h2 className="text-xl font-bold text-white">{LEVEL_INFO.title}</h2>
                 </div>
-                <h2 className="text-xl font-bold text-white">{LEVEL_INFO.title}</h2>
+                <button
+                  onClick={() => setShowLevelInfo(false)}
+                  className="text-dark-400 hover:text-white transition-colors"
+                >
+                  ✕
+                </button>
               </div>
+
+              <p className="text-dark-300 mb-4">{LEVEL_INFO.description}</p>
+
+              {/* Formula */}
+              <div className="bg-dark-800/50 rounded-lg p-3 mb-4">
+                <p className="text-sm text-dark-400 mb-1">Level Formula:</p>
+                <code className="text-primary-400 font-mono">{LEVEL_INFO.formula}</code>
+                <div className="flex gap-4 mt-2 text-xs text-dark-500">
+                  <span>• {LEVEL_INFO.xpPerCompletion}</span>
+                  <span>• {LEVEL_INFO.xpPerLevel}</span>
+                </div>
+              </div>
+
+              {/* Level Tiers */}
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-dark-400">Level Tiers:</p>
+                {LEVEL_INFO.tiers.map((tier) => (
+                  <div
+                    key={tier.level}
+                    className="flex items-center justify-between p-2 rounded-lg bg-dark-800/30"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className={clsx('font-bold', tier.color)}>Lv {tier.level}</span>
+                      <span className="text-white">{tier.title}</span>
+                    </div>
+                    <span className="text-xs text-dark-500">{tier.completions} completions</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Your Progress */}
+              <div className="mt-4 pt-4 border-t border-dark-700">
+                <div className="flex items-center justify-between">
+                  <span className="text-dark-400">Your progress:</span>
+                  <span className="text-white font-bold">
+                    Level {level.level} ({level.completions} completions)
+                  </span>
+                </div>
+              </div>
+
               <button
                 onClick={() => setShowLevelInfo(false)}
-                className="text-dark-400 hover:text-white transition-colors"
+                className="w-full mt-4 btn btn-primary"
               >
-                ✕
+                Got it!
               </button>
             </div>
-
-            <p className="text-dark-300 mb-4">{LEVEL_INFO.description}</p>
-
-            {/* Formula */}
-            <div className="bg-dark-800/50 rounded-lg p-3 mb-4">
-              <p className="text-sm text-dark-400 mb-1">Level Formula:</p>
-              <code className="text-primary-400 font-mono">{LEVEL_INFO.formula}</code>
-              <div className="flex gap-4 mt-2 text-xs text-dark-500">
-                <span>• {LEVEL_INFO.xpPerCompletion}</span>
-                <span>• {LEVEL_INFO.xpPerLevel}</span>
-              </div>
-            </div>
-
-            {/* Level Tiers */}
-            <div className="space-y-2">
-              <p className="text-sm font-medium text-dark-400">Level Tiers:</p>
-              {LEVEL_INFO.tiers.map((tier) => (
-                <div
-                  key={tier.level}
-                  className="flex items-center justify-between p-2 rounded-lg bg-dark-800/30"
-                >
-                  <div className="flex items-center gap-3">
-                    <span className={clsx('font-bold', tier.color)}>Lv {tier.level}</span>
-                    <span className="text-white">{tier.title}</span>
-                  </div>
-                  <span className="text-xs text-dark-500">{tier.completions} completions</span>
-                </div>
-              ))}
-            </div>
-
-            {/* Your Progress */}
-            <div className="mt-4 pt-4 border-t border-dark-700">
-              <div className="flex items-center justify-between">
-                <span className="text-dark-400">Your progress:</span>
-                <span className="text-white font-bold">
-                  Level {level.level} ({level.completions} completions)
-                </span>
-              </div>
-            </div>
-
-            <button onClick={() => setShowLevelInfo(false)} className="w-full mt-4 btn btn-primary">
-              Got it!
-            </button>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body
+        )}
 
       {/* Tabs */}
       <div className="flex gap-2 border-b border-dark-700 pb-2">
@@ -461,93 +474,309 @@ const Profile: React.FC = () => {
         })}
       </div>
 
-      {/* Overview Tab */}
-      {activeTab === 'overview' && (
-        <div className="grid lg:grid-cols-3 gap-6">
-          {/* Stats Grid */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Quick Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="card text-center">
-                <div className="flex items-center justify-center gap-1 text-accent-orange mb-1">
-                  <Flame size={20} />
-                  <span className="text-2xl font-bold">{stats?.currentBestStreak || 0}</span>
+      <AnimatePresence mode="wait">
+        {/* Overview Tab */}
+        {activeTab === 'overview' && (
+          <motion.div
+            key="overview"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            className="grid lg:grid-cols-3 gap-6"
+          >
+            {/* Stats Grid */}
+            <div className="lg:col-span-2 space-y-6">
+              {/* Quick Stats */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="card text-center">
+                  <div className="flex items-center justify-center gap-1 text-accent-orange mb-1">
+                    <Flame size={20} />
+                    <span className="text-2xl font-bold">{stats?.currentBestStreak || 0}</span>
+                  </div>
+                  <p className="text-xs text-dark-400">Current Streak</p>
                 </div>
-                <p className="text-xs text-dark-400">Current Streak</p>
+                <div className="card text-center">
+                  <div className="flex items-center justify-center gap-1 text-accent-green mb-1">
+                    <Trophy size={20} />
+                    <span className="text-2xl font-bold">{stats?.longestEverStreak || 0}</span>
+                  </div>
+                  <p className="text-xs text-dark-400">Best Streak</p>
+                </div>
+                <div className="card text-center">
+                  <div className="flex items-center justify-center gap-1 text-primary-400 mb-1">
+                    <Target size={20} />
+                    <span className="text-2xl font-bold">{stats?.monthlyCompletionRate || 0}%</span>
+                  </div>
+                  <p className="text-xs text-dark-400">Completion Rate</p>
+                </div>
+                <div className="card text-center">
+                  <div className="flex items-center justify-center gap-1 text-accent-purple mb-1">
+                    <BarChart3 size={20} />
+                    <span className="text-2xl font-bold">{stats?.totalCompletions || 0}</span>
+                  </div>
+                  <p className="text-xs text-dark-400">Total Entries</p>
+                </div>
               </div>
-              <div className="card text-center">
-                <div className="flex items-center justify-center gap-1 text-accent-green mb-1">
-                  <Trophy size={20} />
-                  <span className="text-2xl font-bold">{stats?.longestEverStreak || 0}</span>
+
+              {/* Habit Summary */}
+              <div className="card">
+                <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                  <Target size={20} className="text-primary-400" />
+                  Habit Summary
+                </h3>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="text-center p-4 rounded-lg bg-dark-800">
+                    <p className="text-3xl font-bold text-white">{stats?.totalHabits || 0}</p>
+                    <p className="text-sm text-dark-400">Total Habits</p>
+                  </div>
+                  <div className="text-center p-4 rounded-lg bg-dark-800">
+                    <p className="text-3xl font-bold text-accent-green">
+                      {stats?.activeHabits || 0}
+                    </p>
+                    <p className="text-sm text-dark-400">Active</p>
+                  </div>
+                  <div className="text-center p-4 rounded-lg bg-dark-800">
+                    <p className="text-3xl font-bold text-dark-500">{stats?.archivedHabits || 0}</p>
+                    <p className="text-sm text-dark-400">Archived</p>
+                  </div>
                 </div>
-                <p className="text-xs text-dark-400">Best Streak</p>
+
+                {/* Today's Progress */}
+                <div className="mt-4 pt-4 border-t border-dark-700">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-dark-400">Today's Progress</span>
+                    <span className="text-white font-medium">
+                      {stats?.completedToday || 0}/{stats?.totalToday || 0}
+                    </span>
+                  </div>
+                  <div className="h-3 bg-dark-700 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-accent-green to-accent-green/70 transition-all"
+                      style={{ width: `${stats?.todayPercentage || 0}%` }}
+                    />
+                  </div>
+                </div>
               </div>
-              <div className="card text-center">
-                <div className="flex items-center justify-center gap-1 text-primary-400 mb-1">
-                  <Target size={20} />
-                  <span className="text-2xl font-bold">{stats?.monthlyCompletionRate || 0}%</span>
+
+              {/* Recent Milestones */}
+              <div className="card">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                    <Award size={20} className="text-accent-yellow" />
+                    Recent Milestones
+                  </h3>
                 </div>
-                <p className="text-xs text-dark-400">Completion Rate</p>
-              </div>
-              <div className="card text-center">
-                <div className="flex items-center justify-center gap-1 text-accent-purple mb-1">
-                  <BarChart3 size={20} />
-                  <span className="text-2xl font-bold">{stats?.totalCompletions || 0}</span>
-                </div>
-                <p className="text-xs text-dark-400">Total Entries</p>
+
+                {recentMilestones.length > 0 ? (
+                  <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {recentMilestones.map(
+                      (milestone: {
+                        id: string;
+                        type: string;
+                        value: number;
+                        achievedAt: string;
+                        habit: { name: string; color: string };
+                      }) => (
+                        <div
+                          key={milestone.id}
+                          className="p-3 rounded-lg bg-dark-800 border border-dark-700"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div
+                              className="w-10 h-10 rounded-lg flex items-center justify-center"
+                              style={{ backgroundColor: `${milestone.habit.color}20` }}
+                            >
+                              <Flame size={20} style={{ color: milestone.habit.color }} />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-white">
+                                {milestone.value}{' '}
+                                {milestone.type === 'STREAK' ? 'day streak' : 'completions'}
+                              </p>
+                              <p className="text-xs text-dark-400 truncate">
+                                {milestone.habit.name}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <Trophy className="w-12 h-12 text-dark-600 mx-auto mb-3" />
+                    <p className="text-dark-400">No milestones yet</p>
+                    <p className="text-dark-500 text-sm mt-1">
+                      Keep up your habits to earn streak milestones!
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* Habit Summary */}
-            <div className="card">
-              <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                <Target size={20} className="text-primary-400" />
-                Habit Summary
-              </h3>
-              <div className="grid grid-cols-3 gap-4">
-                <div className="text-center p-4 rounded-lg bg-dark-800">
-                  <p className="text-3xl font-bold text-white">{stats?.totalHabits || 0}</p>
-                  <p className="text-sm text-dark-400">Total Habits</p>
-                </div>
-                <div className="text-center p-4 rounded-lg bg-dark-800">
-                  <p className="text-3xl font-bold text-accent-green">{stats?.activeHabits || 0}</p>
-                  <p className="text-sm text-dark-400">Active</p>
-                </div>
-                <div className="text-center p-4 rounded-lg bg-dark-800">
-                  <p className="text-3xl font-bold text-dark-500">{stats?.archivedHabits || 0}</p>
-                  <p className="text-sm text-dark-400">Archived</p>
-                </div>
+            {/* Sidebar */}
+            <div className="space-y-6">
+              {/* Edit Profile */}
+              <div className="card">
+                <h3 className="text-lg font-semibold text-white mb-4">Profile</h3>
+                {isEditing ? (
+                  <form onSubmit={handleSubmit} className="space-y-4">
+                    <div>
+                      <label className="label">Name</label>
+                      <input
+                        type="text"
+                        className="input"
+                        value={formData.name}
+                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                        autoFocus
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        type="submit"
+                        disabled={updateMutation.isPending}
+                        className="btn btn-primary flex-1"
+                      >
+                        {updateMutation.isPending ? (
+                          <Loader2 size={16} className="animate-spin" />
+                        ) : (
+                          <Check size={16} />
+                        )}
+                        Save
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsEditing(false);
+                          setFormData({ name: user?.name || '' });
+                        }}
+                        className="btn btn-secondary"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3 p-3 rounded-lg bg-dark-800">
+                      <User size={18} className="text-dark-400" />
+                      <div className="flex-1">
+                        <p className="text-xs text-dark-500">Name</p>
+                        <p className="text-white">{user?.name}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 p-3 rounded-lg bg-dark-800">
+                      <Mail size={18} className="text-dark-400" />
+                      <div className="flex-1">
+                        <p className="text-xs text-dark-500">Email</p>
+                        <p className="text-white">{user?.email}</p>
+                      </div>
+                    </div>
+                    <button onClick={() => setIsEditing(true)} className="btn btn-secondary w-full">
+                      Edit Profile
+                    </button>
+                  </div>
+                )}
               </div>
 
-              {/* Today's Progress */}
-              <div className="mt-4 pt-4 border-t border-dark-700">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-dark-400">Today's Progress</span>
-                  <span className="text-white font-medium">
-                    {stats?.completedToday || 0}/{stats?.totalToday || 0}
-                  </span>
+              {/* Quick Actions */}
+              <div className="card">
+                <h3 className="text-lg font-semibold text-white mb-4">Account</h3>
+                <div className="space-y-2">
+                  <button
+                    onClick={handleLogout}
+                    className="w-full flex items-center gap-3 p-3 rounded-lg text-left text-dark-300 hover:bg-dark-800 hover:text-white transition-colors"
+                  >
+                    <LogOut size={18} />
+                    <span>Log Out</span>
+                    <ChevronRight size={16} className="ml-auto text-dark-500" />
+                  </button>
                 </div>
-                <div className="h-3 bg-dark-700 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-accent-green to-accent-green/70 transition-all"
-                    style={{ width: `${stats?.todayPercentage || 0}%` }}
-                  />
+
+                <div className="mt-4 pt-4 border-t border-dark-700">
+                  <div className="flex items-center gap-2 text-dark-500 text-xs">
+                    <Shield size={14} />
+                    <span>Your data is securely stored</span>
+                  </div>
                 </div>
               </div>
             </div>
+          </motion.div>
+        )}
 
-            {/* Recent Milestones */}
+        {/* Achievements Tab */}
+        {activeTab === 'achievements' && (
+          <motion.div
+            key="achievements"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            className="space-y-6"
+          >
+            {/* Badges Grid */}
             <div className="card">
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center justify-between mb-6">
                 <h3 className="text-lg font-semibold text-white flex items-center gap-2">
                   <Award size={20} className="text-accent-yellow" />
-                  Recent Milestones
+                  Badges
                 </h3>
+                <span className="text-dark-400">
+                  {earnedBadges.length}/{BADGES.length} earned
+                </span>
               </div>
 
-              {recentMilestones.length > 0 ? (
-                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {recentMilestones.map(
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {BADGES.map((badge) => {
+                  const isEarned = earnedBadges.some((b) => b.id === badge.id);
+                  const Icon = badge.icon;
+                  return (
+                    <div
+                      key={badge.id}
+                      className={clsx(
+                        'p-4 rounded-xl border-2 transition-all',
+                        isEarned
+                          ? 'bg-dark-800 border-dark-600'
+                          : 'bg-dark-900/50 border-dark-800 opacity-50'
+                      )}
+                    >
+                      <div
+                        className={clsx(
+                          'w-12 h-12 rounded-xl flex items-center justify-center mb-3',
+                          isEarned ? badge.bgColor : 'bg-dark-800'
+                        )}
+                      >
+                        <Icon size={24} className={isEarned ? badge.color : 'text-dark-600'} />
+                      </div>
+                      <h4
+                        className={clsx('font-medium', isEarned ? 'text-white' : 'text-dark-500')}
+                      >
+                        {badge.name}
+                      </h4>
+                      <p className="text-xs text-dark-500 mt-1">{badge.description}</p>
+                      {isEarned && (
+                        <div className="flex items-center gap-1 mt-2 text-accent-green text-xs">
+                          <CheckCircle size={12} />
+                          <span>Earned</span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* All Milestones */}
+            <div className="card">
+              <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                <Flame size={20} className="text-accent-orange" />
+                All Milestones
+              </h3>
+
+              {milestones && milestones.length > 0 ? (
+                <div className="space-y-3 max-h-96 overflow-y-auto">
+                  {milestones.map(
                     (milestone: {
                       id: string;
                       type: string;
@@ -557,22 +786,25 @@ const Profile: React.FC = () => {
                     }) => (
                       <div
                         key={milestone.id}
-                        className="p-3 rounded-lg bg-dark-800 border border-dark-700"
+                        className="flex items-center gap-4 p-3 rounded-lg bg-dark-800 border border-dark-700"
                       >
-                        <div className="flex items-center gap-3">
-                          <div
-                            className="w-10 h-10 rounded-lg flex items-center justify-center"
-                            style={{ backgroundColor: `${milestone.habit.color}20` }}
-                          >
-                            <Flame size={20} style={{ color: milestone.habit.color }} />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="font-medium text-white">
-                              {milestone.value}{' '}
-                              {milestone.type === 'STREAK' ? 'day streak' : 'completions'}
-                            </p>
-                            <p className="text-xs text-dark-400 truncate">{milestone.habit.name}</p>
-                          </div>
+                        <div
+                          className="w-12 h-12 rounded-lg flex items-center justify-center"
+                          style={{ backgroundColor: `${milestone.habit.color}20` }}
+                        >
+                          <Flame size={24} style={{ color: milestone.habit.color }} />
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-medium text-white">
+                            {milestone.value}{' '}
+                            {milestone.type === 'STREAK' ? 'Day Streak' : 'Completions'}
+                          </p>
+                          <p className="text-sm text-dark-400">{milestone.habit.name}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm text-dark-400">
+                            {format(new Date(milestone.achievedAt), 'MMM d, yyyy')}
+                          </p>
                         </div>
                       </div>
                     )
@@ -583,519 +815,337 @@ const Profile: React.FC = () => {
                   <Trophy className="w-12 h-12 text-dark-600 mx-auto mb-3" />
                   <p className="text-dark-400">No milestones yet</p>
                   <p className="text-dark-500 text-sm mt-1">
-                    Keep up your habits to earn streak milestones!
+                    Complete habits consistently to earn milestones!
                   </p>
                 </div>
               )}
             </div>
-          </div>
+          </motion.div>
+        )}
 
-          {/* Sidebar */}
-          <div className="space-y-6">
-            {/* Edit Profile */}
-            <div className="card">
-              <h3 className="text-lg font-semibold text-white mb-4">Profile</h3>
-              {isEditing ? (
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div>
-                    <label className="label">Name</label>
-                    <input
-                      type="text"
-                      className="input"
-                      value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      autoFocus
-                    />
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      type="submit"
-                      disabled={updateMutation.isPending}
-                      className="btn btn-primary flex-1"
-                    >
-                      {updateMutation.isPending ? (
-                        <Loader2 size={16} className="animate-spin" />
-                      ) : (
-                        <Check size={16} />
-                      )}
-                      Save
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsEditing(false);
-                        setFormData({ name: user?.name || '' });
-                      }}
-                      className="btn btn-secondary"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </form>
-              ) : (
-                <div className="space-y-3">
-                  <div className="flex items-center gap-3 p-3 rounded-lg bg-dark-800">
-                    <User size={18} className="text-dark-400" />
-                    <div className="flex-1">
-                      <p className="text-xs text-dark-500">Name</p>
-                      <p className="text-white">{user?.name}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3 p-3 rounded-lg bg-dark-800">
-                    <Mail size={18} className="text-dark-400" />
-                    <div className="flex-1">
-                      <p className="text-xs text-dark-500">Email</p>
-                      <p className="text-white">{user?.email}</p>
-                    </div>
-                  </div>
-                  <button onClick={() => setIsEditing(true)} className="btn btn-secondary w-full">
-                    Edit Profile
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* Quick Actions */}
-            <div className="card">
-              <h3 className="text-lg font-semibold text-white mb-4">Account</h3>
-              <div className="space-y-2">
-                <button
-                  onClick={handleLogout}
-                  className="w-full flex items-center gap-3 p-3 rounded-lg text-left text-dark-300 hover:bg-dark-800 hover:text-white transition-colors"
-                >
-                  <LogOut size={18} />
-                  <span>Log Out</span>
-                  <ChevronRight size={16} className="ml-auto text-dark-500" />
-                </button>
-              </div>
-
-              <div className="mt-4 pt-4 border-t border-dark-700">
-                <div className="flex items-center gap-2 text-dark-500 text-xs">
-                  <Shield size={14} />
-                  <span>Your data is securely stored</span>
+        {/* Archived Tab */}
+        {activeTab === 'archived' && (
+          <motion.div
+            key="archived"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            className="space-y-6"
+          >
+            {/* Info Banner */}
+            <div className="card bg-dark-800/50 border-dark-700">
+              <div className="flex items-start gap-3">
+                <Archive className="text-dark-400 mt-0.5" size={20} />
+                <div>
+                  <h3 className="font-medium text-white">Archived Habits</h3>
+                  <p className="text-dark-400 text-sm mt-1">
+                    Archived habits are hidden from your daily tracking but their historical data is
+                    preserved. You can restore them at any time to resume tracking.
+                  </p>
                 </div>
               </div>
             </div>
-          </div>
-        </div>
-      )}
 
-      {/* Achievements Tab */}
-      {activeTab === 'achievements' && (
-        <div className="space-y-6">
-          {/* Badges Grid */}
-          <div className="card">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                <Award size={20} className="text-accent-yellow" />
-                Badges
-              </h3>
-              <span className="text-dark-400">
-                {earnedBadges.length}/{BADGES.length} earned
-              </span>
-            </div>
-
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {BADGES.map((badge) => {
-                const isEarned = earnedBadges.some((b) => b.id === badge.id);
-                const Icon = badge.icon;
-                return (
-                  <div
-                    key={badge.id}
-                    className={clsx(
-                      'p-4 rounded-xl border-2 transition-all',
-                      isEarned
-                        ? 'bg-dark-800 border-dark-600'
-                        : 'bg-dark-900/50 border-dark-800 opacity-50'
-                    )}
-                  >
-                    <div
-                      className={clsx(
-                        'w-12 h-12 rounded-xl flex items-center justify-center mb-3',
-                        isEarned ? badge.bgColor : 'bg-dark-800'
-                      )}
-                    >
-                      <Icon size={24} className={isEarned ? badge.color : 'text-dark-600'} />
-                    </div>
-                    <h4 className={clsx('font-medium', isEarned ? 'text-white' : 'text-dark-500')}>
-                      {badge.name}
-                    </h4>
-                    <p className="text-xs text-dark-500 mt-1">{badge.description}</p>
-                    {isEarned && (
-                      <div className="flex items-center gap-1 mt-2 text-accent-green text-xs">
-                        <CheckCircle size={12} />
-                        <span>Earned</span>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* All Milestones */}
-          <div className="card">
-            <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-              <Flame size={20} className="text-accent-orange" />
-              All Milestones
-            </h3>
-
-            {milestones && milestones.length > 0 ? (
-              <div className="space-y-3 max-h-96 overflow-y-auto">
-                {milestones.map(
-                  (milestone: {
-                    id: string;
-                    type: string;
-                    value: number;
-                    achievedAt: string;
-                    habit: { name: string; color: string };
-                  }) => (
-                    <div
-                      key={milestone.id}
-                      className="flex items-center gap-4 p-3 rounded-lg bg-dark-800 border border-dark-700"
-                    >
-                      <div
-                        className="w-12 h-12 rounded-lg flex items-center justify-center"
-                        style={{ backgroundColor: `${milestone.habit.color}20` }}
-                      >
-                        <Flame size={24} style={{ color: milestone.habit.color }} />
-                      </div>
-                      <div className="flex-1">
-                        <p className="font-medium text-white">
-                          {milestone.value}{' '}
-                          {milestone.type === 'STREAK' ? 'Day Streak' : 'Completions'}
-                        </p>
-                        <p className="text-sm text-dark-400">{milestone.habit.name}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm text-dark-400">
-                          {format(new Date(milestone.achievedAt), 'MMM d, yyyy')}
-                        </p>
-                      </div>
-                    </div>
-                  )
+            {/* Archived Habits List */}
+            <div className="card">
+              <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                <Archive size={20} className="text-dark-400" />
+                Archived Habits
+                {archivedHabits && archivedHabits.length > 0 && (
+                  <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-dark-700 text-dark-400">
+                    {archivedHabits.length}
+                  </span>
                 )}
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <Trophy className="w-12 h-12 text-dark-600 mx-auto mb-3" />
-                <p className="text-dark-400">No milestones yet</p>
-                <p className="text-dark-500 text-sm mt-1">
-                  Complete habits consistently to earn milestones!
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+              </h3>
 
-      {/* Archived Tab */}
-      {activeTab === 'archived' && (
-        <div className="space-y-6">
-          {/* Info Banner */}
-          <div className="card bg-dark-800/50 border-dark-700">
-            <div className="flex items-start gap-3">
-              <Archive className="text-dark-400 mt-0.5" size={20} />
-              <div>
-                <h3 className="font-medium text-white">Archived Habits</h3>
-                <p className="text-dark-400 text-sm mt-1">
-                  Archived habits are hidden from your daily tracking but their historical data is
-                  preserved. You can restore them at any time to resume tracking.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Archived Habits List */}
-          <div className="card">
-            <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-              <Archive size={20} className="text-dark-400" />
-              Archived Habits
-              {archivedHabits && archivedHabits.length > 0 && (
-                <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-dark-700 text-dark-400">
-                  {archivedHabits.length}
-                </span>
-              )}
-            </h3>
-
-            {loadingArchived ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="animate-spin text-primary-500" size={24} />
-              </div>
-            ) : archivedHabits && archivedHabits.length > 0 ? (
-              <div className="space-y-3">
-                {archivedHabits.map((habit) => (
-                  <div
-                    key={habit.id}
-                    className="flex items-center justify-between p-4 bg-dark-800 rounded-xl border border-dark-700"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div
-                        className="w-10 h-10 rounded-lg flex items-center justify-center"
-                        style={{ backgroundColor: `${habit.color}20` }}
-                      >
-                        <Target size={20} style={{ color: habit.color }} />
-                      </div>
-                      <div>
-                        <h4 className="font-medium text-white">{habit.name}</h4>
-                        <div className="flex items-center gap-2 text-xs text-dark-400">
-                          <span className="capitalize">
-                            {habit.category?.toLowerCase() || 'general'}
-                          </span>
-                          <span>•</span>
-                          <span className="capitalize">
-                            {habit.frequency?.toLowerCase() || 'daily'}
-                          </span>
-                          {habit.totalCompletions !== undefined && (
-                            <>
-                              <span>•</span>
-                              <span>{habit.totalCompletions} completions</span>
-                            </>
-                          )}
+              {loadingArchived ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="animate-spin text-primary-500" size={24} />
+                </div>
+              ) : archivedHabits && archivedHabits.length > 0 ? (
+                <div className="space-y-3">
+                  {archivedHabits.map((habit) => (
+                    <div
+                      key={habit.id}
+                      className="flex items-center justify-between p-4 bg-dark-800 rounded-xl border border-dark-700"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div
+                          className="w-10 h-10 rounded-lg flex items-center justify-center"
+                          style={{ backgroundColor: `${habit.color}20` }}
+                        >
+                          <Target size={20} style={{ color: habit.color }} />
+                        </div>
+                        <div>
+                          <h4 className="font-medium text-white">{habit.name}</h4>
+                          <div className="flex items-center gap-2 text-xs text-dark-400">
+                            <span className="capitalize">
+                              {habit.category?.toLowerCase() || 'general'}
+                            </span>
+                            <span>•</span>
+                            <span className="capitalize">
+                              {habit.frequency?.toLowerCase() || 'daily'}
+                            </span>
+                            {habit.totalCompletions !== undefined && (
+                              <>
+                                <span>•</span>
+                                <span>{habit.totalCompletions} completions</span>
+                              </>
+                            )}
+                          </div>
                         </div>
                       </div>
+                      <button
+                        onClick={() => unarchiveMutation.mutate(habit.id)}
+                        disabled={unarchiveMutation.isPending}
+                        className="btn btn-secondary btn-sm flex items-center gap-2"
+                      >
+                        <RotateCcw size={14} />
+                        Restore
+                      </button>
                     </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <Archive size={40} className="mx-auto text-dark-600 mb-3" />
+                  <p className="text-dark-400">No archived habits</p>
+                  <p className="text-dark-500 text-sm mt-1">
+                    Habits you archive will appear here. You can archive habits from the Habits
+                    page.
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Data Info */}
+            <div className="card">
+              <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                <BarChart3 size={20} className="text-primary-400" />
+                Data Retention
+              </h3>
+              <div className="space-y-3 text-sm">
+                <div className="flex items-start gap-3 p-3 bg-dark-800 rounded-lg">
+                  <CheckCircle size={16} className="text-accent-green mt-0.5" />
+                  <div>
+                    <p className="text-white font-medium">Historical data is preserved</p>
+                    <p className="text-dark-400">
+                      All your completion logs, streaks, and statistics are kept when you archive a
+                      habit.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3 p-3 bg-dark-800 rounded-lg">
+                  <CheckCircle size={16} className="text-accent-green mt-0.5" />
+                  <div>
+                    <p className="text-white font-medium">Calendar history intact</p>
+                    <p className="text-dark-400">
+                      Archived habits still appear in your calendar for past dates.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3 p-3 bg-dark-800 rounded-lg">
+                  <CheckCircle size={16} className="text-accent-green mt-0.5" />
+                  <div>
+                    <p className="text-white font-medium">Restore anytime</p>
+                    <p className="text-dark-400">
+                      Click "Restore" to bring back any archived habit and continue tracking.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Settings Tab */}
+        {activeTab === 'settings' && (
+          <motion.div
+            key="settings"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            className="grid lg:grid-cols-2 gap-6"
+          >
+            {/* Account Settings */}
+            <div className="card">
+              <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                <User size={20} className="text-primary-400" />
+                Account Settings
+              </h3>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="label">Display Name</label>
+                  <input
+                    type="text"
+                    className="input"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="label">Email</label>
+                  <input type="email" className="input" value={user?.email || ''} disabled />
+                  <p className="text-xs text-dark-500 mt-1">Email cannot be changed</p>
+                </div>
+                <button
+                  onClick={handleSubmit}
+                  disabled={updateMutation.isPending || formData.name === user?.name}
+                  className="btn btn-primary"
+                >
+                  {updateMutation.isPending ? (
+                    <Loader2 size={16} className="animate-spin" />
+                  ) : (
+                    <Check size={16} />
+                  )}
+                  Save Changes
+                </button>
+              </div>
+            </div>
+
+            {/* Change Password */}
+            <div className="card">
+              <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                <Lock size={20} className="text-primary-400" />
+                Change Password
+              </h3>
+
+              <form onSubmit={handlePasswordChange} className="space-y-4">
+                <div>
+                  <label className="label">Current Password</label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      className="input pr-10"
+                      value={passwordData.currentPassword}
+                      onChange={(e) =>
+                        setPasswordData({ ...passwordData, currentPassword: e.target.value })
+                      }
+                    />
                     <button
-                      onClick={() => unarchiveMutation.mutate(habit.id)}
-                      disabled={unarchiveMutation.isPending}
-                      className="btn btn-secondary btn-sm flex items-center gap-2"
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-dark-400 hover:text-white"
                     >
-                      <RotateCcw size={14} />
-                      Restore
+                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>
                   </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <Archive size={40} className="mx-auto text-dark-600 mb-3" />
-                <p className="text-dark-400">No archived habits</p>
-                <p className="text-dark-500 text-sm mt-1">
-                  Habits you archive will appear here. You can archive habits from the Habits page.
-                </p>
-              </div>
-            )}
-          </div>
-
-          {/* Data Info */}
-          <div className="card">
-            <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-              <BarChart3 size={20} className="text-primary-400" />
-              Data Retention
-            </h3>
-            <div className="space-y-3 text-sm">
-              <div className="flex items-start gap-3 p-3 bg-dark-800 rounded-lg">
-                <CheckCircle size={16} className="text-accent-green mt-0.5" />
-                <div>
-                  <p className="text-white font-medium">Historical data is preserved</p>
-                  <p className="text-dark-400">
-                    All your completion logs, streaks, and statistics are kept when you archive a
-                    habit.
-                  </p>
                 </div>
-              </div>
-              <div className="flex items-start gap-3 p-3 bg-dark-800 rounded-lg">
-                <CheckCircle size={16} className="text-accent-green mt-0.5" />
                 <div>
-                  <p className="text-white font-medium">Calendar history intact</p>
-                  <p className="text-dark-400">
-                    Archived habits still appear in your calendar for past dates.
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3 p-3 bg-dark-800 rounded-lg">
-                <CheckCircle size={16} className="text-accent-green mt-0.5" />
-                <div>
-                  <p className="text-white font-medium">Restore anytime</p>
-                  <p className="text-dark-400">
-                    Click "Restore" to bring back any archived habit and continue tracking.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Settings Tab */}
-      {activeTab === 'settings' && (
-        <div className="grid lg:grid-cols-2 gap-6">
-          {/* Account Settings */}
-          <div className="card">
-            <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-              <User size={20} className="text-primary-400" />
-              Account Settings
-            </h3>
-
-            <div className="space-y-4">
-              <div>
-                <label className="label">Display Name</label>
-                <input
-                  type="text"
-                  className="input"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                />
-              </div>
-              <div>
-                <label className="label">Email</label>
-                <input type="email" className="input" value={user?.email || ''} disabled />
-                <p className="text-xs text-dark-500 mt-1">Email cannot be changed</p>
-              </div>
-              <button
-                onClick={handleSubmit}
-                disabled={updateMutation.isPending || formData.name === user?.name}
-                className="btn btn-primary"
-              >
-                {updateMutation.isPending ? (
-                  <Loader2 size={16} className="animate-spin" />
-                ) : (
-                  <Check size={16} />
-                )}
-                Save Changes
-              </button>
-            </div>
-          </div>
-
-          {/* Change Password */}
-          <div className="card">
-            <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-              <Lock size={20} className="text-primary-400" />
-              Change Password
-            </h3>
-
-            <form onSubmit={handlePasswordChange} className="space-y-4">
-              <div>
-                <label className="label">Current Password</label>
-                <div className="relative">
+                  <label className="label">New Password</label>
                   <input
                     type={showPassword ? 'text' : 'password'}
-                    className="input pr-10"
-                    value={passwordData.currentPassword}
+                    className="input"
+                    value={passwordData.newPassword}
                     onChange={(e) =>
-                      setPasswordData({ ...passwordData, currentPassword: e.target.value })
+                      setPasswordData({ ...passwordData, newPassword: e.target.value })
                     }
                   />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-dark-400 hover:text-white"
-                  >
-                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                  </button>
                 </div>
-              </div>
-              <div>
-                <label className="label">New Password</label>
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  className="input"
-                  value={passwordData.newPassword}
-                  onChange={(e) =>
-                    setPasswordData({ ...passwordData, newPassword: e.target.value })
-                  }
-                />
-              </div>
-              <div>
-                <label className="label">Confirm New Password</label>
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  className="input"
-                  value={passwordData.confirmPassword}
-                  onChange={(e) =>
-                    setPasswordData({ ...passwordData, confirmPassword: e.target.value })
-                  }
-                />
-              </div>
-              <button
-                type="submit"
-                disabled={!passwordData.currentPassword || !passwordData.newPassword}
-                className="btn btn-primary"
-              >
-                Update Password
-              </button>
-            </form>
-          </div>
-
-          {/* Data & Privacy */}
-          <div className="card">
-            <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-              <Shield size={20} className="text-primary-400" />
-              Data & Privacy
-            </h3>
-
-            <div className="space-y-3">
-              <button
-                onClick={async () => {
-                  try {
-                    const response = await api.get('/users/export', { responseType: 'blob' });
-                    const blob = new Blob([JSON.stringify(response.data, null, 2)], {
-                      type: 'application/json',
-                    });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `habit-tracker-export-${new Date().toISOString().split('T')[0]}.json`;
-                    a.click();
-                    URL.revokeObjectURL(url);
-                    toast.success('Data exported successfully!');
-                  } catch {
-                    toast.error('Failed to export data');
-                  }
-                }}
-                className="w-full flex items-center gap-3 p-3 rounded-lg text-left text-dark-300 hover:bg-dark-800 hover:text-white transition-colors"
-              >
-                <Download size={18} />
-                <div className="flex-1">
-                  <p className="font-medium">Export Data</p>
-                  <p className="text-xs text-dark-500">Download all your habit data as JSON</p>
+                <div>
+                  <label className="label">Confirm New Password</label>
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    className="input"
+                    value={passwordData.confirmPassword}
+                    onChange={(e) =>
+                      setPasswordData({ ...passwordData, confirmPassword: e.target.value })
+                    }
+                  />
                 </div>
-                <ChevronRight size={16} className="text-dark-500" />
-              </button>
+                <button
+                  type="submit"
+                  disabled={!passwordData.currentPassword || !passwordData.newPassword}
+                  className="btn btn-primary"
+                >
+                  Update Password
+                </button>
+              </form>
+            </div>
 
-              <button
-                onClick={() => setShowShortcuts(true)}
-                className="w-full flex items-center gap-3 p-3 rounded-lg text-left text-dark-300 hover:bg-dark-800 hover:text-white transition-colors"
-              >
-                <Keyboard size={18} />
-                <div className="flex-1">
-                  <p className="font-medium">Keyboard Shortcuts</p>
-                  <p className="text-xs text-dark-500">View all keyboard shortcuts</p>
-                </div>
-                <kbd className="px-2 py-1 text-xs font-mono bg-dark-800 border border-dark-600 rounded">
-                  ?
-                </kbd>
+            {/* Data & Privacy */}
+            <div className="card">
+              <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                <Shield size={20} className="text-primary-400" />
+                Data & Privacy
+              </h3>
+
+              <div className="space-y-3">
+                <button
+                  onClick={async () => {
+                    try {
+                      const response = await api.get('/users/export', { responseType: 'blob' });
+                      const blob = new Blob([JSON.stringify(response.data, null, 2)], {
+                        type: 'application/json',
+                      });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = `habit-tracker-export-${new Date().toISOString().split('T')[0]}.json`;
+                      a.click();
+                      URL.revokeObjectURL(url);
+                      toast.success('Data exported successfully!');
+                    } catch {
+                      toast.error('Failed to export data');
+                    }
+                  }}
+                  className="w-full flex items-center gap-3 p-3 rounded-lg text-left text-dark-300 hover:bg-dark-800 hover:text-white transition-colors"
+                >
+                  <Download size={18} />
+                  <div className="flex-1">
+                    <p className="font-medium">Export Data</p>
+                    <p className="text-xs text-dark-500">Download all your habit data as JSON</p>
+                  </div>
+                  <ChevronRight size={16} className="text-dark-500" />
+                </button>
+
+                <button
+                  onClick={() => setShowShortcuts(true)}
+                  className="w-full flex items-center gap-3 p-3 rounded-lg text-left text-dark-300 hover:bg-dark-800 hover:text-white transition-colors"
+                >
+                  <Keyboard size={18} />
+                  <div className="flex-1">
+                    <p className="font-medium">Keyboard Shortcuts</p>
+                    <p className="text-xs text-dark-500">View all keyboard shortcuts</p>
+                  </div>
+                  <kbd className="px-2 py-1 text-xs font-mono bg-dark-800 border border-dark-600 rounded">
+                    ?
+                  </kbd>
+                </button>
+              </div>
+            </div>
+
+            {/* API Access */}
+            <ApiDashboard />
+
+            {/* Connected Apps */}
+            <ConnectedApps />
+
+            {/* Notifications & Reminders */}
+            <NotificationSettings />
+
+            {/* Danger Zone */}
+            <div className="card border-accent-red/20">
+              <h3 className="text-lg font-semibold text-accent-red mb-4 flex items-center gap-2">
+                <Trash2 size={20} />
+                Danger Zone
+              </h3>
+
+              <p className="text-dark-400 text-sm mb-4">
+                Once you delete your account, there is no going back. Please be certain.
+              </p>
+
+              <button className="btn bg-accent-red/20 text-accent-red hover:bg-accent-red/30">
+                <Trash2 size={16} />
+                Delete Account
               </button>
             </div>
-          </div>
-
-          {/* API Access */}
-          <ApiDashboard />
-
-          {/* Connected Apps */}
-          <ConnectedApps />
-
-          {/* Notifications & Reminders */}
-          <NotificationSettings />
-
-          {/* Danger Zone */}
-          <div className="card border-accent-red/20">
-            <h3 className="text-lg font-semibold text-accent-red mb-4 flex items-center gap-2">
-              <Trash2 size={20} />
-              Danger Zone
-            </h3>
-
-            <p className="text-dark-400 text-sm mb-4">
-              Once you delete your account, there is no going back. Please be certain.
-            </p>
-
-            <button className="btn bg-accent-red/20 text-accent-red hover:bg-accent-red/30">
-              <Trash2 size={16} />
-              Delete Account
-            </button>
-          </div>
-        </div>
-      )}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Keyboard Shortcuts Modal */}
       <KeyboardShortcutsModal isOpen={showShortcuts} onClose={() => setShowShortcuts(false)} />

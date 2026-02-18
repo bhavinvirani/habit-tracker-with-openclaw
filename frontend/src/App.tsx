@@ -5,9 +5,11 @@ import { SpeedInsights } from '@vercel/speed-insights/react';
 import { Toaster } from 'react-hot-toast';
 import ErrorBoundary from './components/ErrorBoundary';
 import Layout from './components/layout/Layout';
+import AuthLayout from './components/layout/AuthLayout';
 import { LoadingSpinner } from './components/ui';
 import { useAuthStore } from './store/authStore';
 import { restoreSession } from './services/api';
+import { FeatureFlagProvider } from './contexts/FeatureFlagContext';
 
 // Lazy-loaded pages
 const Dashboard = React.lazy(() => import('./pages/Dashboard'));
@@ -19,10 +21,13 @@ const Books = React.lazy(() => import('./pages/Books'));
 const Challenges = React.lazy(() => import('./pages/Challenges'));
 const Login = React.lazy(() => import('./pages/Login'));
 const Register = React.lazy(() => import('./pages/Register'));
+const ForgotPassword = React.lazy(() => import('./pages/ForgotPassword'));
+const ResetPassword = React.lazy(() => import('./pages/ResetPassword'));
 const ApiDocs = React.lazy(() => import('./pages/ApiDocs'));
 const IntegrationDocs = React.lazy(() => import('./pages/IntegrationDocs'));
 const Help = React.lazy(() => import('./pages/Help'));
 const NotFound = React.lazy(() => import('./pages/NotFound'));
+const Admin = React.lazy(() => import('./pages/Admin'));
 
 const SuspensePage: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <ErrorBoundary>
@@ -60,151 +65,171 @@ function App() {
 
   return (
     <ErrorBoundary>
-      <Routes>
-        <Route
-          path="/login"
-          element={
-            isAuthenticated ? (
-              <Navigate to="/" />
-            ) : (
+      <FeatureFlagProvider>
+        <Routes>
+          <Route element={!isAuthenticated ? <AuthLayout /> : <Navigate to="/" />}>
+            <Route
+              path="/login"
+              element={
+                <SuspensePage>
+                  <Login />
+                </SuspensePage>
+              }
+            />
+            <Route
+              path="/register"
+              element={
+                <SuspensePage>
+                  <Register />
+                </SuspensePage>
+              }
+            />
+            <Route
+              path="/forgot-password"
+              element={
+                <SuspensePage>
+                  <ForgotPassword />
+                </SuspensePage>
+              }
+            />
+            <Route
+              path="/reset-password"
+              element={
+                <SuspensePage>
+                  <ResetPassword />
+                </SuspensePage>
+              }
+            />
+          </Route>
+          <Route
+            path="/docs/api"
+            element={
               <SuspensePage>
-                <Login />
+                <ApiDocs />
               </SuspensePage>
-            )
-          }
-        />
-        <Route
-          path="/register"
-          element={
-            isAuthenticated ? (
-              <Navigate to="/" />
-            ) : (
+            }
+          />
+          <Route
+            path="/docs/integration"
+            element={
               <SuspensePage>
-                <Register />
+                <IntegrationDocs />
               </SuspensePage>
-            )
-          }
-        />
-        <Route
-          path="/docs/api"
-          element={
-            <SuspensePage>
-              <ApiDocs />
-            </SuspensePage>
-          }
-        />
-        <Route
-          path="/docs/integration"
-          element={
-            <SuspensePage>
-              <IntegrationDocs />
-            </SuspensePage>
-          }
-        />
+            }
+          />
 
-        <Route element={isAuthenticated ? <Layout /> : <Navigate to="/login" />}>
-          <Route
-            index
-            element={
-              <SuspensePage>
-                <Dashboard />
-              </SuspensePage>
-            }
-          />
-          <Route
-            path="habits"
-            element={
-              <SuspensePage>
-                <Habits />
-              </SuspensePage>
-            }
-          />
-          <Route
-            path="calendar"
-            element={
-              <SuspensePage>
-                <Calendar />
-              </SuspensePage>
-            }
-          />
-          <Route
-            path="analytics"
-            element={
-              <SuspensePage>
-                <Analytics />
-              </SuspensePage>
-            }
-          />
-          <Route
-            path="books"
-            element={
-              <SuspensePage>
-                <Books />
-              </SuspensePage>
-            }
-          />
-          <Route
-            path="challenges"
-            element={
-              <SuspensePage>
-                <Challenges />
-              </SuspensePage>
-            }
-          />
-          <Route
-            path="profile"
-            element={
-              <SuspensePage>
-                <Profile />
-              </SuspensePage>
-            }
-          />
-          <Route
-            path="help"
-            element={
-              <SuspensePage>
-                <Help />
-              </SuspensePage>
-            }
-          />
-          <Route
-            path="*"
-            element={
-              <SuspensePage>
-                <NotFound />
-              </SuspensePage>
-            }
-          />
-        </Route>
+          <Route element={isAuthenticated ? <Layout /> : <Navigate to="/login" />}>
+            <Route
+              index
+              element={
+                <SuspensePage>
+                  <Dashboard />
+                </SuspensePage>
+              }
+            />
+            <Route
+              path="habits"
+              element={
+                <SuspensePage>
+                  <Habits />
+                </SuspensePage>
+              }
+            />
+            <Route
+              path="calendar"
+              element={
+                <SuspensePage>
+                  <Calendar />
+                </SuspensePage>
+              }
+            />
+            <Route
+              path="analytics"
+              element={
+                <SuspensePage>
+                  <Analytics />
+                </SuspensePage>
+              }
+            />
+            <Route
+              path="books"
+              element={
+                <SuspensePage>
+                  <Books />
+                </SuspensePage>
+              }
+            />
+            <Route
+              path="challenges"
+              element={
+                <SuspensePage>
+                  <Challenges />
+                </SuspensePage>
+              }
+            />
+            <Route
+              path="profile"
+              element={
+                <SuspensePage>
+                  <Profile />
+                </SuspensePage>
+              }
+            />
+            <Route
+              path="help"
+              element={
+                <SuspensePage>
+                  <Help />
+                </SuspensePage>
+              }
+            />
+            <Route
+              path="admin"
+              element={
+                <SuspensePage>
+                  <Admin />
+                </SuspensePage>
+              }
+            />
+            <Route
+              path="*"
+              element={
+                <SuspensePage>
+                  <NotFound />
+                </SuspensePage>
+              }
+            />
+          </Route>
 
-        {/* Unauthenticated users on unknown paths go to login */}
-        <Route path="*" element={<Navigate to="/login" />} />
-      </Routes>
-      <VercelAnalytics />
-      <SpeedInsights />
-      <Toaster
-        position="top-right"
-        toastOptions={{
-          style: {
-            background: '#1e293b',
-            color: '#e2e8f0',
-            borderRadius: '12px',
-            border: '1px solid #334155',
-          },
-          success: {
-            iconTheme: {
-              primary: '#10b981',
-              secondary: '#1e293b',
+          {/* Unauthenticated users on unknown paths go to login */}
+          <Route path="*" element={<Navigate to="/login" />} />
+        </Routes>
+        <VercelAnalytics />
+        <SpeedInsights />
+        <Toaster
+          position="top-right"
+          toastOptions={{
+            style: {
+              background: '#1e293b',
+              color: '#e2e8f0',
+              borderRadius: '12px',
+              border: '1px solid #334155',
             },
-          },
-          error: {
-            iconTheme: {
-              primary: '#ef4444',
-              secondary: '#1e293b',
+            success: {
+              iconTheme: {
+                primary: '#10b981',
+                secondary: '#1e293b',
+              },
             },
-          },
-        }}
-      />
+            error: {
+              iconTheme: {
+                primary: '#ef4444',
+                secondary: '#1e293b',
+              },
+            },
+          }}
+        />
+      </FeatureFlagProvider>
     </ErrorBoundary>
   );
 }
