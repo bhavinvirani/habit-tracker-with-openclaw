@@ -67,6 +67,19 @@ model LoginAttempt {
   @@map("login_attempts")
 }
 
+model PasswordReset {
+  id        String    @id @default(uuid())
+  tokenHash String    @unique
+  email     String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([email])
+  @@index([expiresAt])
+  @@map("password_resets")
+}
+
 model Habit {
   id          String  @id @default(uuid())
   userId      String

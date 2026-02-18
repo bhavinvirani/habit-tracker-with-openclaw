@@ -272,6 +272,15 @@ const Login: React.FC = () => {
               {errors.password && <p className="text-accent-red text-sm mt-1">{errors.password}</p>}
             </div>
 
+            <div className="flex justify-end">
+              <Link
+                to="/forgot-password"
+                className="text-sm text-dark-400 hover:text-primary-400 transition-colors"
+              >
+                Forgot password?
+              </Link>
+            </div>
+
             {/* Submit button */}
             <motion.button
               type="submit"

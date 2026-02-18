@@ -20,6 +20,8 @@ const Books = React.lazy(() => import('./pages/Books'));
 const Challenges = React.lazy(() => import('./pages/Challenges'));
 const Login = React.lazy(() => import('./pages/Login'));
 const Register = React.lazy(() => import('./pages/Register'));
+const ForgotPassword = React.lazy(() => import('./pages/ForgotPassword'));
+const ResetPassword = React.lazy(() => import('./pages/ResetPassword'));
 const ApiDocs = React.lazy(() => import('./pages/ApiDocs'));
 const IntegrationDocs = React.lazy(() => import('./pages/IntegrationDocs'));
 const Help = React.lazy(() => import('./pages/Help'));
@@ -76,6 +78,22 @@ function App() {
             element={
               <SuspensePage>
                 <Register />
+              </SuspensePage>
+            }
+          />
+          <Route
+            path="/forgot-password"
+            element={
+              <SuspensePage>
+                <ForgotPassword />
+              </SuspensePage>
+            }
+          />
+          <Route
+            path="/reset-password"
+            element={
+              <SuspensePage>
+                <ResetPassword />
               </SuspensePage>
             }
           />

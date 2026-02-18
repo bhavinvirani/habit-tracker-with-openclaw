@@ -218,6 +218,19 @@ const tokenCleanupInterval = setInterval(
       await prisma.loginAttempt.deleteMany({
         where: { lockedUntil: { lt: new Date() } },
       });
+
+      // Cleanup used/expired password reset tokens
+      const deletedResets = await prisma.passwordReset.deleteMany({
+        where: {
+          OR: [
+            { usedAt: { not: null }, expiresAt: { lt: new Date() } },
+            { createdAt: { lt: new Date(Date.now() - 24 * 60 * 60 * 1000) } },
+          ],
+        },
+      });
+      if (deletedResets.count > 0) {
+        logger.info(`Cleaned up ${deletedResets.count} expired password reset tokens`);
+      }
       reportCronRun('tokenCleanup', 'success', Date.now() - start);
     } catch (error) {
       reportCronRun('tokenCleanup', 'failure', Date.now() - start, (error as Error).message);
