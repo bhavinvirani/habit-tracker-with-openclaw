@@ -9,6 +9,8 @@ import {
   updateFeatureFlag,
   getEnabledFeatures,
 } from '../controllers/admin.controller';
+import { requireFeature } from '../middleware/featureGate';
+import { generateReports, getMyLatestReport } from '../controllers/report.controller';
 
 const router = Router();
 
@@ -28,6 +30,27 @@ router.patch(
   validateParams(featureFlagKeyParamSchema),
   validateBody(updateFeatureFlagSchema),
   updateFeatureFlag
+);
+
+// Report generation (admin only, requires ai_insights feature)
+router.post(
+  '/admin/generate-reports',
+  authenticate,
+  requireAdmin,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  writeLimiter as any,
+  requireFeature('ai_insights'),
+  generateReports
+);
+
+// User's latest report (authenticated, requires ai_insights feature)
+router.get(
+  '/reports/latest',
+  authenticate,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  readLimiter as any,
+  requireFeature('ai_insights'),
+  getMyLatestReport
 );
 
 export default router;
