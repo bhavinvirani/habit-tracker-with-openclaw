@@ -39,6 +39,7 @@ model User {
   habitReminders       HabitReminder[]
   notificationSettings UserNotificationSettings?
   weeklyReports        WeeklyReport[]
+  featureFlagAudits    FeatureFlagAudit[]
 
   @@map("users")
 }
@@ -385,6 +386,31 @@ model FeatureFlag {
 
   @@index([category])
   @@map("feature_flags")
+}
+
+// ============ FEATURE FLAG AUDIT LOG ============
+
+enum AuditAction {
+  CREATED
+  UPDATED
+  DELETED
+  TOGGLED
+}
+
+model FeatureFlagAudit {
+  id          String      @id @default(cuid())
+  flagKey     String
+  action      AuditAction
+  changes     Json // { field: { old: value, new: value } }
+  performedBy String
+  createdAt   DateTime    @default(now())
+
+  user User @relation(fields: [performedBy], references: [id], onDelete: Cascade)
+
+  @@index([flagKey])
+  @@index([performedBy])
+  @@index([createdAt])
+  @@map("feature_flag_audits")
 }
 
 // ============ AI WEEKLY REPORTS ============

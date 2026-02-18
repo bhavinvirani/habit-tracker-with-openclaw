@@ -59,13 +59,55 @@ export interface User {
 
 // Feature Flags
 export interface FeatureFlag {
+  id: string;
   key: string;
   name: string;
   description: string | null;
   category: string;
   enabled: boolean;
   metadata: Record<string, unknown> | null;
+  createdAt: string;
   updatedAt: string;
+}
+
+// Admin types
+export interface AdminUser {
+  id: string;
+  name: string;
+  email: string;
+  isAdmin: boolean;
+  createdAt: string;
+  _count: {
+    habits: number;
+    habitLogs: number;
+  };
+}
+
+export interface ApplicationStats {
+  totalUsers: number;
+  totalHabits: number;
+  totalHabitLogs: number;
+  adminCount: number;
+  activeUsersLast7Days: number;
+  activeUsersLast30Days: number;
+  newRegistrationsLast7Days: number;
+  avgCompletionRate: number;
+}
+
+export type AuditAction = 'CREATED' | 'UPDATED' | 'DELETED' | 'TOGGLED';
+
+export interface AuditEntry {
+  id: string;
+  flagKey: string;
+  action: AuditAction;
+  changes: Record<string, unknown>;
+  performedBy: string;
+  createdAt: string;
+  user: {
+    id: string;
+    name: string;
+    email: string;
+  };
 }
 
 // Weekly Report

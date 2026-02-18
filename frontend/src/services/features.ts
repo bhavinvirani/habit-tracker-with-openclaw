@@ -20,12 +20,34 @@ export const featuresApi = {
 
   updateFlag: async (
     key: string,
-    data: { enabled?: boolean; metadata?: Record<string, unknown> }
+    data: {
+      enabled?: boolean;
+      name?: string;
+      description?: string;
+      category?: string;
+      metadata?: Record<string, unknown>;
+    }
   ): Promise<FeatureFlag> => {
     const response = await api.patch<ApiResponse<{ flag: FeatureFlag }>>(
       `/admin/features/${key}`,
       data
     );
     return response.data.data.flag;
+  },
+
+  createFlag: async (data: {
+    key: string;
+    name: string;
+    description?: string;
+    category?: string;
+    enabled?: boolean;
+    metadata?: Record<string, unknown>;
+  }): Promise<FeatureFlag> => {
+    const response = await api.post<ApiResponse<{ flag: FeatureFlag }>>('/admin/features', data);
+    return response.data.data.flag;
+  },
+
+  deleteFlag: async (key: string): Promise<void> => {
+    await api.delete(`/admin/features/${key}`);
   },
 };
