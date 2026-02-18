@@ -3,6 +3,7 @@ import prisma from '../config/database';
 import { sendToUser } from './notifier.service';
 import { getTodayForTimezone } from '../utils/timezone';
 import logger from '../utils/logger';
+import { registerCronJob, reportCronRun } from '../utils/cronTracker';
 
 // Track which reminders were already sent today to avoid duplicates
 const sentReminders = new Set<string>();
@@ -199,14 +200,31 @@ function clearDedupSet(): void {
  * Initialize the reminder scheduler
  */
 export function initReminderScheduler(): void {
+  registerCronJob('reminderProcessor', '* * * * *');
+  registerCronJob('dedupClear', '0 0 * * *');
+
   // Process reminders every minute
   cron.schedule('* * * * *', async () => {
-    await processHabitReminders();
-    await processDailySummaries();
+    const start = Date.now();
+    try {
+      await processHabitReminders();
+      await processDailySummaries();
+      reportCronRun('reminderProcessor', 'success', Date.now() - start);
+    } catch (err) {
+      reportCronRun('reminderProcessor', 'failure', Date.now() - start, (err as Error).message);
+    }
   });
 
   // Clear dedup set at midnight UTC
-  cron.schedule('0 0 * * *', clearDedupSet);
+  cron.schedule('0 0 * * *', () => {
+    const start = Date.now();
+    try {
+      clearDedupSet();
+      reportCronRun('dedupClear', 'success', Date.now() - start);
+    } catch (err) {
+      reportCronRun('dedupClear', 'failure', Date.now() - start, (err as Error).message);
+    }
+  });
 
   logger.info('Reminder scheduler initialized');
 }

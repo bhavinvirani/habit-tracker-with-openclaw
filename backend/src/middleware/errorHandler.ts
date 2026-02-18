@@ -5,6 +5,7 @@ import {
 } from '@prisma/client/runtime/library';
 import logger from '../utils/logger';
 import { AppError } from '../utils/AppError';
+import { recordError } from '../utils/errorTracker';
 
 // Safe keys that can be exposed in production error details
 const SAFE_DETAIL_KEYS = new Set(['field', 'fields', 'code', 'type', 'limit', 'value']);
@@ -189,4 +190,13 @@ export const errorHandler = (
   }
 
   sendErrorResponse(error, req, res);
+
+  // Track error for actuator stats
+  recordError(
+    error.code || 'UNKNOWN',
+    error.message,
+    error.statusCode,
+    req.originalUrl,
+    req.method
+  );
 };

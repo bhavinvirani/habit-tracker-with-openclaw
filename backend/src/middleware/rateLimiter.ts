@@ -1,10 +1,19 @@
 import rateLimit, { Options } from 'express-rate-limit';
 import { RedisStore } from 'rate-limit-redis';
-import { Request, RequestHandler } from 'express';
+import { Request, Response, RequestHandler } from 'express';
 import { AuthRequest } from './auth';
 import { getRedisClientForStore } from '../config/redis';
 
 const isTest = process.env.NODE_ENV === 'test';
+
+// ============ RATE LIMIT STATS ============
+
+const rateLimitHits: Record<string, number> = {};
+
+export function getRateLimitStats(): { totalThrottled: number; byLimiter: Record<string, number> } {
+  const totalThrottled = Object.values(rateLimitHits).reduce((sum, n) => sum + n, 0);
+  return { totalThrottled, byLimiter: { ...rateLimitHits } };
+}
 
 // No-op middleware for test environment
 const noopLimiter: RequestHandler = (_req, _res, next) => {
@@ -29,7 +38,10 @@ function createRedisStore(prefix: string): RedisStore | undefined {
 /**
  * Helper to create a rate limiter (disabled in test)
  */
-function createLimiter(opts: Partial<Options> & { redisPrefix?: string }): RequestHandler {
+function createLimiter(
+  name: string,
+  opts: Partial<Options> & { redisPrefix?: string }
+): RequestHandler {
   if (isTest) return noopLimiter;
 
   const { redisPrefix, ...rateLimitOpts } = opts;
@@ -44,6 +56,14 @@ function createLimiter(opts: Partial<Options> & { redisPrefix?: string }): Reque
         code: 'RATE_LIMIT_ERROR',
       },
     },
+    handler: (_req: Request, res: Response) => {
+      rateLimitHits[name] = (rateLimitHits[name] || 0) + 1;
+      const msg = rateLimitOpts.message || {
+        success: false,
+        error: { message: 'Too many requests, please try again later', code: 'RATE_LIMIT_ERROR' },
+      };
+      res.status(429).json(msg);
+    },
     ...(redisPrefix ? { store: createRedisStore(redisPrefix) } : {}),
     ...rateLimitOpts,
   });
@@ -54,7 +74,7 @@ function createLimiter(opts: Partial<Options> & { redisPrefix?: string }): Reque
 /**
  * Login / register: 10 requests per 15 minutes per IP
  */
-export const authLimiter = createLimiter({
+export const authLimiter = createLimiter('auth', {
   windowMs: 15 * 60 * 1000,
   limit: 10,
   redisPrefix: 'auth',
@@ -73,7 +93,7 @@ export const authLimiter = createLimiter({
  * Create/update/delete operations: 60 requests per 15 minutes
  * Keyed by userId when authenticated, falls back to IP
  */
-export const writeLimiter = createLimiter({
+export const writeLimiter = createLimiter('write', {
   windowMs: 15 * 60 * 1000,
   limit: 60,
   redisPrefix: 'write',
@@ -95,7 +115,7 @@ export const writeLimiter = createLimiter({
  * Read operations: 200 requests per 15 minutes
  * Keyed by userId when authenticated, falls back to IP
  */
-export const readLimiter = createLimiter({
+export const readLimiter = createLimiter('read', {
   windowMs: 15 * 60 * 1000,
   limit: 200,
   redisPrefix: 'read',
@@ -110,7 +130,7 @@ export const readLimiter = createLimiter({
  * Analytics endpoints: 120 requests per 15 minutes
  * The analytics page loads ~12 endpoints per visit
  */
-export const analyticsLimiter = createLimiter({
+export const analyticsLimiter = createLimiter('analytics', {
   windowMs: 15 * 60 * 1000,
   limit: 120,
   redisPrefix: 'analytics',
@@ -132,7 +152,7 @@ export const analyticsLimiter = createLimiter({
  * Bot endpoints: 30 requests per minute per API key
  * Keyed by API key header
  */
-export const botLimiter = createLimiter({
+export const botLimiter = createLimiter('bot', {
   windowMs: 60 * 1000,
   limit: 30,
   redisPrefix: 'bot',
@@ -153,7 +173,7 @@ export const botLimiter = createLimiter({
 /**
  * API key generation, data export: 5 requests per hour
  */
-export const sensitiveLimiter = createLimiter({
+export const sensitiveLimiter = createLimiter('sensitive', {
   windowMs: 60 * 60 * 1000,
   limit: 5,
   redisPrefix: 'sensitive',
@@ -174,7 +194,7 @@ export const sensitiveLimiter = createLimiter({
 /**
  * Health endpoint: 20 requests per minute per IP
  */
-export const healthLimiter = createLimiter({
+export const healthLimiter = createLimiter('health', {
   windowMs: 60 * 1000,
   limit: 20,
   redisPrefix: 'health',
@@ -186,7 +206,7 @@ export const healthLimiter = createLimiter({
  * Actuator stats: 10 requests per minute per IP
  * Stricter than health since it runs DB queries
  */
-export const actuatorLimiter = createLimiter({
+export const actuatorLimiter = createLimiter('actuator', {
   windowMs: 60 * 1000,
   limit: 10,
   redisPrefix: 'actuator',
@@ -205,7 +225,7 @@ export const actuatorLimiter = createLimiter({
  * Catch-all for any route not covered by a specific limiter
  * 100 requests per 15 minutes per IP
  */
-export const generalLimiter = createLimiter({
+export const generalLimiter = createLimiter('general', {
   windowMs: 15 * 60 * 1000,
   limit: 100,
   redisPrefix: 'general',

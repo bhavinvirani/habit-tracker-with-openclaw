@@ -4,7 +4,7 @@ import { createTestApp } from '../helpers';
 const app = createTestApp();
 
 describe('Actuator Stats', () => {
-  test('GET /actuator/stats returns 200 with all 6 stat categories', async () => {
+  test('GET /actuator/stats returns 200 with all 13 stat categories', async () => {
     const res = await request(app).get('/actuator/stats');
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
@@ -16,6 +16,13 @@ describe('Actuator Stats', () => {
     expect(data).toHaveProperty('cache');
     expect(data).toHaveProperty('requests');
     expect(data).toHaveProperty('redis');
+    expect(data).toHaveProperty('deployment');
+    expect(data).toHaveProperty('errors');
+    expect(data).toHaveProperty('cronJobs');
+    expect(data).toHaveProperty('rateLimiting');
+    expect(data).toHaveProperty('activeUsers');
+    expect(data).toHaveProperty('dependencies');
+    expect(data).toHaveProperty('prismaMetrics');
   });
 
   test('application info has expected fields', async () => {
@@ -83,5 +90,73 @@ describe('Actuator Stats', () => {
   test('does not require authentication', async () => {
     const res = await request(app).get('/actuator/stats');
     expect(res.status).not.toBe(401);
+  });
+
+  test('deployment info has packageVersion field', async () => {
+    const res = await request(app).get('/actuator/stats');
+    const { deployment } = res.body.data;
+
+    expect(deployment).toHaveProperty('packageVersion');
+    expect(deployment).toHaveProperty('gitSha');
+    expect(deployment).toHaveProperty('buildTimestamp');
+    expect(deployment).toHaveProperty('dockerImage');
+  });
+
+  test('errors has totalErrors and byCode', async () => {
+    const res = await request(app).get('/actuator/stats');
+    const { errors } = res.body.data;
+
+    expect(errors).toHaveProperty('totalErrors');
+    expect(typeof errors.totalErrors).toBe('number');
+    expect(errors).toHaveProperty('byCode');
+    expect(errors).toHaveProperty('recent');
+    expect(Array.isArray(errors.recent)).toBe(true);
+  });
+
+  test('cronJobs is an object', async () => {
+    const res = await request(app).get('/actuator/stats');
+    const { cronJobs } = res.body.data;
+
+    expect(typeof cronJobs).toBe('object');
+    expect(cronJobs).not.toBeNull();
+  });
+
+  test('rateLimiting has totalThrottled', async () => {
+    const res = await request(app).get('/actuator/stats');
+    const { rateLimiting } = res.body.data;
+
+    expect(rateLimiting).toHaveProperty('totalThrottled');
+    expect(typeof rateLimiting.totalThrottled).toBe('number');
+    expect(rateLimiting).toHaveProperty('byLimiter');
+  });
+
+  test('activeUsers has dau/wau/mau fields or degrades gracefully', async () => {
+    const res = await request(app).get('/actuator/stats');
+    const { activeUsers } = res.body.data;
+
+    // Either has DAU/WAU/MAU or error field when DB unavailable
+    if (activeUsers.error) {
+      expect(activeUsers.error).toBe('unavailable');
+    } else {
+      expect(activeUsers).toHaveProperty('dau');
+      expect(activeUsers).toHaveProperty('wau');
+      expect(activeUsers).toHaveProperty('mau');
+      expect(activeUsers).toHaveProperty('totalRegistered');
+    }
+  });
+
+  test('dependencies has database and redis fields or degrades gracefully', async () => {
+    const res = await request(app).get('/actuator/stats');
+    const { dependencies } = res.body.data;
+
+    // Either has health pings or error field
+    if (dependencies.error) {
+      expect(dependencies.error).toBe('unavailable');
+    } else {
+      expect(dependencies).toHaveProperty('database');
+      expect(dependencies).toHaveProperty('redis');
+      expect(dependencies.database).toHaveProperty('status');
+      expect(dependencies.database).toHaveProperty('latencyMs');
+    }
   });
 });

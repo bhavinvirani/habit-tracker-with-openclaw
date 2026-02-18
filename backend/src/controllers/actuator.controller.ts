@@ -6,6 +6,9 @@ import { cacheMetrics } from '../utils/cache';
 import { getRequestMetrics } from '../utils/requestMetrics';
 import { isRedisConnected, getRedisClient } from '../config/redis';
 import prisma from '../config/database';
+import { getErrorStats } from '../utils/errorTracker';
+import { getCronJobStats } from '../utils/cronTracker';
+import { getRateLimitStats } from '../middleware/rateLimiter';
 
 // ============ HELPERS ============
 
@@ -87,8 +90,27 @@ export const getStats = asyncHandler(async (_req: Request, res: Response) => {
 
   const requests = getRequestMetrics();
 
+  // New sync categories
+  const deployment = {
+    gitSha: process.env.GIT_SHA || null,
+    buildTimestamp: process.env.BUILD_TIMESTAMP || null,
+    dockerImage: process.env.DOCKER_IMAGE || null,
+    packageVersion: process.env.npm_package_version || '1.0.0',
+  };
+
+  const errors = getErrorStats();
+  const cronJobs = getCronJobStats();
+  const rateLimiting = getRateLimitStats();
+
   // Async stats — use Promise.allSettled for resilience
-  const [dbResult, redisResult] = await Promise.allSettled([getDatabaseStats(), getRedisStats()]);
+  const [dbResult, redisResult, activeUsersResult, depsResult, prismaMetricsResult] =
+    await Promise.allSettled([
+      getDatabaseStats(),
+      getRedisStats(),
+      getActiveUserStats(),
+      getDependencyHealth(),
+      getPrismaMetrics(),
+    ]);
 
   const database = dbResult.status === 'fulfilled' ? dbResult.value : { error: 'unavailable' };
 
@@ -97,6 +119,15 @@ export const getStats = asyncHandler(async (_req: Request, res: Response) => {
       ? redisResult.value
       : { connected: false, error: 'unavailable' };
 
+  const activeUsers =
+    activeUsersResult.status === 'fulfilled' ? activeUsersResult.value : { error: 'unavailable' };
+
+  const dependencies =
+    depsResult.status === 'fulfilled' ? depsResult.value : { error: 'unavailable' };
+
+  const prismaMetrics =
+    prismaMetricsResult.status === 'fulfilled' ? prismaMetricsResult.value : { available: false };
+
   sendSuccess(res, {
     application,
     system,
@@ -104,6 +135,13 @@ export const getStats = asyncHandler(async (_req: Request, res: Response) => {
     cache,
     requests,
     redis,
+    deployment,
+    errors,
+    cronJobs,
+    rateLimiting,
+    activeUsers,
+    dependencies,
+    prismaMetrics,
   });
 });
 
@@ -202,4 +240,75 @@ async function getRedisStats() {
     server: parseRedisInfo(serverInfo, REDIS_SERVER_KEYS),
     memory: parseRedisInfo(memoryInfo, REDIS_MEMORY_KEYS),
   };
+}
+
+// ============ ACTIVE USERS ============
+
+async function getActiveUserStats() {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const sevenDaysAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+  const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+  const [dauResult, wauResult, mauResult, totalRegistered] = await Promise.all([
+    prisma.$queryRaw<[{ count: bigint }]>`
+      SELECT COUNT(DISTINCT "userId") as count FROM "habit_logs" WHERE "date" >= ${today}
+    `,
+    prisma.$queryRaw<[{ count: bigint }]>`
+      SELECT COUNT(DISTINCT "userId") as count FROM "habit_logs" WHERE "date" >= ${sevenDaysAgo}
+    `,
+    prisma.$queryRaw<[{ count: bigint }]>`
+      SELECT COUNT(DISTINCT "userId") as count FROM "habit_logs" WHERE "date" >= ${thirtyDaysAgo}
+    `,
+    prisma.user.count(),
+  ]);
+
+  return {
+    dau: Number(dauResult[0].count),
+    wau: Number(wauResult[0].count),
+    mau: Number(mauResult[0].count),
+    totalRegistered,
+  };
+}
+
+// ============ DEPENDENCY HEALTH ============
+
+async function getDependencyHealth() {
+  const results: Record<string, { status: string; latencyMs: number }> = {};
+
+  // Database ping
+  const dbStart = Date.now();
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    results.database = { status: 'connected', latencyMs: Date.now() - dbStart };
+  } catch {
+    results.database = { status: 'disconnected', latencyMs: Date.now() - dbStart };
+  }
+
+  // Redis ping
+  const redis = getRedisClient();
+  const redisStart = Date.now();
+  if (redis) {
+    try {
+      await redis.ping();
+      results.redis = { status: 'connected', latencyMs: Date.now() - redisStart };
+    } catch {
+      results.redis = { status: 'disconnected', latencyMs: Date.now() - redisStart };
+    }
+  } else {
+    results.redis = { status: 'not configured', latencyMs: 0 };
+  }
+
+  return results;
+}
+
+// ============ PRISMA METRICS ============
+
+async function getPrismaMetrics() {
+  try {
+    const metrics = await prisma.$metrics.json();
+    return metrics;
+  } catch {
+    return { available: false };
+  }
 }

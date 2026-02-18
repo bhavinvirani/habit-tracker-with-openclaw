@@ -1,10 +1,6 @@
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
+import { AppError } from '../utils/AppError';
 
-export const notFoundHandler = (req: Request, res: Response) => {
-  res.status(404).json({
-    success: false,
-    error: {
-      message: `Route ${req.originalUrl} not found`,
-    },
-  });
+export const notFoundHandler = (req: Request, _res: Response, next: NextFunction) => {
+  next(new AppError(`Route ${req.originalUrl} not found`, 404, true, 'NOT_FOUND'));
 };

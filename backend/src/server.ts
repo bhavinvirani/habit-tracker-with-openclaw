@@ -29,6 +29,8 @@ import integrationRoutes from './routes/integration.routes';
 import reminderRoutes from './routes/reminder.routes';
 import actuatorRoutes from './routes/actuator.routes';
 import { initReminderScheduler } from './services/reminder.service';
+import { initDemoSeeder } from './services/demoSeed.service';
+import { registerCronJob, reportCronRun } from './utils/cronTracker';
 
 dotenv.config();
 
@@ -191,6 +193,9 @@ const server = app.listen(Number(PORT), '0.0.0.0', () => {
   // Initialize reminder scheduler
   initReminderScheduler();
 
+  // Initialize demo user seeder (if DEMO_USER_EMAIL is set)
+  initDemoSeeder();
+
   // Warm analytics cache for recently active users (after 5s delay)
   if (process.env.NODE_ENV !== 'test') {
     setTimeout(() => warmAnalyticsCache(), 5000);
@@ -198,8 +203,10 @@ const server = app.listen(Number(PORT), '0.0.0.0', () => {
 });
 
 // Cleanup expired refresh tokens every hour
+registerCronJob('tokenCleanup', 'every 60m');
 const tokenCleanupInterval = setInterval(
   async () => {
+    const start = Date.now();
     try {
       const deleted = await prisma.refreshToken.deleteMany({
         where: { expiresAt: { lt: new Date() } },
@@ -211,7 +218,9 @@ const tokenCleanupInterval = setInterval(
       await prisma.loginAttempt.deleteMany({
         where: { lockedUntil: { lt: new Date() } },
       });
+      reportCronRun('tokenCleanup', 'success', Date.now() - start);
     } catch (error) {
+      reportCronRun('tokenCleanup', 'failure', Date.now() - start, (error as Error).message);
       logger.error('Failed to cleanup expired tokens', { error });
     }
   },

@@ -14,6 +14,10 @@ RUN npm install --production --legacy-peer-deps
 FROM node:20-alpine AS builder
 WORKDIR /app
 
+# Build-time metadata
+ARG GIT_SHA=unknown
+ARG BUILD_TIMESTAMP=unknown
+
 # Copy package files
 COPY package*.json ./
 COPY tsconfig.json ./
@@ -36,6 +40,10 @@ FROM node:20-alpine AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
+ARG GIT_SHA=unknown
+ARG BUILD_TIMESTAMP=unknown
+ENV GIT_SHA=$GIT_SHA
+ENV BUILD_TIMESTAMP=$BUILD_TIMESTAMP
 
 # Create non-root user
 RUN addgroup --system --gid 1001 nodejs
