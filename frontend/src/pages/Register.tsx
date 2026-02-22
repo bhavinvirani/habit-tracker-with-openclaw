@@ -57,6 +57,7 @@ const Register: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     if (!validateForm()) return;
 
     setIsLoading(true);
@@ -93,9 +94,9 @@ const Register: React.FC = () => {
         <label className="label">{label}</label>
         <div className="relative">
           <Icon
-            size={16}
+            size={18}
             className={`absolute left-3 top-1/2 -translate-y-1/2 transition-colors duration-200 ${
-              active ? 'text-primary-400' : 'text-dark-600'
+              active ? 'text-primary-400' : 'text-dark-500'
             }`}
           />
           <input
@@ -108,7 +109,7 @@ const Register: React.FC = () => {
             onBlur={() => setFocusedField(null)}
           />
         </div>
-        {errors[field] && <p className="text-accent-red text-xs mt-1">{errors[field]}</p>}
+        {errors[field] && <p className="text-accent-red text-sm mt-1">{errors[field]}</p>}
       </div>
     );
   };
@@ -118,41 +119,41 @@ const Register: React.FC = () => {
       <div className="w-full max-w-md relative z-10">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-primary-600 mb-4">
-            <Sparkles size={24} className="text-white" />
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-primary-500 to-primary-700 mb-4">
+            <Sparkles size={32} className="text-white" />
           </div>
-          <h1 className="text-xl font-semibold text-dark-100 tracking-tight">Create Account</h1>
-          <p className="text-sm text-dark-500 mt-1.5">Start your habit tracking journey</p>
+          <h1 className="text-2xl font-bold text-white">Create Account</h1>
+          <p className="text-dark-400 mt-2">Start your habit tracking journey</p>
         </div>
 
         {/* Register Card */}
-        <div className="bg-dark-900 border border-white/[0.06] rounded-2xl p-6 shadow-card">
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <div className="card">
+          <form onSubmit={handleSubmit} className="space-y-5">
             {renderField('name', 'Name', 'text', 'John Doe', User)}
             {renderField('email', 'Email', 'email', 'you@example.com', Mail)}
-            {renderField('password', 'Password', 'password', 'Min 8 characters', Lock)}
-            {renderField('confirmPassword', 'Confirm Password', 'password', 'Repeat password', Lock)}
+            {renderField('password', 'Password', 'password', '••••••••', Lock)}
+            {renderField('confirmPassword', 'Confirm Password', 'password', '••••••••', Lock)}
 
             <motion.button
               type="submit"
               disabled={isLoading}
-              className="btn btn-primary w-full mt-1"
+              className="btn btn-primary w-full"
               whileHover={{ scale: 1.01 }}
               whileTap={{ scale: 0.98 }}
             >
               {isLoading ? (
-                <Loader2 size={16} className="animate-spin" />
+                <Loader2 size={20} className="animate-spin" />
               ) : (
                 <>
                   Create Account
-                  <ArrowRight size={16} />
+                  <ArrowRight size={18} />
                 </>
               )}
             </motion.button>
           </form>
 
-          <div className="mt-5 text-center">
-            <p className="text-sm text-dark-500">
+          <div className="mt-6 text-center">
+            <p className="text-dark-400">
               Already have an account?{' '}
               <Link to="/login" className="text-primary-400 hover:text-primary-300 font-medium">
                 Sign in

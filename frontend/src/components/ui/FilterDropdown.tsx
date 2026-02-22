@@ -30,8 +30,8 @@ interface FilterDropdownProps<T = string> {
 }
 
 const sizeClasses = {
-  sm: 'px-3 py-1.5 text-xs gap-1.5',
-  md: 'px-3.5 py-2 text-sm gap-2',
+  sm: 'px-3 py-1.5 text-sm gap-1.5',
+  md: 'px-4 py-2 text-sm gap-2',
 };
 
 function FilterDropdown<T extends string | number>({
@@ -69,25 +69,25 @@ function FilterDropdown<T extends string | number>({
         aria-expanded={isOpen}
         aria-haspopup="listbox"
         className={clsx(
-          'flex items-center rounded-lg transition-all duration-150',
-          'bg-dark-950 border border-white/[0.08] text-dark-200',
-          'hover:border-white/[0.12]',
-          isOpen && 'border-primary-500/50 ring-2 ring-primary-500/20',
+          'flex items-center rounded-lg transition-colors',
+          'bg-dark-800 border border-dark-600 text-white',
+          'hover:border-dark-500',
+          isOpen && 'border-primary-500',
           sizeClasses[size]
         )}
       >
         {icon}
-        <span className={clsx(!value && 'text-dark-500')}>{displayLabel}</span>
+        <span className={clsx(!value && 'text-dark-400')}>{displayLabel}</span>
         <ChevronDown
-          size={14}
-          className={clsx('text-dark-600 transition-transform ml-auto', isOpen && 'rotate-180')}
+          size={16}
+          className={clsx('text-dark-400 transition-transform', isOpen && 'rotate-180')}
         />
       </button>
 
       {isOpen && (
         <div
           role="listbox"
-          className="absolute z-20 mt-1.5 min-w-full w-max bg-dark-900 border border-white/[0.08] rounded-lg shadow-elevated overflow-hidden animate-fade-in"
+          className="absolute z-20 mt-1 min-w-full w-max bg-dark-800 border border-dark-600 rounded-lg shadow-xl overflow-hidden"
         >
           {showAllOption && (
             <button
@@ -98,14 +98,14 @@ function FilterDropdown<T extends string | number>({
                 setIsOpen(false);
               }}
               className={clsx(
-                'w-full flex items-center justify-between px-3.5 py-2 text-sm transition-colors',
+                'w-full flex items-center justify-between px-4 py-2 text-sm transition-colors',
                 value === null
-                  ? 'bg-primary-500/[0.12] text-primary-400'
-                  : 'text-dark-300 hover:bg-white/[0.04]'
+                  ? 'bg-primary-500/20 text-primary-400'
+                  : 'text-dark-200 hover:bg-dark-700'
               )}
             >
               <span>{allLabel}</span>
-              {value === null && <Check size={14} />}
+              {value === null && <Check size={16} />}
             </button>
           )}
           {options.map((option) => (
@@ -118,17 +118,17 @@ function FilterDropdown<T extends string | number>({
                 setIsOpen(false);
               }}
               className={clsx(
-                'w-full flex items-center justify-between gap-3 px-3.5 py-2 text-sm transition-colors',
+                'w-full flex items-center justify-between gap-3 px-4 py-2 text-sm transition-colors',
                 value === option.value
-                  ? 'bg-primary-500/[0.12] text-primary-400'
-                  : 'text-dark-300 hover:bg-white/[0.04]'
+                  ? 'bg-primary-500/20 text-primary-400'
+                  : 'text-dark-200 hover:bg-dark-700'
               )}
             >
               <span className="flex items-center gap-2">
                 {option.icon}
                 {option.label}
               </span>
-              {value === option.value && <Check size={14} />}
+              {value === option.value && <Check size={16} />}
             </button>
           ))}
         </div>

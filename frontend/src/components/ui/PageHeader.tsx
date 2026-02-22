@@ -22,19 +22,19 @@ const PageHeader: React.FC<PageHeaderProps> = ({
   children,
 }) => {
   return (
-    <div className="flex items-start justify-between gap-4">
+    <div className="flex items-center justify-between">
       <div className="flex items-center gap-3">
         {Icon && (
-          <div className="w-9 h-9 rounded-lg bg-primary-500/[0.12] flex items-center justify-center">
-            <Icon className="w-[18px] h-[18px] text-primary-400" />
+          <div className="w-10 h-10 rounded-xl bg-primary-500/20 flex items-center justify-center">
+            <Icon className="w-5 h-5 text-primary-400" />
           </div>
         )}
         <div>
-          <h1 className="text-2xl font-semibold text-dark-100 tracking-tight">{title}</h1>
-          {subtitle && <p className="text-sm text-dark-500 mt-0.5">{subtitle}</p>}
+          <h1 className="text-3xl font-bold text-white">{title}</h1>
+          {subtitle && <p className="text-dark-400 mt-1">{subtitle}</p>}
         </div>
       </div>
-      <div className="flex items-center gap-2 shrink-0">
+      <div className="flex items-center gap-3">
         {children}
         {action}
       </div>

@@ -74,16 +74,5 @@
     "@typescript-eslint/typescript-estree": "^8.54.0",
     "@typescript-eslint/utils": "^8.54.0",
     "@typescript-eslint/type-utils": "^8.54.0"
-  },
-  "dependencies": {
-    "@tanstack/react-query": "^5.90.21",
-    "clsx": "^2.1.1",
-    "date-fns": "^4.1.0",
-    "framer-motion": "^12.34.3",
-    "lucide-react": "^0.575.0",
-    "react": "^19.2.4",
-    "react-dom": "^19.2.4",
-    "react-hot-toast": "^2.6.0",
-    "react-router-dom": "^7.13.0"
   }
 }

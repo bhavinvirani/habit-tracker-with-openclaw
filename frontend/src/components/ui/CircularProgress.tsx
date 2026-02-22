@@ -29,7 +29,7 @@ const CircularProgress: React.FC<CircularProgressProps> = ({
   strokeWidth = 6,
   showText = true,
   label,
-  gradientColors = ['#6366f1', '#818cf8'],
+  gradientColors = ['#6366f1', '#8b5cf6'],
   trackColor = 'currentColor',
   children,
   gradientId = 'progressGradient',
@@ -67,7 +67,7 @@ const CircularProgress: React.FC<CircularProgressProps> = ({
           stroke={trackColor}
           strokeWidth={strokeWidth}
           fill="none"
-          className="text-white/[0.06]"
+          className="text-dark-700"
         />
         {/* Progress arc */}
         <motion.circle
@@ -93,10 +93,10 @@ const CircularProgress: React.FC<CircularProgressProps> = ({
           children
         ) : showText ? (
           <>
-            <span className={clsx('font-semibold text-dark-100 tracking-tight', size > 100 ? 'text-3xl' : 'text-lg')}>
+            <span className={clsx('font-bold text-white', size > 100 ? 'text-4xl' : 'text-lg')}>
               <motion.span>{displayPercent}</motion.span>%
             </span>
-            {label && <span className="text-xs text-dark-500">{label}</span>}
+            {label && <span className="text-sm text-dark-400">{label}</span>}
           </>
         ) : null}
       </div>

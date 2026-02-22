@@ -308,7 +308,7 @@ const Dashboard: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="space-y-8">
       {/* Header */}
       <PageHeader
         title="Dashboard"
@@ -337,16 +337,16 @@ const Dashboard: React.FC = () => {
             gradientId="dashboardProgress"
           />
           <div className="mt-4 text-center">
-            <p className="text-sm font-medium text-dark-200">Today's Progress</p>
-            <p className="text-xs text-dark-500 mt-0.5">
+            <p className="text-lg font-semibold text-white">Today's Progress</p>
+            <p className="text-dark-400">
               {completedCount} of {totalCount} habits done
             </p>
           </div>
         </div>
 
         {/* Stats Cards - Compact Row */}
-        <div className="card p-5">
-          <h3 className="text-xs font-medium text-dark-500 uppercase tracking-wider mb-4">
+        <div className="card p-4">
+          <h3 className="text-sm font-medium text-dark-400 uppercase tracking-wider mb-4">
             Your Stats
           </h3>
           <div className="grid grid-cols-3 gap-3">
@@ -372,7 +372,7 @@ const Dashboard: React.FC = () => {
           </div>
 
           {/* Additional Quick Stats */}
-          <div className="grid grid-cols-2 gap-3 mt-4 pt-4 border-t border-white/[0.06]">
+          <div className="grid grid-cols-2 gap-3 mt-4 pt-4 border-t border-dark-700">
             <StatCard
               icon={CheckCircle2}
               value={stats?.totalCompletions || 0}
@@ -396,7 +396,7 @@ const Dashboard: React.FC = () => {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <CalendarDays className="w-5 h-5 text-primary-400" />
-            <h2 className="text-sm font-medium text-dark-200">Last 14 Days</h2>
+            <h2 className="text-lg font-semibold text-white">Last 14 Days</h2>
           </div>
           <Link to="/calendar" className="text-sm text-primary-400 hover:text-primary-300">
             View Calendar →
@@ -409,7 +409,7 @@ const Dashboard: React.FC = () => {
               <div
                 className={clsx(
                   'aspect-square rounded-md flex items-center justify-center text-xs font-medium transition-all',
-                  day.percentage === 0 && 'bg-white/[0.04] text-dark-600',
+                  day.percentage === 0 && 'bg-dark-800 text-dark-600',
                   day.percentage > 0 && day.percentage < 50 && 'bg-primary-600/20 text-primary-400',
                   day.percentage >= 50 &&
                     day.percentage < 100 &&

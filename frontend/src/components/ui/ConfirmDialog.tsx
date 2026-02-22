@@ -36,12 +36,14 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
 }) => {
   useEffect(() => {
     if (!isOpen) return;
+
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.preventDefault();
         onClose();
       }
     };
+
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
@@ -50,37 +52,44 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm animate-fade-in" onClick={onClose} />
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+
+      {/* Dialog */}
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby="confirm-dialog-title"
-        className="relative bg-dark-900 border border-white/[0.06] rounded-2xl shadow-elevated w-full max-w-md mx-4 p-6 animate-scale-in"
+        className="relative bg-dark-800 border border-dark-600 rounded-xl shadow-2xl w-full max-w-md mx-4 p-6"
       >
+        {/* Close button */}
         <button
           onClick={onClose}
           aria-label="Close dialog"
-          className="absolute top-4 right-4 text-dark-600 hover:text-dark-300 transition-colors"
+          className="absolute top-4 right-4 text-dark-400 hover:text-white transition-colors"
         >
-          <X size={18} />
+          <X size={20} />
         </button>
 
+        {/* Icon */}
         {danger && (
-          <div className="w-10 h-10 rounded-lg bg-accent-red/[0.12] flex items-center justify-center mb-4">
-            <AlertTriangle className="w-5 h-5 text-accent-red" />
+          <div className="w-12 h-12 rounded-full bg-accent-red/20 flex items-center justify-center mb-4">
+            <AlertTriangle className="w-6 h-6 text-accent-red" />
           </div>
         )}
 
-        <h3 id="confirm-dialog-title" className="text-base font-semibold text-dark-100 mb-1.5">
+        {/* Content */}
+        <h3 id="confirm-dialog-title" className="text-lg font-semibold text-white mb-2">
           {title}
         </h3>
-        <p className="text-sm text-dark-500 mb-6">{message}</p>
+        <p className="text-dark-400 mb-6">{message}</p>
 
-        <div className="flex gap-2.5 justify-end">
-          <Button variant="secondary" onClick={onClose} disabled={loading} size="sm">
+        {/* Actions */}
+        <div className="flex gap-3 justify-end">
+          <Button variant="secondary" onClick={onClose} disabled={loading}>
             {cancelText}
           </Button>
-          <Button variant={danger ? 'danger' : 'primary'} onClick={onConfirm} loading={loading} size="sm">
+          <Button variant={danger ? 'danger' : 'primary'} onClick={onConfirm} loading={loading}>
             {confirmText}
           </Button>
         </div>

@@ -38,20 +38,20 @@ const TrendIndicator: React.FC<TrendIndicatorProps> = ({
     up: {
       icon: ArrowUpRight,
       color: 'text-accent-green',
-      bg: 'bg-accent-green/[0.12]',
-      borderColor: 'border-accent-green/[0.12]',
+      bg: 'bg-accent-green/20',
+      borderColor: 'border-accent-green/20',
     },
     down: {
       icon: ArrowDownRight,
       color: 'text-accent-red',
-      bg: 'bg-accent-red/[0.12]',
-      borderColor: 'border-accent-red/[0.12]',
+      bg: 'bg-accent-red/20',
+      borderColor: 'border-accent-red/20',
     },
     neutral: {
       icon: Minus,
-      color: 'text-dark-500',
-      bg: 'bg-white/[0.04]',
-      borderColor: 'border-white/[0.06]',
+      color: 'text-dark-400',
+      bg: 'bg-dark-700',
+      borderColor: 'border-dark-600',
     },
   };
 
