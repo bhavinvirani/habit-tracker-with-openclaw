@@ -29,7 +29,7 @@ const Sparkline: React.FC<SparklineProps> = ({ data, color, height = 16, showToo
             className={clsx('w-1.5 rounded-full transition-all', completed ? '' : 'opacity-30')}
             style={{
               height: completed ? height : height * 0.375,
-              backgroundColor: completed ? color : 'rgba(255,255,255,0.08)',
+              backgroundColor: completed ? color : '#4b5563',
             }}
             title={tooltipText}
           />

@@ -15,17 +15,17 @@ interface BadgeProps {
 }
 
 const variantClasses = {
-  default: 'bg-white/[0.06] text-dark-400',
-  primary: 'bg-primary-500/15 text-primary-400',
-  success: 'bg-accent-green/15 text-accent-green',
-  warning: 'bg-accent-orange/15 text-accent-orange',
-  danger: 'bg-accent-red/15 text-accent-red',
-  custom: '',
+  default: 'bg-dark-700 text-dark-300',
+  primary: 'bg-primary-500/20 text-primary-400',
+  success: 'bg-accent-green/20 text-accent-green',
+  warning: 'bg-accent-orange/20 text-accent-orange',
+  danger: 'bg-accent-red/20 text-accent-red',
+  custom: '', // Uses inline styles
 };
 
 const sizeClasses = {
-  sm: 'px-2 py-0.5 text-[11px]',
-  md: 'px-2.5 py-0.5 text-xs',
+  sm: 'px-2 py-0.5 text-xs',
+  md: 'px-2.5 py-1 text-xs',
 };
 
 const Badge: React.FC<BadgeProps> = ({
@@ -41,7 +41,7 @@ const Badge: React.FC<BadgeProps> = ({
     return (
       <span
         className={clsx(baseClasses, sizeClasses[size], className)}
-        style={{ backgroundColor: `${color}18`, color }}
+        style={{ backgroundColor: `${color}20`, color }}
       >
         {children}
       </span>
@@ -60,14 +60,14 @@ export default Badge;
 // Preset badges for common use cases
 export const CategoryBadge: React.FC<{ category: string }> = ({ category }) => {
   const categoryColors: Record<string, string> = {
-    Health: '#60a5fa',
-    Fitness: '#34d399',
-    Learning: '#fbbf24',
-    Productivity: '#f87171',
-    Mindfulness: '#a78bfa',
-    Social: '#f472b6',
-    Finance: '#2dd4bf',
-    Other: '#71717a',
+    Health: '#3b82f6',
+    Fitness: '#10b981',
+    Learning: '#f59e0b',
+    Productivity: '#ef4444',
+    Mindfulness: '#8b5cf6',
+    Social: '#ec4899',
+    Finance: '#14b8a6',
+    Other: '#64748b',
   };
 
   const color = categoryColors[category] || categoryColors.Other;

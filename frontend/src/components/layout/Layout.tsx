@@ -35,7 +35,7 @@ const Layout: React.FC = () => {
       />
       <div className="flex">
         <Sidebar isOpen={isMobileMenuOpen} onClose={closeMobileMenu} />
-        <main className="flex-1 px-4 pb-8 lg:px-8 lg:ml-64 mt-16 pt-6">
+        <main className="flex-1 p-4 lg:p-6 lg:ml-64 mt-16">
           <div className="max-w-7xl mx-auto">
             <AnimatedPage key={location.pathname}>
               <Outlet />

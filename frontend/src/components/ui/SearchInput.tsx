@@ -20,15 +20,15 @@ interface SearchInputProps {
 }
 
 const sizeClasses = {
-  sm: 'pl-8 pr-3 py-1.5 text-xs',
-  md: 'pl-9 pr-4 py-2 text-sm',
-  lg: 'pl-10 pr-4 py-2.5 text-sm',
+  sm: 'pl-8 pr-3 py-1.5 text-sm',
+  md: 'pl-10 pr-4 py-2 text-sm',
+  lg: 'pl-11 pr-4 py-2.5',
 };
 
 const iconSizes = {
   sm: 14,
-  md: 15,
-  lg: 16,
+  md: 16,
+  lg: 18,
 };
 
 const SearchInput: React.FC<SearchInputProps> = ({
@@ -49,7 +49,7 @@ const SearchInput: React.FC<SearchInputProps> = ({
       <Search
         size={iconSizes[size]}
         className={clsx(
-          'absolute top-1/2 -translate-y-1/2 text-dark-600',
+          'absolute top-1/2 -translate-y-1/2 text-dark-500',
           size === 'sm' ? 'left-2.5' : 'left-3'
         )}
       />
@@ -62,9 +62,9 @@ const SearchInput: React.FC<SearchInputProps> = ({
         aria-label={placeholder}
         autoFocus={autoFocus}
         className={clsx(
-          'w-full bg-dark-950 border border-white/[0.08] rounded-lg text-dark-200 placeholder-dark-600',
-          'focus:outline-none focus:border-primary-500/50 focus:ring-2 focus:ring-primary-500/20',
-          'transition-all duration-150',
+          'w-full bg-dark-800 border border-dark-600 rounded-lg text-white placeholder-dark-500',
+          'focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500/20',
+          'transition-all',
           sizeClasses[size],
           showClear && value && 'pr-9'
         )}
@@ -73,7 +73,7 @@ const SearchInput: React.FC<SearchInputProps> = ({
         <button
           onClick={handleClear}
           aria-label="Clear search"
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-dark-600 hover:text-dark-300 transition-colors"
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-dark-400 hover:text-white transition-colors"
         >
           <X size={iconSizes[size]} />
         </button>

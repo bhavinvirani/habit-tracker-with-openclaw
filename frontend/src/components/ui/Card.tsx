@@ -20,7 +20,7 @@ const paddingClasses = {
   none: '',
   sm: 'p-3',
   md: 'p-4',
-  lg: 'p-5',
+  lg: 'p-6',
 };
 
 const Card: React.FC<CardProps> = ({
@@ -34,19 +34,19 @@ const Card: React.FC<CardProps> = ({
   return (
     <div
       className={clsx(
-        'bg-dark-900 border border-white/[0.06] rounded-xl',
-        hoverable && 'hover:border-white/[0.1] hover:bg-dark-900/80 transition-all duration-200 cursor-pointer',
+        'bg-dark-800/50 border border-dark-700 rounded-xl',
+        hoverable && 'hover:border-dark-600 hover:bg-dark-800 transition-all cursor-pointer',
         className
       )}
     >
       {header && (
-        <div className="px-5 py-3 border-b border-white/[0.06] flex items-center justify-between">
+        <div className="px-4 py-3 border-b border-dark-700 flex items-center justify-between">
           {header}
         </div>
       )}
       <div className={paddingClasses[padding]}>{children}</div>
       {footer && (
-        <div className="px-5 py-3 border-t border-white/[0.06] flex items-center justify-between">
+        <div className="px-4 py-3 border-t border-dark-700 flex items-center justify-between">
           {footer}
         </div>
       )}
@@ -70,7 +70,7 @@ export const CardSectionHeader: React.FC<CardSectionHeaderProps> = ({
 }) => {
   return (
     <div className={clsx('flex items-center justify-between mb-4', className)}>
-      <h3 className="text-xs font-medium text-dark-500 uppercase tracking-wider">{title}</h3>
+      <h3 className="text-sm font-medium text-dark-400 uppercase tracking-wider">{title}</h3>
       {action}
     </div>
   );

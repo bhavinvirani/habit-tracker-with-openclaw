@@ -28,20 +28,20 @@ function ViewToggle<T extends string>({
   size = 'md',
 }: ViewToggleProps<T>) {
   return (
-    <div className="flex items-center gap-0.5 p-0.5 bg-white/[0.04] border border-white/[0.06] rounded-lg">
+    <div className="flex items-center gap-1 p-1 bg-dark-800 rounded-lg">
       {options.map(({ id, icon: Icon, label }) => (
         <button
           key={id}
           onClick={() => onChange(id)}
           className={clsx(
-            'flex items-center gap-1.5 rounded-md font-medium transition-all duration-150',
-            size === 'sm' ? 'px-2 py-1 text-xs' : 'px-2.5 py-1.5 text-xs',
+            'flex items-center gap-2 rounded-md font-medium transition-all',
+            size === 'sm' ? 'px-2 py-1 text-xs' : 'px-3 py-1.5 text-sm',
             value === id
-              ? 'bg-white/[0.1] text-dark-100 shadow-sm'
-              : 'text-dark-500 hover:text-dark-300 hover:bg-white/[0.04]'
+              ? 'bg-primary-600 text-white'
+              : 'text-dark-400 hover:text-white hover:bg-dark-700'
           )}
         >
-          <Icon size={size === 'sm' ? 13 : 14} />
+          <Icon size={size === 'sm' ? 14 : 16} />
           {showLabels && <span className="hidden sm:inline">{label}</span>}
         </button>
       ))}

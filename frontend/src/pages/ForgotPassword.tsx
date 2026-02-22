@@ -44,13 +44,13 @@ const ForgotPassword: React.FC = () => {
       <div className="w-full max-w-md relative z-10">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-primary-600 mb-4">
-            <Sparkles size={24} className="text-white" />
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-primary-500 to-primary-700 mb-4">
+            <Sparkles size={32} className="text-white" />
           </div>
-          <h1 className="text-xl font-semibold text-dark-100 tracking-tight">
+          <h1 className="text-2xl font-bold text-white">
             {isSuccess ? 'Check Your Email' : 'Forgot Password'}
           </h1>
-          <p className="text-sm text-dark-500 mt-1.5">
+          <p className="text-dark-400 mt-2">
             {isSuccess
               ? 'We sent you a password reset link'
               : 'Enter your email to receive a reset link'}
@@ -58,31 +58,34 @@ const ForgotPassword: React.FC = () => {
         </div>
 
         {/* Card */}
-        <div className="bg-dark-900 border border-white/[0.06] rounded-2xl p-6 shadow-card">
+        <div className="card">
           {isSuccess ? (
-            <div className="text-center py-2">
-              <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-accent-green/[0.12] mb-4">
-                <CheckCircle size={24} className="text-accent-green" />
+            <div className="text-center py-4">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-accent-green/10 mb-4">
+                <CheckCircle size={32} className="text-accent-green" />
               </div>
-              <p className="text-sm text-dark-400 mb-5">
-                If an account exists for <span className="text-dark-200 font-medium">{email}</span>,
-                {" you'll receive a password reset link shortly. The link expires in 15 minutes."}
+              <p className="text-dark-300 mb-6">
+                If an account exists for <span className="text-white font-medium">{email}</span>,
+                you&apos;ll receive a password reset link shortly. The link expires in 15 minutes.
               </p>
               <Link
                 to="/login"
-                className="inline-flex items-center gap-2 text-sm text-primary-400 hover:text-primary-300 font-medium transition-colors"
+                className="inline-flex items-center gap-2 text-primary-400 hover:text-primary-300 font-medium transition-colors"
               >
-                <ArrowLeft size={14} />
+                <ArrowLeft size={16} />
                 Back to Sign In
               </Link>
             </div>
           ) : (
             <>
-              <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+              <form onSubmit={handleSubmit} className="space-y-5">
                 <div>
                   <label className="label">Email</label>
                   <div className="relative">
-                    <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-dark-600" />
+                    <Mail
+                      size={18}
+                      className="absolute left-3 top-1/2 -translate-y-1/2 text-dark-500"
+                    />
                     <input
                       type="email"
                       className={`input pl-10 ${error ? 'input-error' : ''}`}
@@ -91,23 +94,23 @@ const ForgotPassword: React.FC = () => {
                       onChange={(e) => setEmail(e.target.value)}
                     />
                   </div>
-                  {error && <p className="text-accent-red text-xs mt-1">{error}</p>}
+                  {error && <p className="text-accent-red text-sm mt-1">{error}</p>}
                 </div>
 
                 <button type="submit" disabled={isLoading} className="btn btn-primary w-full">
                   {isLoading ? (
-                    <Loader2 size={16} className="animate-spin" />
+                    <Loader2 size={20} className="animate-spin" />
                   ) : (
                     <>
                       Send Reset Link
-                      <ArrowRight size={16} />
+                      <ArrowRight size={18} />
                     </>
                   )}
                 </button>
               </form>
 
-              <div className="mt-5 text-center">
-                <p className="text-sm text-dark-500">
+              <div className="mt-6 text-center">
+                <p className="text-dark-400">
                   Remember your password?{' '}
                   <Link to="/login" className="text-primary-400 hover:text-primary-300 font-medium">
                     Sign in

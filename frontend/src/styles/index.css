@@ -3,10 +3,10 @@
 @tailwind utilities;
 
 :root {
-  --color-primary: #6366f1;
-  --color-success: #34d399;
-  --color-warning: #fbbf24;
-  --color-danger: #f87171;
+  --color-primary: #2aa3ff;
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-danger: #ef4444;
 }
 
 * {
@@ -35,158 +35,146 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #09090b;
-  color: #e4e4e7;
-  letter-spacing: -0.01em;
+  background-color: #0a0f1a;
+  color: #e2e8f0;
 }
 
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
 }
 
-/* Refined scrollbar */
+/* Custom scrollbar */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: transparent;
+  background: #0f172a;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.08);
-  border-radius: 3px;
+  background: #334155;
+  border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.14);
-}
-
-/* Focus visible for keyboard navigation */
-:focus-visible {
-  outline: 2px solid rgba(99, 102, 241, 0.5);
-  outline-offset: 2px;
+  background: #475569;
 }
 
 @layer components {
-  /* Buttons */
   .btn {
-    @apply px-4 py-2 rounded-lg font-medium text-sm transition-all duration-150 inline-flex items-center justify-center gap-2 
-           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 focus-visible:ring-offset-2 focus-visible:ring-offset-dark-950;
+    @apply px-4 py-2.5 rounded-lg font-medium transition-all duration-200 inline-flex items-center justify-center gap-2;
   }
 
   .btn-primary {
-    @apply bg-primary-600 text-white hover:bg-primary-500 active:bg-primary-700 shadow-sm hover:shadow-md active:scale-[0.98];
+    @apply bg-primary-600 text-white hover:bg-primary-500 shadow-lg hover:shadow-xl active:scale-[0.98];
   }
 
   .btn-secondary {
-    @apply bg-white/[0.06] text-dark-200 hover:bg-white/[0.1] border border-white/[0.08] hover:border-white/[0.12];
+    @apply bg-dark-700 text-dark-200 hover:bg-dark-600 border border-dark-600;
   }
 
   .btn-ghost {
-    @apply text-dark-400 hover:text-dark-100 hover:bg-white/[0.06];
+    @apply text-dark-300 hover:text-white hover:bg-dark-700;
   }
 
   .btn-danger {
-    @apply bg-accent-red/10 text-accent-red hover:bg-accent-red/[0.15] border border-accent-red/[0.15];
+    @apply bg-accent-red/10 text-accent-red hover:bg-accent-red/20 border border-accent-red/20;
   }
 
   .btn-success {
-    @apply bg-accent-green/10 text-accent-green hover:bg-accent-green/[0.15] border border-accent-green/[0.15];
+    @apply bg-accent-green/10 text-accent-green hover:bg-accent-green/20 border border-accent-green/20;
   }
 
-  /* Cards */
   .card {
-    @apply bg-dark-900 rounded-xl border border-white/[0.06] p-5 shadow-card;
+    @apply bg-dark-850 rounded-xl border border-dark-700 p-6 shadow-lg;
   }
 
   .card-hover {
-    @apply card hover:border-white/[0.1] hover:shadow-card-hover transition-all duration-200;
+    @apply card hover:border-dark-600 hover:shadow-glow transition-all duration-200;
   }
 
-  /* Form elements */
   .input {
-    @apply w-full px-3.5 py-2.5 bg-dark-950 border border-white/[0.08] rounded-lg 
-           text-dark-100 placeholder-dark-500 text-sm
-           focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500/50
-           transition-all duration-150;
+    @apply w-full px-4 py-2.5 bg-dark-900 border border-dark-600 rounded-lg 
+           text-dark-100 placeholder-dark-500
+           focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500
+           transition-all duration-200;
   }
 
   .input-error {
-    @apply border-accent-red/40 focus:ring-accent-red/20 focus:border-accent-red/50;
+    @apply border-accent-red focus:ring-accent-red/50 focus:border-accent-red;
   }
 
   .label {
-    @apply block text-xs font-medium text-dark-400 mb-1.5 uppercase tracking-wider;
+    @apply block text-sm font-medium text-dark-300 mb-1.5;
   }
 
-  /* Badges */
   .badge {
-    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+    @apply inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium;
   }
 
   .badge-primary {
-    @apply bg-primary-500/15 text-primary-400;
+    @apply bg-primary-500/20 text-primary-400;
   }
 
   .badge-success {
-    @apply bg-accent-green/15 text-accent-green;
+    @apply bg-accent-green/20 text-accent-green;
   }
 
   .badge-warning {
-    @apply bg-accent-yellow/15 text-accent-yellow;
+    @apply bg-accent-yellow/20 text-accent-yellow;
   }
 
   .badge-danger {
-    @apply bg-accent-red/15 text-accent-red;
+    @apply bg-accent-red/20 text-accent-red;
   }
 
   /* Stat card styles */
   .stat-card {
-    @apply card flex flex-col gap-1.5;
+    @apply card flex flex-col gap-2;
   }
 
   .stat-label {
-    @apply text-xs text-dark-500 font-medium uppercase tracking-wider;
+    @apply text-sm text-dark-400 font-medium;
   }
 
   .stat-value {
-    @apply text-2xl font-semibold text-white tracking-tight;
+    @apply text-3xl font-bold text-white;
   }
 
   /* Modal styles */
   .modal-overlay {
-    @apply fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] flex items-center justify-center p-4;
+    @apply fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4;
   }
 
   .modal-content {
-    @apply bg-dark-900 rounded-2xl border border-white/[0.06] shadow-elevated w-full max-w-lg max-h-[90vh] overflow-auto animate-scale-in;
+    @apply bg-dark-850 rounded-xl border border-dark-700 shadow-2xl w-full max-w-lg max-h-[90vh] overflow-auto;
   }
 
   /* Habit colors */
   .habit-color-blue {
-    --habit-color: #6366f1;
+    --habit-color: #2aa3ff;
   }
   .habit-color-green {
-    --habit-color: #34d399;
+    --habit-color: #10b981;
   }
   .habit-color-yellow {
-    --habit-color: #fbbf24;
+    --habit-color: #f59e0b;
   }
   .habit-color-red {
-    --habit-color: #f87171;
+    --habit-color: #ef4444;
   }
   .habit-color-purple {
-    --habit-color: #a78bfa;
+    --habit-color: #8b5cf6;
   }
   .habit-color-pink {
-    --habit-color: #f472b6;
+    --habit-color: #ec4899;
   }
   .habit-color-cyan {
-    --habit-color: #22d3ee;
+    --habit-color: #06b6d4;
   }
   .habit-color-orange {
-    --habit-color: #fb923c;
+    --habit-color: #f97316;
   }
 }
